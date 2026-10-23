@@ -1,0 +1,522 @@
+
+{% extends "base.html" %}
+
+{% block title %}About | MobileStore ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+html, body {
+    margin: 0;
+    min-height: 100%;
+    background: #f5f6fb;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.about-layout {
+    display: flex;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: 235px;
+    flex: 0 0 235px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: #171b2d;
+    color: white;
+    padding: 18px 13px;
+    display: flex;
+    flex-direction: column;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 0 8px 18px;
+    border-bottom: 1px solid #303448;
+}
+
+.brand-icon {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #8585ff, #494bd0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+}
+
+.brand h5 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 750;
+}
+
+.brand small {
+    color: #a2a8bd;
+    font-size: 11px;
+}
+
+.nav-heading {
+    color: #858ba4;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    margin: 19px 11px 8px;
+}
+
+.side-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-height: 39px;
+    padding: 9px 11px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #b6bbce;
+    font-size: 13px;
+    transition: background .3s ease,
+                color .3s ease,
+                transform .3s ease,
+                box-shadow .3s ease;
+}
+
+.side-link i {
+    width: 20px;
+    font-size: 17px;
+    text-align: center;
+    transition: transform .3s ease;
+}
+
+.side-link:hover {
+    background: linear-gradient(100deg, #303b70, #252b4b);
+    color: white;
+    transform: translateX(4px);
+    box-shadow: -4px 0 12px rgba(101,101,232,.3),
+                0 4px 12px rgba(0,0,0,.15);
+}
+
+.side-link:hover i {
+    color: #a9aaff;
+    transform: scale(1.08);
+}
+
+.side-link.active {
+    background: #303253;
+    color: white;
+    box-shadow: inset 3px 0 #8585ff;
+}
+
+
+.sidebar-footer {
+    margin-top: 16px;
+    padding: 13px 8px 0;
+    border-top: 1px solid #303448;
+    color: #a2a8bd;
+    font-size: 11px;
+}
+
+.user-name {
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.role-badge {
+    display: inline-block;
+    margin-top: 7px;
+    padding: 5px 9px;
+    border-radius: 6px;
+    background: #303253;
+    color: #dedfff;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+/* ABOUT CONTENT */
+.about-main {
+    flex: 1;
+    min-width: 0;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+}
+
+.about-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.about-header h2 {
+    margin: 0;
+    color: #252a3d;
+    font-size: 25px;
+    font-weight: 800;
+}
+
+.about-header p {
+    margin: 5px 0 0;
+    color: #858ba0;
+    font-size: 13px;
+}
+
+.about-card {
+    width: 100%;
+    max-width: 850px;
+    margin: auto;
+    padding: 30px;
+    background: white;
+    border: 1px solid #e9ebf3;
+    border-radius: 18px;
+    box-shadow: 0 12px 35px rgba(30, 40, 80, .06);
+}
+
+.about-logo {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 14px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #8585ff, #494bd0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 35px;
+    box-shadow: 0 8px 18px rgba(86,86,223,.2);
+}
+
+.about-card h3 {
+    text-align: center;
+    color: #292d43;
+    font-size: 25px;
+    font-weight: 800;
+    margin: 0 0 6px;
+}
+
+.version {
+    display: table;
+    margin: 0 auto 18px;
+    padding: 5px 12px;
+    background: #ededff;
+    color: #5656df;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.about-description {
+    max-width: 600px;
+    margin: 0 auto 23px;
+    text-align: center;
+    color: #73798d;
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.section-heading {
+    font-size: 14px;
+    font-weight: 750;
+    color: #30354b;
+    margin: 18px 0 12px;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: #f8f9fd;
+    border: 1px solid #edf0f7;
+    border-radius: 10px;
+    color: #51576b;
+    font-size: 12px;
+}
+
+.feature-item i {
+    color: #6262df;
+    font-size: 18px;
+}
+
+.license-box {
+    margin-top: 18px;
+    padding: 14px;
+    border-radius: 10px;
+    background: #f7f7ff;
+    border: 1px solid #e7e7ff;
+    font-size: 12px;
+    color: #666c82;
+    line-height: 1.8;
+}
+
+.license-box strong {
+    color: #343954;
+}
+
+.about-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.meta-item {
+    padding: 12px;
+    border: 1px solid #edf0f7;
+    border-radius: 10px;
+}
+
+.meta-label {
+    color: #9298a9;
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+
+.meta-value {
+    color: #34394e;
+    font-size: 12px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.about-footer {
+    margin-top: 20px;
+    text-align: center;
+    color: #9298a9;
+    font-size: 11px;
+}
+
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 10px 15px;
+    border: 0;
+    border-radius: 9px;
+    background: #5656df;
+    color: white;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 700;
+    transition: background .2s, transform .2s;
+}
+
+.back-button:hover {
+    background: #4141c3;
+    color: white;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 767px) {
+    .about-layout {
+        display: block;
+    }
+
+    .sidebar {
+        display: none;
+    }
+
+    .about-main {
+        padding: 15px 12px;
+    }
+
+    .about-header {
+        align-items: flex-start;
+    }
+
+    .about-header h2 {
+        font-size: 22px;
+    }
+
+    .about-card {
+        padding: 22px 16px;
+    }
+
+    .feature-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .about-meta {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .side-link,
+    .side-link i,
+    .back-button {
+        transition: none;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="about-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">
+                <i class="bi bi-phone"></i>
+            </div>
+            <div>
+                <h5>MobileStore</h5>
+                <small>ERP Management</small>
+            </div>
+        </div>
+
+        <div class="nav-heading">MAIN MENU</div>
+
+        <nav>
+            <a href="{{ url_for('dashboard_page') }}" class="side-link">
+                <i class="bi bi-grid-1x2"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="{{ url_for('customers_list') }}" class="side-link">
+                <i class="bi bi-people"></i>
+                <span>Customers</span>
+            </a>
+
+            <a href="{{ url_for('products_list') }}" class="side-link">
+                <i class="bi bi-phone"></i>
+                <span>Products</span>
+            </a>
+
+            <a href="{{ url_for('billing_list') }}" class="side-link">
+                <i class="bi bi-receipt"></i>
+                <span>Billing</span>
+            </a>
+
+            <a href="{{ url_for('inventory') }}" class="side-link">
+                <i class="bi bi-box-seam"></i>
+                <span>Inventory</span>
+            </a>
+
+            <a href="{{ url_for('about') }}" class="side-link active">
+                <i class="bi bi-info-circle"></i>
+                <span>About</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-person-circle fs-4"></i>
+                <div>
+                    <div class="user-name">
+                        {{ current_user.full_name or current_user.username }}
+                    </div>
+                    <small>Signed in</small>
+                </div>
+            </div>
+
+            <div class="role-badge">
+                <i class="bi bi-shield-check me-1"></i>
+                Role: {{ current_user.role|title }}
+            </div>
+        </div>
+    </aside>
+
+    <!-- ABOUT PAGE -->
+    <main class="about-main">
+
+        <!-- <header class="about-header">
+            <div>
+                <h2>About</h2>
+                <p>Application information and product details</p>
+            </div>
+
+            <a href="{{ url_for('dashboard_page') }}" class="back-button">
+                <i class="bi bi-arrow-left"></i>
+                Back to Dashboard
+            </a>
+        </header> -->
+
+        <section class="about-card">
+
+            <div class="about-logo">
+                <i class="bi bi-phone"></i>
+            </div>
+
+            <h3>MobileStore ERP</h3>
+            <div class="version">Version 1.0.0</div>
+
+            <p class="about-description">
+                MobileStore ERP is a store management application designed
+                to help manage mobile products, customers, billing, and
+                inventory through one convenient system.
+            </p>
+
+            <h5 class="section-heading">Key Features</h5>
+
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <i class="bi bi-phone"></i>
+                    <span>Mobile Product Management</span>
+                </div>
+
+                <div class="feature-item">
+                    <i class="bi bi-people"></i>
+                    <span>Customer Management</span>
+                </div>
+
+                <div class="feature-item">
+                    <i class="bi bi-receipt"></i>
+                    <span>Billing and Sales</span>
+                </div>
+
+                <div class="feature-item">
+                    <i class="bi bi-box-seam"></i>
+                    <span>Inventory and Stock Tracking</span>
+                </div>
+            </div>
+
+            <div class="license-box">
+                <strong>
+                    <i class="bi bi-shield-lock me-1"></i>
+                    Proprietary Software
+                </strong>
+                <br>
+                This application is intended for authorized use only.
+                Unauthorized copying, distribution, or modification is
+                prohibited where applicable.
+            </div>
+
+            <div class="about-meta">
+                <div class="meta-item">
+                    <div class="meta-label">Developed by</div>
+                    <div class="meta-value">KriscSoft</div>
+                </div>
+
+                <div class="meta-item">
+                    <div class="meta-label">License Expiry Date</div>
+                    <div class="meta-value">[Expiry Date]</div>
+                </div>
+            </div>
+
+            <div class="about-footer">
+                © 2026 KriscSoft. All rights reserved.
+            </div>
+
+        </section>
+    </main>
+</div>
+{% endblock %}

@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}Billing | MobileStore ERP{% endblock %}
+
+{% block content %}
+
+<style>
+.billing-page {
+    padding: 18px;
+    color: #252a3d;
+}
+.billing-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+}
+.billing-header h1 {
+    margin: 0 0 5px;
+    font-size: 25px;
+    font-weight: 800;
+}
+.billing-muted {
+    color: #858ba0;
+    font-size: 12px;
+}
+.billing-card {
+    background: #fff;
+    border: 1px solid #e9ebf3;
+    border-radius: 13px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+.billing-btn {
+    display: inline-block;
+    border: 0;
+    border-radius: 8px;
+    padding: 9px 12px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.billing-primary {
+    background: #5656df;
+    color: white;
+}
+.billing-secondary {
+    background: #eeeef8;
+    color: #454866;
+}
+.billing-search {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.billing-search input {
+    flex: 1;
+    min-width: 180px;
+    padding: 10px 12px;
+    border: 1px solid #dfe2ed;
+    border-radius: 8px;
+}
+.billing-table-wrap {
+    overflow-x: auto;
+}
+.billing-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 950px;
+}
+.billing-table th {
+    background: #f8f9fc;
+    color: #858ba0;
+    font-size: 11px;
+    text-align: left;
+    padding: 12px;
+}
+.billing-table td {
+    border-top: 1px solid #eef0f5;
+    padding: 13px 12px;
+    font-size: 13px;
+    vertical-align: middle;
+}
+.invoice-link {
+    color: #5656df;
+    font-weight: 750;
+    text-decoration: none;
+}
+.payment-badge {
+    display: inline-block;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+}
+.paid {
+    background: #e4f8ec;
+    color: #168252;
+}
+.partial {
+    background: #fff0df;
+    color: #a76012;
+}
+.unpaid {
+    background: #ffe8e8;
+    color: #b42323;
+}
+.billing-empty {
+    text-align: center;
+    color: #858ba0;
+    padding: 28px;
+}
+.balance-amount {
+    color: #b42323;
+    font-weight: 600;
+}
+.action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    white-space: nowrap;
+}
+.billing-edit-link {
+    display: inline-block;
+    padding: 3px 0;
+    border: none;
+    background: transparent;
+    color: #5656df;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+.billing-edit-link:hover {
+    color: #3434b5;
+    text-decoration: underline;
+}
+.billing-view-link {
+    display: inline-block;
+    padding: 3px 0;
+    color: #64748b;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+}
+.billing-view-link:hover {
+    color: #334155;
+    text-decoration: underline;
+}
+@media (max-width: 600px) {
+    .billing-page {
+        padding: 10px;
+    }
+}
+</style>
+
+<div class="billing-page">
+
+    <div class="billing-header">
+        <div>
+            <h1>Billing</h1>
+            <div class="billing-muted">
+                Create invoices and manage sales and outstanding payments.
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a class="billing-btn billing-primary"
+               href="{{ url_for('billing_create') }}">
+                + Create Bill
+            </a>
+
+            <a class="billing-btn billing-secondary"
+               href="{{ url_for('dashboard_page') }}">
+                ← Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="billing-card">
+        <form method="GET" class="billing-search">
+            <input
+                type="search"
+                name="search"
+                value="{{ search }}"
+                placeholder="Search invoice number, customer or phone">
+
+            <button class="billing-btn billing-primary" type="submit">
+                Search
+            </button>
+
+            <a class="billing-btn billing-secondary"
+               href="{{ url_for('billing_list') }}">
+                Reset
+            </a>
+        </form>
+    </div>
+
+    <div class="billing-card">
+        <div class="billing-table-wrap">
+            <table class="billing-table">
+                <thead>
+                    <tr>
+                        <th>Invoice</th>
+                        <th>Date</th>
+                        <th>Customer</th>
+                        <th>Subtotal</th>
+                        <th>GST</th>
+                        <th>Total</th>
+                        <th>Paid</th>
+                        <th>Balance Due</th>
+                        <th>Payment</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                {% for sale in sales %}
+
+                    {% set payments = sale.payments|default([], true) %}
+                    {% set paid_total = payments
+                        |selectattr('status', 'equalto', 'completed')
+                        |sum(attribute='amount') %}
+                    {% set total = sale.total_amount or 0 %}
+                    {% set balance_due = [total - paid_total, 0]|max %}
+
+                    <tr>
+                        <td>
+                            <a class="invoice-link"
+                               href="{{ url_for('billing_detail', sale_id=sale.id) }}">
+                                {{ sale.invoice_number }}
+                            </a>
+                        </td>
+
+                        <td>
+                            {{ sale.sale_date.strftime('%d-%m-%Y %I:%M %p')
+                               if sale.sale_date else '-' }}
+                        </td>
+
+                        <td>
+                            {% if sale.customer %}
+                                {{ sale.customer.name }}
+                                {% if sale.customer.phone %}
+                                    <div class="billing-muted">
+                                        {{ sale.customer.phone }}
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                Walk-in Customer
+                            {% endif %}
+                        </td>
+
+                        <td>₹{{ "%.2f"|format(sale.subtotal or 0) }}</td>
+                        <td>₹{{ "%.2f"|format(sale.tax_amount or 0) }}</td>
+
+                        <td>
+                            <strong>₹{{ "%.2f"|format(total) }}</strong>
+                        </td>
+
+                        <td>₹{{ "%.2f"|format(paid_total) }}</td>
+
+                        <td>
+                            {% if balance_due > 0.009 %}
+                                <span class="balance-amount">
+                                    ₹{{ "%.2f"|format(balance_due) }}
+                                </span>
+                            {% else %}
+                                ₹0.00
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if balance_due <= 0.009 %}
+                                <span class="payment-badge paid">Paid</span>
+                            {% elif paid_total > 0 %}
+                                <span class="payment-badge partial">Partial</span>
+                            {% else %}
+                                <span class="payment-badge unpaid">Unpaid</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <div class="action-buttons">
+                                <a class="billing-view-link"
+                                   href="{{ url_for('billing_detail', sale_id=sale.id) }}">
+                                    View
+                                </a>
+
+                                <a class="billing-edit-link"
+                                   href="{{ url_for('billing_receive_payment', sale_id=sale.id) }}">
+                                    Edit
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+
+                {% else %}
+                    <tr>
+                        <td colspan="10" class="billing-empty">
+                            No bills found. Create your first bill to get started.
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

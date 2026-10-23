@@ -1,0 +1,198 @@
+
+{% extends "base.html" %}
+
+{% block title %}Analytics | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Business Analytics</h2>
+            <p class="text-secondary mb-0">
+                Monitor sales performance and profitability.
+            </p>
+        </div>
+        <a href="{{ url_for('dashboard_page') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('analytics') }}"
+                  class="row g-3 align-items-end">
+
+                <div class="col-12 col-md-4">
+                    <label for="start_date" class="form-label">From date</label>
+                    <input type="date" id="start_date" name="start_date"
+                           class="form-control"
+                           value="{{ start_date|default('') }}">
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <label for="end_date" class="form-label">To date</label>
+                    <input type="date" id="end_date" name="end_date"
+                           class="form-control"
+                           value="{{ end_date|default('') }}">
+                </div>
+
+                <div class="col-12 col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">
+                        <i class="bi bi-funnel me-1"></i>Apply Filters
+                    </button>
+                    <a href="{{ url_for('analytics') }}"
+                       class="btn btn-outline-secondary">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-secondary small">Total Sales</div>
+                    <h3 class="fw-bold mt-2">
+                        ₹{{ '%.2f'|format(total_sales|default(0)|float) }}
+                    </h3>
+                    <span class="text-secondary small">Selected period</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-secondary small">Gross Profit</div>
+                    <h3 class="fw-bold text-success mt-2">
+                        ₹{{ '%.2f'|format(total_profit|default(0)|float) }}
+                    </h3>
+                    <span class="text-secondary small">Before operating expenses</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-secondary small">Transactions</div>
+                    <h3 class="fw-bold mt-2">{{ transaction_count|default(0) }}</h3>
+                    <span class="text-secondary small">Sales in selected period</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-secondary small">Average Sale</div>
+                    <h3 class="fw-bold mt-2">
+                        ₹{{ '%.2f'|format(average_sale|default(0)|float) }}
+                    </h3>
+                    <span class="text-secondary small">Sales revenue per transaction</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-receipt me-2"></i>Sales Report
+                    </h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Invoice</th>
+                                <th>Customer</th>
+                                <th class="text-end">Sales Amount</th>
+                                <th>Payment Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sale in sales_rows %}
+                            <tr>
+                                <td>{{ sale.date.strftime('%d-%m-%Y') if sale.date else '—' }}</td>
+                                <td>{{ sale.invoice_no|default(sale.id, true) }}</td>
+                                <td>{{ sale.customer.name if sale.customer else 'Walk-in customer' }}</td>
+                                <td class="text-end fw-semibold">
+                                    ₹{{ '%.2f'|format(sale.total_amount|default(0)|float) }}
+                                </td>
+                                <td>{{ sale.payment_status|default('Unknown')|title }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-secondary py-4">
+                                    No sales found for this period.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-graph-up-arrow me-2"></i>Profit Report
+                    </h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Invoice</th>
+                                <th class="text-end">Revenue</th>
+                                <th class="text-end">Cost</th>
+                                <th class="text-end">Gross Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in profit_rows %}
+                            <tr>
+                                <td>{{ row.date.strftime('%d-%m-%Y') if row.date else '—' }}</td>
+                                <td>{{ row.invoice_no|default(row.id, true) }}</td>
+                                <td class="text-end">
+                                    ₹{{ '%.2f'|format(row.revenue|default(0)|float) }}
+                                </td>
+                                <td class="text-end">
+                                    ₹{{ '%.2f'|format(row.cost|default(0)|float) }}
+                                </td>
+                                <td class="text-end fw-semibold
+                                    {% if row.profit|default(0)|float < 0 %}
+                                        text-danger
+                                    {% else %}
+                                        text-success
+                                    {% endif %}">
+                                    ₹{{ '%.2f'|format(row.profit|default(0)|float) }}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-secondary py-4">
+                                    No profit data available for this period.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer bg-white text-secondary small">
+                    Gross profit is revenue minus cost of goods sold. It does not deduct
+                    operating expenses unless your calculations explicitly include them.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

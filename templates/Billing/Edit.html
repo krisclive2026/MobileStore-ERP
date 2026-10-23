@@ -1,0 +1,246 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2>Edit Invoice</h2>
+            <p class="text-muted mb-0">
+                Invoice: <strong>{{ sale.invoice_number }}</strong>
+            </p>
+        </div>
+        <a href="{{ url_for('billing_detail', sale_id=sale.id) }}"
+           class="btn btn-outline-secondary">
+            Cancel
+        </a>
+    </div>
+
+    <div class="alert alert-info">
+        Editing does not delete or add payments. Product prices and GST
+        will be recalculated using the currently configured product values.
+        If the revised total is below the amount already paid, the edit
+        will be rejected until a refund or customer-credit workflow is used.
+    </div>
+
+    <form method="POST"
+          action="{{ url_for('billing_edit', sale_id=sale.id) }}"
+          id="editInvoiceForm">
+
+        <input type="hidden" name="csrf_token"
+               value="{{ csrf_token() }}">
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <label for="customer_id" class="form-label">Customer</label>
+                <select name="customer_id" id="customer_id"
+                        class="form-select">
+                    <option value="">Walk-in Customer</option>
+                    {% for customer in customers %}
+                    <option value="{{ customer.id }}"
+                        {% if sale.customer_id == customer.id %}selected{% endif %}>
+                        {{ customer.name }}
+                        {% if customer.phone %} - {{ customer.phone }}{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Invoice Items</strong>
+                <button type="button" class="btn btn-sm btn-primary"
+                        id="addItemButton">
+                    + Add Product
+                </button>
+            </div>
+
+            <div class="card-body">
+                <div id="itemRows">
+                    {% for item in sale.items %}
+                    <div class="row g-2 align-items-end item-row mb-3">
+                        <div class="col-md-7">
+                            <label class="form-label">Product</label>
+                            <select name="product_id[]" class="form-select product-select"
+                                    required>
+                                <option value="">Select product</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}"
+                                        data-price="{{ product.selling_price or 0 }}"
+                                        data-gst="{{ product.gst_percent or 0 }}"
+                                        {% if item.product_id == product.id %}selected{% endif %}>
+                                    {{ product.name }}
+                                    — ₹{{ "%.2f"|format(product.selling_price or 0) }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" name="quantity[]"
+                                   class="form-control quantity-input"
+                                   min="1" step="1"
+                                   value="{{ item.quantity }}" required>
+                        </div>
+
+                        <div class="col-md-2">
+                            <button type="button"
+                                    class="btn btn-outline-danger remove-row w-100">
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <template id="itemRowTemplate">
+                    <div class="row g-2 align-items-end item-row mb-3">
+                        <div class="col-md-7">
+                            <label class="form-label">Product</label>
+                            <select name="product_id[]" class="form-select product-select"
+                                    required>
+                                <option value="">Select product</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}"
+                                        data-price="{{ product.selling_price or 0 }}"
+                                        data-gst="{{ product.gst_percent or 0 }}">
+                                    {{ product.name }}
+                                    — ₹{{ "%.2f"|format(product.selling_price or 0) }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" name="quantity[]"
+                                   class="form-control quantity-input"
+                                   min="1" step="1" value="1" required>
+                        </div>
+
+                        <div class="col-md-2">
+                            <button type="button"
+                                    class="btn btn-outline-danger remove-row w-100">
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <label for="discount_amount" class="form-label">
+                    Discount (₹)
+                </label>
+                <input type="number" name="discount_amount"
+                       id="discount_amount" class="form-control"
+                       min="0" step="0.01"
+                       value="{{ '%.2f'|format(sale.discount_amount or 0) }}"
+                       required>
+
+                <hr>
+
+                <p class="mb-1">Estimated subtotal:
+                    <strong id="subtotalDisplay">₹0.00</strong>
+                </p>
+                <p class="mb-1">Estimated GST:
+                    <strong id="taxDisplay">₹0.00</strong>
+                </p>
+                <p class="mb-1">Discount:
+                    <strong id="discountDisplay">₹0.00</strong>
+                </p>
+                <h5 class="mt-3">Estimated total:
+                    <span id="totalDisplay">₹0.00</span>
+                </h5>
+                <small class="text-muted">
+                    The server recalculates all totals before saving.
+                </small>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mb-4">
+            <button type="submit" class="btn btn-success">
+                Save Invoice Changes
+            </button>
+            <a href="{{ url_for('billing_detail', sale_id=sale.id) }}"
+               class="btn btn-outline-secondary">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+(function () {
+    const rows = document.getElementById("itemRows");
+    const template = document.getElementById("itemRowTemplate");
+    const addButton = document.getElementById("addItemButton");
+    const discountInput = document.getElementById("discount_amount");
+
+    function updateTotals() {
+        let subtotal = 0;
+        let tax = 0;
+
+        rows.querySelectorAll(".item-row").forEach(function (row) {
+            const select = row.querySelector(".product-select");
+            const quantityInput = row.querySelector(".quantity-input");
+            const option = select.options[select.selectedIndex];
+
+            if (!option || !option.value) return;
+
+            const price = Number(option.dataset.price || 0);
+            const gst = Number(option.dataset.gst || 0);
+            const quantity = Math.max(0, parseInt(quantityInput.value || "0", 10));
+
+            const lineSubtotal = price * quantity;
+            subtotal += lineSubtotal;
+            tax += lineSubtotal * gst / 100;
+        });
+
+        subtotal = Math.round((subtotal + Number.EPSILON) * 100) / 100;
+        tax = Math.round((tax + Number.EPSILON) * 100) / 100;
+
+        const discount = Math.max(0, Number(discountInput.value || 0));
+        const total = subtotal + tax - discount;
+
+        document.getElementById("subtotalDisplay").textContent =
+            "₹" + subtotal.toFixed(2);
+        document.getElementById("taxDisplay").textContent =
+            "₹" + tax.toFixed(2);
+        document.getElementById("discountDisplay").textContent =
+            "₹" + discount.toFixed(2);
+        document.getElementById("totalDisplay").textContent =
+            "₹" + total.toFixed(2);
+    }
+
+    addButton.addEventListener("click", function () {
+        rows.appendChild(template.content.cloneNode(true));
+        updateTotals();
+    });
+
+    rows.addEventListener("click", function (event) {
+        if (event.target.classList.contains("remove-row")) {
+            const itemRows = rows.querySelectorAll(".item-row");
+
+            if (itemRows.length <= 1) {
+                alert("An invoice must contain at least one product.");
+                return;
+            }
+
+            event.target.closest(".item-row").remove();
+            updateTotals();
+        }
+    });
+
+    rows.addEventListener("input", updateTotals);
+    rows.addEventListener("change", updateTotals);
+    discountInput.addEventListener("input", updateTotals);
+
+    updateTotals();
+})();
+</script>
+{% endblock %}

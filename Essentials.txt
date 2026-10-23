@@ -1,0 +1,4 @@
+# python -m pip install --upgrade pip
+# pip install Flask Flask-SQLAlchemy Flask-Login Flask-WTF
+# pip install reportlab openpyxl Pillow waitress
+# pip install pyinstaller

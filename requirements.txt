@@ -1,0 +1,15 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-WTF
+Flask-Limiter
+email-validator
+reportlab
+openpyxl
+Pillow
+waitress
+psycopg[binary]
+Flask-Migrate
+pytest
+pyinstaller
+pywebview

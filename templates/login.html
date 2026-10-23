@@ -1,0 +1,256 @@
+
+{% extends "base.html" %}
+
+{% block title %}Login | MobileStore ERP{% endblock %}
+
+{% block content %}
+<style>
+    /* Password field layout */
+    .password-wrap {
+        position: relative;
+    }
+
+    .password-wrap .password-input {
+        padding-right: 48px;
+    }
+
+    /* Our single custom eye button */
+    .password-wrap .password-toggle {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border: none;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        z-index: 5;
+        cursor: pointer;
+    }
+
+    .password-wrap .password-toggle i {
+        font-size: 18px;
+    }
+
+    /* Hide the browser's built-in reveal control */
+    input::-ms-reveal,
+    input::-ms-clear {
+        display: none;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="row min-vh-100">
+
+        <!-- LEFT SIDE -->
+        <div class="col-lg-6 position-relative overflow-hidden text-white
+                    d-flex align-items-center p-4 p-lg-5"
+             style="background: linear-gradient(rgba(13, 35, 70, 0.78), rgba(13, 35, 70, 0.78)),
+                    url('https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1400&q=85')
+                    center / cover no-repeat;">
+
+            <div class="position-relative">
+                <h3 class="fw-bold mb-5">
+                    <i class="bi bi-phone me-2"></i>
+                    MobileStore ERP
+                </h3>
+
+                <h1 class="display-4 fw-bold">
+                    Manage Your Store.
+                    <span class="text-info">Grow Your Business.</span>
+                </h1>
+
+                <p class="lead mt-4">
+                    A complete solution to manage your mobile shop,
+                    inventory, sales, purchases, customers and staff.
+                </p>
+
+                <div class="mt-5">
+                    <p class="mb-4">
+                        <i class="bi bi-box-seam fs-4 me-3"></i>
+                        Inventory Management
+                    </p>
+                    <p class="mb-4">
+                        <i class="bi bi-graph-up-arrow fs-4 me-3"></i>
+                        Sales &amp; Purchase Tracking
+                    </p>
+                    <p class="mb-4">
+                        <i class="bi bi-people fs-4 me-3"></i>
+                        Customer Management
+                    </p>
+                    <p class="mb-4">
+                        <i class="bi bi-shield-lock fs-4 me-3"></i>
+                        Secure Staff Access
+                    </p>
+                </div>
+
+                <p class="mt-5 mb-0">
+                    <small>&copy; 2026 MobileStore ERP</small>
+                </p>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDE -->
+        <div class="col-lg-6 bg-light d-flex align-items-center
+                    justify-content-center p-4 p-lg-5">
+
+            <div class="w-100" style="max-width: 440px;">
+
+                <div class="text-center mb-4">
+                    <div class="mb-3">
+                        <i class="bi bi-person-circle display-2 text-primary"></i>
+                    </div>
+                    <h2 class="fw-bold">Welcome Back</h2>
+                    <p class="text-secondary">Sign in to your account</p>
+                </div>
+
+                <!-- FLASH MESSAGES -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show"
+                             role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close"
+                                    data-bs-dismiss="alert"
+                                    aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endwith %}
+
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4 p-md-5">
+
+                        <form method="POST"
+                              action="{{ url_for('login_page') }}">
+
+                            <input type="hidden"
+                                   name="csrf_token"
+                                   value="{{ csrf_token() }}">
+
+                            <!-- USERNAME -->
+                            <div class="mb-4">
+                                <label for="username"
+                                       class="form-label fw-semibold">
+                                    Username
+                                </label>
+
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="bi bi-person text-secondary"></i>
+                                    </span>
+
+                                    <input type="text"
+                                           class="form-control py-2"
+                                           id="username"
+                                           name="username"
+                                           placeholder="Enter your username"
+                                           autocomplete="username"
+                                           required>
+                                </div>
+                            </div>
+
+                            <!-- PASSWORD -->
+                            <div class="mb-4">
+                                <label for="password"
+                                       class="form-label fw-semibold">
+                                    Password
+                                </label>
+
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="bi bi-lock text-secondary"></i>
+                                    </span>
+
+                                    <div class="form-control password-wrap p-0">
+                                        <input type="password"
+                                               class="form-control password-input border-0 py-2"
+                                               id="password"
+                                               name="password"
+                                               placeholder="Enter your password"
+                                               autocomplete="current-password"
+                                               required>
+
+                                        <button type="button"
+                                                class="password-toggle"
+                                                id="togglePassword"
+                                                aria-label="Show password"
+                                                title="Show password">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SIGN IN -->
+                            <button type="submit"
+                                    class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>
+                                Sign In
+                            </button>
+
+                        </form>
+
+                        <hr class="my-4">
+
+                        <p class="text-center mb-0">
+                            Don't have an account?
+                            <a href="{{ url_for('register_page') }}"
+                               class="fw-semibold text-decoration-none">
+                                Register here
+                            </a>
+                        </p>
+
+                    </div>
+                </div>
+
+                <p class="text-center text-secondary small mt-4">
+                    <i class="bi bi-shield-check me-1"></i>
+                    Secure access to your store
+                </p>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const password = document.getElementById("password");
+    const toggle = document.getElementById("togglePassword");
+
+    if (!password || !toggle) return;
+
+    toggle.addEventListener("click", function () {
+        const showPassword = password.type === "password";
+
+        password.type = showPassword ? "text" : "password";
+
+        const icon = toggle.querySelector("i");
+
+        if (icon) {
+            icon.className = showPassword
+                ? "bi bi-eye-slash"
+                : "bi bi-eye";
+        }
+
+        toggle.setAttribute(
+            "aria-label",
+            showPassword ? "Hide password" : "Show password"
+        );
+
+        toggle.setAttribute(
+            "title",
+            showPassword ? "Hide password" : "Show password"
+        );
+    });
+});
+</script>
+{% endblock %}

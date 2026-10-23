@@ -1,0 +1,308 @@
+
+{% extends "base.html" %}
+
+{% block title %}Customers | MobileStore ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .customer-page {
+        padding: 24px;
+        background: #f5f7fb;
+        min-height: 80vh;
+    }
+
+    .customer-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+    }
+
+    .customer-heading h2 {
+        font-weight: 700;
+        margin-bottom: 5px;
+        color: #182230;
+    }
+
+    .customer-card {
+        background: #fff;
+        border: 1px solid #e7eaf0;
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 22px;
+    }
+
+    .customer-stat {
+        background: #fff;
+        border: 1px solid #e7eaf0;
+        border-radius: 14px;
+        padding: 20px;
+        height: 100%;
+    }
+
+    .customer-stat .stat-label {
+        color: #667085;
+        font-size: 14px;
+    }
+
+    .customer-stat .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #182230;
+        margin-top: 8px;
+    }
+
+    .customer-table th {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: #667085;
+        background: #f8fafc;
+        white-space: nowrap;
+    }
+
+    .customer-table td,
+    .customer-table th {
+        padding: 15px 12px;
+        vertical-align: middle;
+    }
+
+    .customer-name {
+        font-weight: 600;
+        color: #182230;
+    }
+
+    .customer-secondary {
+        color: #667085;
+        font-size: 13px;
+    }
+
+    .customer-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #eaf1ff;
+        color: #2458c6;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .filter-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 7px;
+        color: #475467;
+    }
+
+    @media (max-width: 768px) {
+        .customer-page {
+            padding: 14px;
+        }
+
+        .customer-card {
+            padding: 14px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="customer-page">
+
+    <div class="customer-heading">
+        <div>
+            <h2>Customers</h2>
+            <div class="text-secondary">
+                Manage your MobileStore customer records.
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('customer_create') }}"
+               class="btn btn-primary btn-sm">
+                <i class="bi bi-person-plus me-1"></i>
+                Add Customer
+            </a>
+
+            <a href="{{ url_for('dashboard_page') }}"
+               class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>
+                Back
+            </a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show"
+                     role="alert">
+                    {{ message }}
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert"
+                            aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-4">
+            <div class="customer-stat">
+                <div class="stat-label">
+                    <i class="bi bi-people me-2"></i>Total Customers
+                </div>
+                <div class="stat-value">{{ total_customers }}</div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-4">
+            <div class="customer-stat">
+                <div class="stat-label">
+                    <i class="bi bi-funnel me-2"></i>Filtered Results
+                </div>
+                <div class="stat-value">{{ filtered_count }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="customer-card">
+        <h5 class="fw-bold mb-3">Search and Filter</h5>
+
+        <form method="GET" action="{{ url_for('customers_list') }}">
+            <div class="row g-3 align-items-end">
+
+                <div class="col-12 col-lg-5">
+                    <label class="filter-label" for="search">
+                        Search customers
+                    </label>
+                    <input type="search"
+                           class="form-control"
+                           id="search"
+                           name="search"
+                           value="{{ search }}"
+                           placeholder="Name, phone or email">
+                </div>
+
+                <div class="col-6 col-lg-2">
+                    <label class="filter-label" for="date_from">
+                        Created From
+                    </label>
+                    <input type="date"
+                           class="form-control"
+                           id="date_from"
+                           name="date_from"
+                           value="{{ date_from }}">
+                </div>
+
+                <div class="col-6 col-lg-2">
+                    <label class="filter-label" for="date_to">
+                        Created To
+                    </label>
+                    <input type="date"
+                           class="form-control"
+                           id="date_to"
+                           name="date_to"
+                           value="{{ date_to }}">
+                </div>
+
+                <div class="col-12 col-lg-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">
+                        <i class="bi bi-search me-1"></i> Search
+                    </button>
+
+                    <a href="{{ url_for('customers_list') }}"
+                       class="btn btn-outline-secondary">
+                        Reset
+                    </a>
+                </div>
+
+            </div>
+        </form>
+    </div>
+
+    <div class="customer-card">
+        <div class="d-flex justify-content-between align-items-center
+                    flex-wrap gap-2 mb-3">
+            <h5 class="fw-bold mb-0">Customer Directory</h5>
+            <span class="text-secondary small">
+                {{ filtered_count }} record(s)
+            </span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table customer-table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>GST Number</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for customer in customers %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="customer-avatar">
+                                    {{ customer.name[:1]|upper }}
+                                </div>
+                                <div>
+                                    <div class="customer-name">
+                                        {{ customer.name }}
+                                    </div>
+                                    <div class="customer-secondary">
+                                        Customer #{{ customer.id }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>{{ customer.phone or '—' }}</td>
+                        <td>{{ customer.email or '—' }}</td>
+                        <td>{{ customer.gst_number or '—' }}</td>
+
+                        <td class="text-end">
+                            <a href="{{ url_for(
+                                'customer_edit',
+                                customer_id=customer.id
+                            ) }}"
+                               class="btn btn-sm btn-outline-primary"
+                               title="Edit customer">
+                                <i class="bi bi-pencil-square"></i>
+                                Edit
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <i class="bi bi-people display-6 text-secondary"></i>
+                            <h6 class="mt-3 fw-bold">No customers found</h6>
+                            <p class="text-secondary mb-3">
+                                Add a customer or change your search filters.
+                            </p>
+                            <a href="{{ url_for('customer_create') }}"
+                               class="btn btn-primary btn-sm">
+                                Add Customer
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

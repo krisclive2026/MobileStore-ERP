@@ -1,0 +1,267 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+.product-form-page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 24px;
+    color: #1e293b;
+}
+.form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+.form-header h1 {
+    margin: 0 0 6px;
+    font-size: 28px;
+}
+.form-header p {
+    margin: 0;
+    color: #64748b;
+}
+.form-panel {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, .04);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+.form-panel-heading {
+    padding: 18px 22px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+.form-panel-heading h2 {
+    margin: 0;
+    font-size: 17px;
+}
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    padding: 22px;
+}
+.form-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 7px;
+}
+.form-field input,
+.form-field select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: white;
+    font-size: 14px;
+}
+.form-field input:focus,
+.form-field select:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+.form-field small {
+    display: block;
+    margin-top: 5px;
+    color: #64748b;
+}
+.checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 28px;
+}
+.checkbox-field input {
+    width: auto;
+}
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 20px 22px;
+    border-top: 1px solid #e2e8f0;
+}
+.btn {
+    display: inline-block;
+    padding: 11px 17px;
+    border: 0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+.btn-primary {
+    background: #2563eb;
+    color: white;
+}
+.btn-secondary {
+    background: #e2e8f0;
+    color: #334155;
+}
+.required {
+    color: #dc2626;
+}
+@media (max-width: 750px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .product-form-page { padding: 14px; }
+}
+</style>
+
+{% set editing = product is defined and product %}
+{% set page_title = 'Edit Product' if editing else 'Add Product' %}
+
+<div class="product-form-page">
+    <div class="form-header">
+        <div>
+            <h1>{{ page_title }}</h1>
+            <p>Enter product details, pricing, tax information and stock quantity.</p>
+        </div>
+        <a href="{{ url_for('products_list') }}" class="btn btn-secondary">
+            Back to Products
+        </a>
+    </div>
+
+    <form method="POST">
+        {% if csrf_token is defined %}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% endif %}
+
+        <div class="form-panel">
+            <div class="form-panel-heading">
+                <h2>Basic Information</h2>
+            </div>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="product_code">Product Code</label>
+                    <input type="text" id="product_code" name="product_code"
+                           value="{{ product.product_code if editing else '' }}">
+                </div>
+                <div class="form-field">
+                    <label for="barcode">Barcode</label>
+                    <input type="text" id="barcode" name="barcode"
+                           value="{{ product.barcode if editing else '' }}">
+                </div>
+                <div class="form-field">
+                    <label for="name">Product Name <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" required
+                           value="{{ product.name if editing else '' }}">
+                </div>
+                <div class="form-field">
+                    <label for="brand">Brand</label>
+                    <input type="text" id="brand" name="brand"
+                           value="{{ product.brand if editing else '' }}"
+                           placeholder="e.g. Samsung, Apple, Vivo">
+                </div>
+                <div class="form-field">
+                    <label for="model">Model</label>
+                    <input type="text" id="model" name="model"
+                           value="{{ product.model if editing else '' }}">
+                </div>
+                <div class="form-field">
+                    <label for="category">Category</label>
+                    <input type="text" id="category" name="category"
+                           value="{{ product.category if editing else 'Mobile' }}">
+                </div>
+                <div class="form-field">
+                    <label for="color">Color</label>
+                    <input type="text" id="color" name="color"
+                           value="{{ product.color if editing else '' }}">
+                </div>
+                <div class="form-field">
+                    <label for="ram">RAM</label>
+                    <input type="text" id="ram" name="ram"
+                           value="{{ product.ram if editing else '' }}"
+                           placeholder="e.g. 8GB">
+                </div>
+                <div class="form-field">
+                    <label for="storage">Storage</label>
+                    <input type="text" id="storage" name="storage"
+                           value="{{ product.storage if editing else '' }}"
+                           placeholder="e.g. 128GB">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-panel">
+            <div class="form-panel-heading">
+                <h2>Pricing &amp; Tax</h2>
+            </div>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="cost_price">Cost Price (₹)</label>
+                    <input type="number" id="cost_price" name="cost_price"
+                           min="0" step="0.01"
+                           value="{{ product.cost_price if editing and product.cost_price is not none else '0.00' }}">
+                </div>
+                <div class="form-field">
+                    <label for="selling_price">Selling Price (₹) <span class="required">*</span></label>
+                    <input type="number" id="selling_price" name="selling_price"
+                           min="0" step="0.01" required
+                           value="{{ product.selling_price if editing and product.selling_price is not none else '0.00' }}">
+                </div>
+                <div class="form-field">
+                    <label for="hsn_code">HSN Code</label>
+                    <input type="text" id="hsn_code" name="hsn_code"
+                           value="{{ product.hsn_code if editing else '' }}">
+                </div>
+                <div class="form-field">
+                    <label for="gst_percent">GST (%)</label>
+                    <input type="number" id="gst_percent" name="gst_percent"
+                           min="0" max="100" step="0.01"
+                           value="{{ product.gst_percent if editing and product.gst_percent is not none else '18.00' }}">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-panel">
+            <div class="form-panel-heading">
+                <h2>Inventory &amp; Settings</h2>
+            </div>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="stock_quantity">Stock Quantity</label>
+                    <input type="number" id="stock_quantity" name="stock_quantity"
+                           min="0" step="1"
+                           value="{{ product.stock_quantity if editing and product.stock_quantity is not none else 0 }}">
+                </div>
+                <div class="form-field">
+                    <label for="reorder_level">Reorder Level</label>
+                    <input type="number" id="reorder_level" name="reorder_level"
+                           min="0" step="1"
+                           value="{{ product.reorder_level if editing and product.reorder_level is not none else 5 }}">
+                </div>
+                <div class="form-field checkbox-field">
+                    <input type="checkbox" id="track_imei" name="track_imei" value="1"
+                           {% if editing and product.track_imei %}checked{% endif %}>
+                    <label for="track_imei">Track IMEI / Serial Number</label>
+                </div>
+                <div class="form-field checkbox-field">
+                    <input type="checkbox" id="is_active" name="is_active" value="1"
+                           {% if not editing or product.is_active %}checked{% endif %}>
+                    <label for="is_active">Product is Active</label>
+                </div>
+            </div>
+            <div class="form-actions">
+                <a href="{{ url_for('products_list') }}" class="btn btn-secondary">
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    {{ 'Update Product' if editing else 'Save Product' }}
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

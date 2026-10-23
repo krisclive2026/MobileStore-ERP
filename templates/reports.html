@@ -1,0 +1,184 @@
+
+{% extends "base.html" %}
+
+{% block title %}Reports | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Page Header -->
+  
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="fw-bold mb-1">Reports Center</h2>
+        <p class="text-secondary mb-0">
+            View business performance and download reports as PDF.
+        </p>
+    </div>
+
+    <a href="{{ url_for('dashboard_page') }}" class="btn btn-outline-primary">
+        &larr; Back to Dashboard
+    </a>
+    </div>
+
+
+    <!-- Date Filter -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <form method="GET" action="{{ url_for('reports_page') }}"
+                  class="row g-3 align-items-end">
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">From Date</label>
+                    <input type="date" name="start_date"
+                           class="form-control"
+                           value="{{ start_date }}">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">To Date</label>
+                    <input type="date" name="end_date"
+                           class="form-control"
+                           value="{{ end_date }}">
+                </div>
+
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel"></i> Apply Filter
+                    </button>
+                    <a href="{{ url_for('reports_page') }}"
+                       class="btn btn-outline-secondary">
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Report Cards -->
+    <div class="row g-4">
+
+        <div class="col-sm-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="rounded-3 bg-primary-subtle text-primary d-inline-flex p-3 mb-3">
+                        <i class="bi bi-graph-up-arrow fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold">Sales Report</h5>
+                    <p class="text-secondary small">
+                        Review sales transactions for the selected period.
+                    </p>
+                    <a href="{{ url_for('report_pdf', report_type='sales',
+                         start_date=start_date, end_date=end_date) }}"
+                       class="btn btn-outline-danger w-100">
+                        <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="rounded-3 bg-success-subtle text-success d-inline-flex p-3 mb-3">
+                        <i class="bi bi-box-seam fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold">Inventory Report</h5>
+                    <p class="text-secondary small">
+                        Review products, available stock and stock value.
+                    </p>
+                    <a href="{{ url_for('report_pdf', report_type='inventory',
+                         start_date=start_date, end_date=end_date) }}"
+                       class="btn btn-outline-danger w-100">
+                        <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="rounded-3 bg-warning-subtle text-warning d-inline-flex p-3 mb-3">
+                        <i class="bi bi-cart-check fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold">Purchase Report</h5>
+                    <p class="text-secondary small">
+                        Review purchase records for the selected period.
+                    </p>
+                    <a href="{{ url_for('report_pdf', report_type='purchases',
+                         start_date=start_date, end_date=end_date) }}"
+                       class="btn btn-outline-danger w-100">
+                        <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="rounded-3 bg-info-subtle text-info d-inline-flex p-3 mb-3">
+                        <i class="bi bi-people fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold">Customer Report</h5>
+                    <p class="text-secondary small">
+                        Download your customer directory.
+                    </p>
+                    <a href="{{ url_for('report_pdf', report_type='customers',
+                         start_date=start_date, end_date=end_date) }}"
+                       class="btn btn-outline-danger w-100">
+                        <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="rounded-3 bg-danger-subtle text-danger d-inline-flex p-3 mb-3">
+                        <i class="bi bi-wallet2 fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold">Expense Report</h5>
+                    <p class="text-secondary small">
+                        Review recorded business expenses.
+                    </p>
+                    <a href="{{ url_for('report_pdf', report_type='expenses',
+                         start_date=start_date, end_date=end_date) }}"
+                       class="btn btn-outline-danger w-100">
+                        <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="rounded-3 bg-secondary-subtle text-secondary d-inline-flex p-3 mb-3">
+                        <i class="bi bi-phone fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold">IMEI Report</h5>
+                    <p class="text-secondary small">
+                        Review device IMEI and stock status.
+                    </p>
+                    <a href="{{ url_for('report_pdf', report_type='imei',
+                         start_date=start_date, end_date=end_date) }}"
+                       class="btn btn-outline-danger w-100">
+                        <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="alert alert-light border rounded-3 mt-4">
+        <i class="bi bi-info-circle text-primary"></i>
+        Reports use your application's stored data. Select a date range
+        where applicable before downloading.
+    </div>
+
+</div>
+{% endblock %}

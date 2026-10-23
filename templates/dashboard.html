@@ -1,0 +1,1066 @@
+
+{% extends "base.html" %}
+
+{% block title %}Dashboard | MobileStore ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --primary: #5656df;
+    --sidebar: #171b2d;
+    --page-bg: #f5f6fb;
+    --text: #252a3d;
+    --muted: #858ba0;
+    --border: #e9ebf3;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--page-bg);
+    color: var(--text);
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+body { overflow-x: hidden; }
+
+.dashboard-layout {
+    display: flex;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: 235px;
+    flex: 0 0 235px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--sidebar);
+    color: white;
+    padding: 18px 13px;
+    display: flex;
+    flex-direction: column;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 0 8px 18px;
+    border-bottom: 1px solid #303448;
+}
+
+.brand-icon {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #8585ff, #494bd0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+}
+
+.brand h5 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 750;
+}
+
+.brand small {
+    color: #a2a8bd;
+    font-size: 11px;
+}
+
+.nav-heading {
+    color: #858ba4;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    margin: 19px 11px 8px;
+}
+
+.side-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-height: 39px;
+    padding: 9px 11px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #b6bbce;
+    font-size: 13px;
+    transition:
+        background .3s ease,
+        color .3s ease,
+        transform .3s ease,
+        box-shadow .3s ease;
+}
+
+.side-link i {
+    width: 20px;
+    font-size: 17px;
+    text-align: center;
+    transition: transform .3s ease, color .3s ease;
+}
+
+.side-link:hover {
+    background: linear-gradient(100deg, #303b70, #252b4b);
+    color: white;
+    transform: translateX(4px);
+    box-shadow: -4px 0 12px rgba(101, 101, 232, .3),
+                0 4px 12px rgba(0, 0, 0, .15);
+}
+
+.side-link:hover i {
+    color: #a9aaff;
+    transform: scale(1.08);
+}
+
+.side-link.active {
+    background: #303253;
+    color: white;
+    box-shadow: inset 3px 0 #8585ff;
+}
+
+.sidebar-footer {
+    margin-top: 16px;
+    padding: 13px 8px 0;
+    border-top: 1px solid #303448;
+    color: #a2a8bd;
+    font-size: 11px;
+}
+
+.user-name {
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.role-badge {
+    display: inline-block;
+    margin-top: 7px;
+    padding: 5px 9px;
+    border-radius: 6px;
+    background: #303253;
+    color: #dedfff;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+/* MAIN CONTENT */
+.main-content {
+    flex: 1;
+    min-width: 0;
+    padding: 15px 20px;
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 13px;
+}
+
+.page-title {
+    margin: 0 0 4px;
+    font-size: 25px;
+    font-weight: 800;
+    letter-spacing: -.5px;
+}
+
+.muted {
+    color: var(--muted);
+    font-size: 12px;
+    margin: 0;
+}
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.icon-button {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    color: #52566c;
+    cursor: pointer;
+}
+
+.icon-button:hover {
+    color: var(--primary);
+    border-color: #c9c9ff;
+}
+
+.avatar {
+    width: 37px;
+    height: 37px;
+    border-radius: 11px;
+    background: #e9e9ff;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+/* WELCOME BANNER */
+.welcome-banner {
+    padding: 16px 22px;
+    border-radius: 14px;
+    color: white;
+    background: linear-gradient(115deg, #4849c7, #7977f4);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 14px;
+    box-shadow: 0 7px 20px #5555d91a;
+}
+
+.welcome-banner h3 {
+    font-size: 19px;
+    font-weight: 750;
+    margin: 0 0 5px;
+}
+
+.welcome-banner p {
+    font-size: 12px;
+    color: #eeedff;
+    margin: 0;
+}
+
+.welcome-icon {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    border-radius: 13px;
+    background: #ffffff25;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+/* SUMMARY CARDS */
+.stat-card {
+    height: 100%;
+    padding: 13px 15px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: transform .2s, box-shadow .2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px #2028500c;
+}
+
+.stat-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 7px;
+}
+
+.stat-label {
+    color: #81889b;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.stat-icon {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.purple { background: #ededff; color: #6565df; }
+.green  { background: #e4f8ec; color: #1b9c62; }
+.blue   { background: #e4f2ff; color: #2582d6; }
+.orange { background: #fff0df; color: #df8a26; }
+
+.stat-value {
+    margin-top: 7px;
+    color: #24283c;
+    font-size: 22px;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.stat-note {
+    color: #9298a9;
+    font-size: 10px;
+    margin-top: 3px;
+}
+
+/* PANELS */
+.panel {
+    height: 100%;
+    padding: 15px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+}
+
+.panel-title {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 750;
+}
+
+.panel-subtitle {
+    color: #9298a9;
+    font-size: 11px;
+    margin: 0 0 10px;
+}
+
+.chart-container {
+    position: relative;
+    height: 175px;
+    width: 100%;
+}
+
+/* QUICK ACTIONS */
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+}
+
+.quick-action {
+    min-width: 0;
+    min-height: 77px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 7px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    text-decoration: none;
+    color: #353a50;
+    transition:
+        background .25s ease,
+        border-color .25s ease,
+        transform .25s ease,
+        box-shadow .25s ease;
+}
+
+.quick-action:hover {
+    background: #f8f8ff;
+    border-color: #b9baff;
+    color: var(--primary);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(86, 86, 223, .12);
+}
+
+.quick-action-icon {
+    width: 29px;
+    height: 29px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.quick-action span {
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+/* RECENT TRANSACTIONS */
+.table-responsive { width: 100%; }
+
+.table { margin-bottom: 0; }
+
+.table thead th {
+    background: #f8f9fc;
+    color: #858ba0;
+    font-size: 10px;
+    padding: 8px;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+}
+
+.table tbody td {
+    color: #51576b;
+    font-size: 11px;
+    padding: 8px;
+    vertical-align: middle;
+}
+
+.empty-state {
+    text-align: center;
+    color: #9298a9 !important;
+    padding: 18px !important;
+}
+
+.empty-state i {
+    display: block;
+    font-size: 23px;
+    margin-bottom: 6px;
+}
+
+.invoice {
+    color: var(--primary) !important;
+    font-weight: 750;
+}
+
+.dashboard-footer {
+    text-align: center;
+    margin-top: 10px;
+    color: #9298a9;
+    font-size: 10px;
+}
+
+/* DESKTOP */
+@media (min-width: 768px) {
+    .dashboard-layout {
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .sidebar {
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .main-content {
+        height: 100vh;
+        height: 100dvh;
+        overflow-y: auto;
+        padding: 12px 18px;
+    }
+
+    .topbar { margin-bottom: 10px; }
+
+    .welcome-banner {
+        padding: 13px 20px;
+        margin-bottom: 11px;
+    }
+
+    .welcome-banner h3 { font-size: 18px; }
+
+    .stat-card { padding: 11px 13px; }
+
+    .stat-value { font-size: 20px; }
+
+    .panel { padding: 12px; }
+
+    .chart-container { height: 155px; }
+
+    .quick-action {
+        min-height: 69px;
+        padding: 8px;
+    }
+
+    .table thead th,
+    .table tbody td { padding: 7px 8px; }
+
+    .dashboard-footer { margin-top: 7px; }
+}
+
+/* SHORT DESKTOP SCREENS */
+@media (min-width: 768px) and (max-height: 800px) {
+    .main-content {
+        padding-top: 9px;
+        padding-bottom: 9px;
+    }
+
+    .page-title { font-size: 22px; }
+
+    .welcome-banner { padding: 10px 17px; }
+
+    .welcome-icon {
+        width: 40px;
+        height: 40px;
+        flex-basis: 40px;
+    }
+
+    .chart-container { height: 135px; }
+
+    .panel-subtitle { margin-bottom: 7px; }
+
+    .sidebar { padding-top: 13px; }
+
+    .brand { padding-bottom: 13px; }
+
+    .nav-heading { margin-top: 13px; }
+
+    .side-link {
+        min-height: 35px;
+        padding-top: 7px;
+        padding-bottom: 7px;
+    }
+
+    .sidebar-footer {
+        margin-top: 10px;
+        padding-top: 9px;
+    }
+}
+
+/* MOBILE AND TABLET */
+@media (max-width: 767px) {
+    .dashboard-layout {
+        display: block;
+        min-height: 100vh;
+    }
+
+    .sidebar { display: none; }
+
+    .main-content {
+        height: auto;
+        overflow: visible;
+        padding: 15px 12px;
+    }
+
+    .page-title { font-size: 22px; }
+
+    .welcome-banner { padding: 16px; }
+
+    .stat-card { padding: 12px; }
+
+    .stat-value { font-size: 20px; }
+
+    .panel { padding: 13px; }
+
+    .chart-container { height: 195px; }
+
+    .table-responsive { overflow-x: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .side-link,
+    .side-link i,
+    .quick-action,
+    .stat-card {
+        transition: none !important;
+    }
+}
+
+@media print {
+    .sidebar,
+    .topbar-actions,
+    .quick-actions {
+        display: none !important;
+    }
+
+    .dashboard-layout {
+        display: block;
+        height: auto;
+        overflow: visible;
+    }
+
+    .main-content {
+        height: auto;
+        overflow: visible;
+        padding: 0;
+    }
+
+    .panel,
+    .stat-card { break-inside: avoid; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">
+                <i class="bi bi-phone"></i>
+            </div>
+            <div>
+                <h5>MobileStore</h5>
+                <small>ERP Management</small>
+            </div>
+        </div>
+
+        <div class="nav-heading">MAIN MENU</div>
+
+        <nav>
+            <a href="{{ url_for('dashboard_page') }}"
+               class="side-link">
+                <i class="bi bi-grid-1x2"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="{{ url_for('customers_list') }}" class="side-link">
+                <i class="bi bi-people"></i>
+                <span>Customers</span>
+            </a>
+
+            <a href="{{ url_for('products_list') }}" class="side-link">
+                <i class="bi bi-phone"></i>
+                <span>Products</span>
+            </a>
+
+            <a href="{{ url_for('billing_list') }}" class="side-link">
+                <i class="bi bi-receipt"></i>
+                <span>Billing</span>
+            </a>
+
+            <a href="{{ url_for('inventory') }}" class="side-link">
+                <i class="bi bi-box-seam"></i>
+                <span>Inventory</span>
+            </a>
+
+            <a href="{{ url_for('about') }}" class="side-link">
+                <i class="bi bi-info-circle"></i>
+                <span>About</span>
+            </a>
+
+            {% if current_user.is_authenticated and current_user.role|lower == 'admin' %}
+
+            <div class="nav-heading">ADMINISTRATION</div>
+
+            <a href="{{ url_for('analytics') }}" class="side-link">
+                <i class="bi bi-graph-up-arrow"></i>
+                <span>Analytics</span>
+            </a>
+
+            
+        <a href="{{ url_for('reports_page') }}"
+            class="side-link">
+            <i class="bi bi-file-earmark-bar-graph me-2"></i>
+            Reports
+            </a>
+
+
+            <a href="{{ url_for('users_list') }}" class="side-link">
+                <i class="bi bi-person-gear"></i>
+                <span>User Accounts</span>
+            </a>
+
+
+
+        {% endif %}
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-person-circle fs-4"></i>
+                <div>
+                    <div class="user-name">
+                        {{ current_user.full_name or current_user.username }}
+                    </div>
+                    <small>Signed in</small>
+                </div>
+            </div>
+
+            <div class="role-badge">
+                <i class="bi bi-shield-check me-1"></i>
+                Role: {{ current_user.role|title }}
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+        <!-- HEADER -->
+        <header class="topbar">
+            <div>
+                <h1 class="page-title">Dashboard</h1>
+                <p class="muted">
+                    Here's what's happening in your store today.
+                </p>
+            </div>
+
+            <div class="topbar-actions">
+                <span class="muted d-none d-sm-inline" id="todayDate"></span>
+
+                <button class="icon-button"
+                        type="button"
+                        onclick="window.print()"
+                        title="Print dashboard"
+                        aria-label="Print dashboard">
+                    <i class="bi bi-printer"></i>
+                </button>
+
+                <div class="avatar">
+                    <i class="bi bi-person"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- WELCOME -->
+        <section class="welcome-banner">
+            <div>
+                <h3>
+                    Welcome back,
+                    {{ current_user.full_name or current_user.username }}!
+                </h3>
+                <p>
+                    Manage your mobiles, customers and inventory in one place.
+                </p>
+            </div>
+
+            <div class="welcome-icon">
+                <i class="bi bi-phone-fill"></i>
+            </div>
+        </section>
+
+        <!-- SUMMARY CARDS -->
+        <section class="row g-2 mb-2">
+
+            <div class="col-6 col-xl-3">
+                <div class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-label">Today's Sales</span>
+                        <div class="stat-icon purple">
+                            <i class="bi bi-currency-rupee"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">
+                        ₹{{ "%.2f"|format(today_sales|default(0, true)|float) }}
+                    </div>
+                    <div class="stat-note">Revenue recorded today</div>
+                </div>
+            </div>
+
+            <div class="col-6 col-xl-3">
+                <div class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-label">Today's Orders</span>
+                        <div class="stat-icon green">
+                            <i class="bi bi-cart-check"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">
+                        {{ today_orders|default(0, true) }}
+                    </div>
+                    <div class="stat-note">Invoices created today</div>
+                </div>
+            </div>
+
+            <div class="col-6 col-xl-3">
+                <div class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-label">Total Customers</span>
+                        <div class="stat-icon blue">
+                            <i class="bi bi-people"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">
+                        {{ total_customers|default(0, true) }}
+                    </div>
+                    <div class="stat-note">Registered customers</div>
+                </div>
+            </div>
+
+            <div class="col-6 col-xl-3">
+                <div class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-label">Total Mobiles</span>
+                        <div class="stat-icon orange">
+                            <i class="bi bi-phone"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">
+                        {{ total_products|default(0, true) }}
+                    </div>
+                    <div class="stat-note">Active products in inventory</div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- PAID AMOUNT -->
+        <section class="row g-2 mb-2">
+            <div class="col-12 col-md-6">
+                <div class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-label">Total Paid Amount</span>
+                        <div class="stat-icon green">
+                            <i class="bi bi-currency-rupee"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">
+                        ₹{{ "%.2f"|format(paid_amount|default(0, true)|float) }}
+                    </div>
+                    <div class="stat-note">
+                        Completed customer payments
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-label">Low Stock</span>
+                        <div class="stat-icon orange">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">
+                        {{ low_stock|default(0, true) }}
+                    </div>
+                    <div class="stat-note">Products needing attention</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CHART AND QUICK ACTIONS -->
+        <section class="row g-2 mb-2">
+
+            <div class="col-12 col-xl-8">
+                <div class="panel">
+                    <h5 class="panel-title">Sales Overview</h5>
+                    <p class="panel-subtitle">Weekly sales performance</p>
+
+                    <div class="chart-container">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <div class="panel">
+                    <h5 class="panel-title">Quick Actions</h5>
+                    <p class="panel-subtitle">Common store operations</p>
+
+                    <div class="quick-actions">
+
+                        <a href="{{ url_for('billing_create') }}"
+                           class="quick-action">
+                            <div class="quick-action-icon purple">
+                                <i class="bi bi-cart-plus"></i>
+                            </div>
+                            <span>Create New Sale</span>
+                        </a>
+
+                        <a href="{{ url_for('products_list') }}"
+                           class="quick-action">
+                            <div class="quick-action-icon green">
+                                <i class="bi bi-phone"></i>
+                            </div>
+                            <span>Manage Products</span>
+                        </a>
+
+                        <a href="{{ url_for('inventory') }}"
+                           class="quick-action">
+                            <div class="quick-action-icon blue">
+                                <i class="bi bi-box-seam"></i>
+                            </div>
+                            <span>View Inventory</span>
+                        </a>
+
+                        <a href="{{ url_for('customers_list') }}"
+                           class="quick-action">
+                            <div class="quick-action-icon orange">
+                                <i class="bi bi-people"></i>
+                            </div>
+                            <span>View Customers</span>
+                        </a>
+
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- RECENT TRANSACTIONS -->
+        <section class="panel">
+            <div class="mb-2">
+                <h5 class="panel-title">Recent Transactions</h5>
+                <p class="panel-subtitle mb-0">
+                    Your latest sales and billing activity
+                </p>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Invoice</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Payment Method</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% if recent_sales is defined and recent_sales %}
+                            {% for sale in recent_sales %}
+                            <tr>
+                                <td class="invoice">
+                                    {{ sale.invoice_number|default('—', true) }}
+                                </td>
+
+                                <td>
+                                    {{ sale.customer.name if sale.customer else 'Walk-in Customer' }}
+                                </td>
+
+                                <td>
+                                    {% if sale.sale_date %}
+                                        {{ sale.sale_date.strftime('%d %b %Y') }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+
+                                <td class="fw-bold">
+                                    ₹{{ "%.2f"|format(sale.total_amount|default(0, true)|float) }}
+                                </td>
+
+                                <td>
+                                    {% if sale.payments is defined and sale.payments %}
+                                        {{ sale.payments[-1].method|default('—', true)|title }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    <span class="badge text-bg-success">
+                                        {{ sale.status|default('Completed', true)|title }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    <i class="bi bi-receipt-cutoff"></i>
+                                    No transactions available yet.
+                                    <div class="mt-1">
+                                        Sales will appear here after invoices are created.
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer class="dashboard-footer">
+            © 2026 MobileStore ERP · Store management made simple
+        </footer>
+
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const dateElement = document.getElementById("todayDate");
+
+    if (dateElement) {
+        dateElement.textContent = new Intl.DateTimeFormat("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }).format(new Date());
+    }
+
+    const canvas = document.getElementById("salesChart");
+
+    if (!canvas || typeof Chart === "undefined") {
+        return;
+    }
+
+    // Demonstration values until the weekly chart is connected to Flask.
+    const weeklySales = [1200, 2400, 1800, 3500, 2900, 4800, 3900];
+
+    new Chart(canvas, {
+        type: "line",
+        data: {
+            labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+            datasets: [{
+                label: "Sales (₹)",
+                data: weeklySales,
+                borderColor: "#6565e8",
+                backgroundColor: "rgba(101, 101, 232, 0.10)",
+                fill: true,
+                tension: 0.35,
+                borderWidth: 3,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: "#ffffff",
+                pointBorderColor: "#6565e8",
+                pointBorderWidth: 3,
+                pointHitRadius: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: "index"
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    enabled: true,
+                    callbacks: {
+                        label: function(context) {
+                            return "Sales: ₹" +
+                                Number(context.parsed.y || 0)
+                                .toLocaleString("en-IN");
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    border: { display: false }
+                },
+                y: {
+                    beginAtZero: true,
+                    border: { display: false },
+                    grid: { color: "#f0f1f7" },
+                    ticks: {
+                        maxTicksLimit: 5,
+                        callback: function(value) {
+                            return "₹" +
+                                Number(value).toLocaleString("en-IN");
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+
