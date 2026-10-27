@@ -222,9 +222,7 @@
                 {% for sale in sales %}
 
                     {% set payments = sale.payments|default([], true) %}
-                    {% set paid_total = payments
-                        |selectattr('status', 'equalto', 'completed')
-                        |sum(attribute='amount') %}
+                    {% set paid_total = payment_totals.get(sale.id, 0) %}
                     {% set total = sale.total_amount or 0 %}
                     {% set balance_due = [total - paid_total, 0]|max %}
 
@@ -291,7 +289,7 @@
                                 </a>
 
                                 <a class="billing-edit-link"
-                                   href="{{ url_for('billing_receive_payment', sale_id=sale.id) }}">
+                                   href="{{ url_for('billing_edit', sale_id=sale.id) }}">
                                     Edit
                                 </a>
                             </div>

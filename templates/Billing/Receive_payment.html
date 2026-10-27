@@ -1,0 +1,102 @@
+
+{% extends "base.html" %}
+
+{% block title %}Receive Payment | MobileStore ERP{% endblock %}
+
+{% block content %}
+<div style="max-width:700px; margin:30px auto; padding:20px;">
+
+    <div style="margin-bottom:24px;">
+        <h1 style="margin:0;">Receive Payment</h1>
+        <p style="color:#64748b; margin-top:6px;">
+            Invoice: {{ sale.invoice_number }}
+        </p>
+    </div>
+
+    <div style="background:white; padding:24px; border:1px solid #e2e8f0; border-radius:10px;">
+
+        <div style="display:flex; justify-content:space-between; padding:10px 0;">
+            <span>Invoice Total</span>
+            <strong>₹{{ "%.2f"|format(sale.total_amount or 0) }}</strong>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; padding:10px 0;">
+            <span>Already Paid</span>
+            <strong>₹{{ "%.2f"|format(paid_amount) }}</strong>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; padding:12px 0; border-top:1px solid #cbd5e1; font-size:20px;">
+            <strong>Balance Due</strong>
+            <strong style="color:#dc2626;">₹{{ "%.2f"|format(balance) }}</strong>
+        </div>
+
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div style="margin-top:20px;">
+                <label for="amount" style="display:block; margin-bottom:8px; font-weight:600;">
+                    Payment Amount (₹)
+                </label>
+                <input
+                    type="number"
+                    id="amount"
+                    name="amount"
+                    min="0.01"
+                    max="{{ '%.2f'|format(balance) }}"
+                    step="0.01"
+                    required
+                    style="width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:6px;"
+                >
+            </div>
+
+            <div style="margin-top:18px;">
+                <label for="method" style="display:block; margin-bottom:8px; font-weight:600;">
+                    Payment Method
+                </label>
+                <select
+                    id="method"
+                    name="method"
+                    required
+                    style="width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:6px;"
+                >
+                    <option value="cash">Cash</option>
+                    <option value="upi">UPI</option>
+                    <option value="card">Card</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div style="margin-top:18px;">
+                <label for="reference" style="display:block; margin-bottom:8px; font-weight:600;">
+                    Reference (Optional)
+                </label>
+                <input
+                    type="text"
+                    id="reference"
+                    name="reference"
+                    maxlength="100"
+                    placeholder="Transaction ID or receipt reference"
+                    style="width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:6px;"
+                >
+            </div>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:24px;">
+                <button
+                    type="submit"
+                    style="padding:11px 18px; background:#16a34a; color:white; border:0; border-radius:6px; cursor:pointer;"
+                >
+                    Confirm Payment
+                </button>
+
+                <a
+                    href="{{ url_for('billing_detail', sale_id=sale.id) }}"
+                    style="padding:11px 18px; background:#64748b; color:white; text-decoration:none; border-radius:6px;"
+                >
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -222,3 +222,28 @@ class AuditLog(db.Model):
     ip_address = db.Column(db.String(50))
     created_at = db.Column(db.DateTime(timezone=True), default=utc_now)
     user = db.relationship("User")
+
+class StoreSettings(TimestampMixin, db.Model):
+    __tablename__ = "store_settings"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    store_name = db.Column(
+        db.String(150), nullable=False, default="My Store"
+    )
+    logo_filename = db.Column(db.String(255))
+    address = db.Column(db.Text)
+    phone = db.Column(db.String(30))
+    gstin = db.Column(db.String(30))
+
+    paper_size = db.Column(
+        db.String(20), nullable=False, default="A4"
+    )
+    orientation = db.Column(
+        db.String(20), nullable=False, default="portrait"
+    )
+
+    custom_width_mm = db.Column(db.Float, default=100)
+    custom_height_mm = db.Column(db.Float, default=150)
+
+    footer_text = db.Column(db.String(500))

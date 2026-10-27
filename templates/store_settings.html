@@ -1,0 +1,139 @@
+
+{% extends "base.html" %}
+
+{% block title %}Store Settings | MobileStore ERP{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h2 class="mb-1">Store Settings</h2>
+            <p class="text-muted mb-0">Manage your store details and invoice preferences.</p>
+        </div>
+        <a href="{{ url_for('dashboard_page') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('store_settings_page') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0"><i class="bi bi-shop me-2"></i>Store Information</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <label for="store_name" class="form-label">Store Name *</label>
+                    <input type="text" class="form-control" id="store_name"
+                           name="store_name" maxlength="150"
+                           value="{{ settings.store_name or '' }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="address" class="form-label">Store Address</label>
+                    <textarea class="form-control" id="address" name="address"
+                              rows="3">{{ settings.address or '' }}</textarea>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="phone" class="form-label">Phone Number</label>
+                        <input type="text" class="form-control" id="phone"
+                               name="phone" maxlength="30"
+                               value="{{ settings.phone or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="gstin" class="form-label">GSTIN</label>
+                        <input type="text" class="form-control" id="gstin"
+                               name="gstin" maxlength="30"
+                               value="{{ settings.gstin or '' }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0"><i class="bi bi-printer me-2"></i>Invoice & Print Settings</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="paper_size" class="form-label">Paper Size</label>
+                        <select class="form-select" id="paper_size" name="paper_size">
+                            <option value="A4" {% if settings.paper_size == 'A4' %}selected{% endif %}>A4</option>
+                            <option value="A5" {% if settings.paper_size == 'A5' %}selected{% endif %}>A5</option>
+                            <option value="thermal" {% if settings.paper_size == 'thermal' %}selected{% endif %}>Thermal Receipt</option>
+                            <option value="custom" {% if settings.paper_size == 'custom' %}selected{% endif %}>Custom Size</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="orientation" class="form-label">Orientation</label>
+                        <select class="form-select" id="orientation" name="orientation">
+                            <option value="portrait" {% if settings.orientation == 'portrait' %}selected{% endif %}>Portrait</option>
+                            <option value="landscape" {% if settings.orientation == 'landscape' %}selected{% endif %}>Landscape</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="customDimensions" class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <label for="custom_width_mm" class="form-label">Custom Width (mm)</label>
+                        <input type="number" class="form-control" id="custom_width_mm"
+                               name="custom_width_mm" min="0.1" max="1000" step="0.1"
+                               value="{{ settings.custom_width_mm or 100 }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="custom_height_mm" class="form-label">Custom Height (mm)</label>
+                        <input type="number" class="form-control" id="custom_height_mm"
+                               name="custom_height_mm" min="0.1" max="1000" step="0.1"
+                               value="{{ settings.custom_height_mm or 150 }}">
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label for="footer_text" class="form-label">Invoice Footer Text</label>
+                    <textarea class="form-control" id="footer_text" name="footer_text"
+                              rows="3" maxlength="500"
+                              placeholder="Thank you for shopping with us!">{{ settings.footer_text or '' }}</textarea>
+                    <div class="form-text">This text can be displayed at the bottom of printed invoices.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mb-4">
+            <a href="{{ url_for('dashboard_page') }}" class="btn btn-light">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save me-1"></i> Save Settings
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const paperSize = document.getElementById("paper_size");
+    const dimensions = document.getElementById("customDimensions");
+
+    function toggleCustomDimensions() {
+        dimensions.style.display = paperSize.value === "custom" ? "flex" : "none";
+    }
+
+    paperSize.addEventListener("change", toggleCustomDimensions);
+    toggleCustomDimensions();
+});
+</script>
+{% endblock %}
