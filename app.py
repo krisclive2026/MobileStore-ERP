@@ -19,9 +19,7 @@ from io import BytesIO
 from flask import make_response, request
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
-from reportlab.platypus import (
-    SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-)
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
 import os
@@ -41,7 +39,8 @@ from flask import (
     redirect,
     url_for,
     flash,
-    current_app,jsonify
+    current_app,
+    jsonify,
 )
 from flask_login import (
     LoginManager,
@@ -51,10 +50,9 @@ from flask_login import (
     login_required,
 )
 from flask_wtf.csrf import CSRFProtect
-from sqlalchemy import or_,func
+from sqlalchemy import or_, func
 
 from config import Config
-
 
 login_manager = LoginManager()
 csrf = CSRFProtect()
@@ -65,6 +63,7 @@ ROLES = {"admin", "staff"}
 # --------------------------------------------------
 # APPLICATION
 # --------------------------------------------------
+
 
 def create_app():
     app = Flask(__name__)
@@ -78,59 +77,58 @@ def create_app():
     login_manager.login_message = "Please log in to continue."
     login_manager.login_message_category = "warning"
 
-     # --------------------------------------------------
-        # ROLE AUTHORIZATION
-        # --------------------------------------------------
-    
+    # --------------------------------------------------
+    # ROLE AUTHORIZATION
+    # --------------------------------------------------
+
     def roles_required(*allowed_roles):
-            def decorator(view):
-                @wraps(view)
-                @login_required
-                def wrapped(*args, **kwargs):
-                    if current_user.role not in allowed_roles:
-                        flash(
-                            "You do not have permission to access this page.",
-                            "danger",
-                        )
-                        return redirect(url_for("dashboard_page"))
-    
-                    return view(*args, **kwargs)
-    
-                return wrapped
-            return decorator
+        def decorator(view):
+            @wraps(view)
+            @login_required
+            def wrapped(*args, **kwargs):
+                if current_user.role not in allowed_roles:
+                    flash(
+                        "You do not have permission to access this page.",
+                        "danger",
+                    )
+                    return redirect(url_for("dashboard_page"))
+
+                return view(*args, **kwargs)
+
+            return wrapped
+
+        return decorator
 
     # --------------------------------------------------
-            # ADMIN: ANALYTICS
-            # --------------------------------------------------
-        
+    # ADMIN: ANALYTICS
+    # --------------------------------------------------
+
     @app.route("/analytics")
     @login_required
     @roles_required("admin")
     def analytics_page():
         total_sales = Sale.query.count()
-        
-        sales_value = (
-                    db.session.query(func.coalesce(func.sum(Sale.total_amount), 0))
-                    .scalar()
-                )
-        
-        completed_payments = (
-                    db.session.query(func.coalesce(func.sum(Payment.amount), 0))
-                    .filter(Payment.status == "completed")
-                    .scalar()
-                )
-        
-        return render_template(
-                    "admin/analytics.html",
-                    total_sales=total_sales,
-                    sales_value=float(sales_value or 0),
-                    completed_payments=float(completed_payments or 0),
-                    total_customers=Customer.query.count(),
-                    total_products=Product.query.count(),
-                    total_users=User.query.count(),
-                )
 
-    
+        sales_value = db.session.query(
+            func.coalesce(func.sum(Sale.total_amount), 0)
+        ).scalar()
+
+        completed_payments = (
+            db.session.query(func.coalesce(func.sum(Payment.amount), 0))
+            .filter(Payment.status == "completed")
+            .scalar()
+        )
+
+        return render_template(
+            "admin/analytics.html",
+            total_sales=total_sales,
+            sales_value=float(sales_value or 0),
+            completed_payments=float(completed_payments or 0),
+            total_customers=Customer.query.count(),
+            total_products=Product.query.count(),
+            total_users=User.query.count(),
+        )
+
     @app.route("/reports/pdf/<report_type>")
     @login_required
     @roles_required("admin")
@@ -145,19 +143,17 @@ def create_app():
         }
 
         if report_type not in allowed_reports:
-                return "Invalid report type.", 404
+            return "Invalid report type.", 404
 
         start_date = request.args.get("start_date", "").strip()
         end_date = request.args.get("end_date", "").strip()
 
         try:
-            start_dt = (
-                datetime.strptime(start_date, "%Y-%m-%d")
-                if start_date else None
-            )
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d") if start_date else None
             end_dt = (
                 datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
-                if end_date else None
+                if end_date
+                else None
             )
 
             if start_dt and end_dt and start_dt >= end_dt:
@@ -190,18 +186,26 @@ def create_app():
             ).all()
 
             for sale in sales:
-                rows.append([
-                    display_date(sale.sale_date),
-                    sale.invoice_number or "-",
-                    sale.customer.name if sale.customer else "Walk-in",
-                    money(sale.total_amount),
-                    (sale.status or "Unknown").title(),
-                ])
+                rows.append(
+                    [
+                        display_date(sale.sale_date),
+                        sale.invoice_number or "-",
+                        sale.customer.name if sale.customer else "Walk-in",
+                        money(sale.total_amount),
+                        (sale.status or "Unknown").title(),
+                    ]
+                )
 
         elif report_type == "inventory":
             headers = [
-                "Code", "Product", "Brand", "Category",
-                "Stock", "Cost Price", "Selling Price", "Stock Value",
+                "Code",
+                "Product",
+                "Brand",
+                "Category",
+                "Stock",
+                "Cost Price",
+                "Selling Price",
+                "Stock Value",
             ]
             products = Product.query.order_by(Product.name).all()
 
@@ -209,16 +213,18 @@ def create_app():
                 quantity = product.stock_quantity or 0
                 cost = product.cost_price or 0
 
-                rows.append([
-                    product.product_code or "-",
-                    product.name or "-",
-                    product.brand or "-",
-                    product.category or "-",
-                    str(quantity),
-                    money(cost),
-                    money(product.selling_price),
-                    money(quantity * cost),
-                ])
+                rows.append(
+                    [
+                        product.product_code or "-",
+                        product.name or "-",
+                        product.brand or "-",
+                        product.category or "-",
+                        str(quantity),
+                        money(cost),
+                        money(product.selling_price),
+                        money(quantity * cost),
+                    ]
+                )
 
         elif report_type == "purchases":
             headers = ["Date", "Invoice", "Supplier", "Amount", "Status"]
@@ -228,13 +234,15 @@ def create_app():
             ).all()
 
             for purchase in purchases:
-                rows.append([
-                    display_date(purchase.purchase_date),
-                    purchase.invoice_number or "-",
-                    purchase.supplier.name if purchase.supplier else "-",
-                    money(purchase.total_amount),
-                    (purchase.status or "Unknown").title(),
-                ])
+                rows.append(
+                    [
+                        display_date(purchase.purchase_date),
+                        purchase.invoice_number or "-",
+                        purchase.supplier.name if purchase.supplier else "-",
+                        money(purchase.total_amount),
+                        (purchase.status or "Unknown").title(),
+                    ]
+                )
 
         elif report_type == "customers":
             headers = ["Name", "Phone", "Email", "GST Number", "Added"]
@@ -242,24 +250,28 @@ def create_app():
 
             if start_dt:
                 customers = [
-                    c for c in customers
+                    c
+                    for c in customers
                     if c.created_at and c.created_at.replace(tzinfo=None) >= start_dt
                 ]
 
             if end_dt:
                 customers = [
-                    c for c in customers
+                    c
+                    for c in customers
                     if c.created_at and c.created_at.replace(tzinfo=None) < end_dt
                 ]
 
             for customer in customers:
-                rows.append([
-                    customer.name or "-",
-                    customer.phone or "-",
-                    customer.email or "-",
-                    customer.gst_number or "-",
-                    display_date(customer.created_at),
-                ])
+                rows.append(
+                    [
+                        customer.name or "-",
+                        customer.phone or "-",
+                        customer.email or "-",
+                        customer.gst_number or "-",
+                        display_date(customer.created_at),
+                    ]
+                )
 
         elif report_type == "expenses":
             headers = ["Date", "Title", "Category", "Amount", "Notes"]
@@ -269,13 +281,15 @@ def create_app():
             ).all()
 
             for expense in expenses:
-                rows.append([
-                    display_date(expense.expense_date),
-                    expense.title or "-",
-                    expense.category or "-",
-                    money(expense.amount),
-                    expense.notes or "-",
-                ])
+                rows.append(
+                    [
+                        display_date(expense.expense_date),
+                        expense.title or "-",
+                        expense.category or "-",
+                        money(expense.amount),
+                        expense.notes or "-",
+                    ]
+                )
 
         elif report_type == "imei":
             headers = ["IMEI", "Product Code", "Product", "Brand", "Status"]
@@ -283,22 +297,24 @@ def create_app():
 
             for record in records:
                 product = record.product
-                rows.append([
-                    record.imei or "-",
-                    product.product_code if product else "-",
-                    product.name if product else "-",
-                    product.brand if product and product.brand else "-",
-                    (record.status or "Unknown").replace("_", " ").title(),
-                ])
+                rows.append(
+                    [
+                        record.imei or "-",
+                        product.product_code if product else "-",
+                        product.name if product else "-",
+                        product.brand if product and product.brand else "-",
+                        (record.status or "Unknown").replace("_", " ").title(),
+                    ]
+                )
 
         if not rows:
             rows = [["No records found for this report."] + [""] * (len(headers) - 1)]
 
         # Build a PDF in memory.
         buffer = BytesIO()
-        page_size = landscape(A4) if report_type in (
-            "inventory", "customers", "imei"
-        ) else A4
+        page_size = (
+            landscape(A4) if report_type in ("inventory", "customers", "imei") else A4
+        )
 
         document = SimpleDocTemplate(
             buffer,
@@ -318,13 +334,14 @@ def create_app():
 
         if start_date or end_date:
             period = (
-                f"Period: {start_date or 'Beginning'} to "
-                f"{end_date or 'Present'}"
+                f"Period: {start_date or 'Beginning'} to " f"{end_date or 'Present'}"
             )
-            story.extend([
-                Paragraph(escape(period), styles["Normal"]),
-                Spacer(1, 10),
-            ])
+            story.extend(
+                [
+                    Paragraph(escape(period), styles["Normal"]),
+                    Spacer(1, 10),
+                ]
+            )
 
         # Paragraph cells allow long text to wrap inside the PDF.
         table_data = [
@@ -332,10 +349,9 @@ def create_app():
         ]
 
         for row in rows:
-            table_data.append([
-                Paragraph(escape(str(value)), styles["BodyText"])
-                for value in row
-            ])
+            table_data.append(
+                [Paragraph(escape(str(value)), styles["BodyText"]) for value in row]
+            )
 
         available_width = page_size[0] - 60
         column_width = available_width / len(headers)
@@ -347,21 +363,30 @@ def create_app():
             hAlign="LEFT",
         )
 
-        table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2457A7")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("GRID", (0, 0), (-1, -1), 0.4, colors.lightgrey),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 5),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-            ("TOPPADDING", (0, 0), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [
-                colors.white,
-                colors.HexColor("#EEF4FC"),
-            ]),
-        ]))
+        table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2457A7")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("GRID", (0, 0), (-1, -1), 0.4, colors.lightgrey),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -1),
+                        [
+                            colors.white,
+                            colors.HexColor("#EEF4FC"),
+                        ],
+                    ),
+                ]
+            )
+        )
 
         story.append(table)
         document.build(story)
@@ -378,60 +403,52 @@ def create_app():
     @login_required
     def about_page():
         return render_template("about.html")
-        
-            # --------------------------------------------------
-            # ADMIN: REPORTS
-            # --------------------------------------------------
-        
+
+        # --------------------------------------------------
+        # ADMIN: REPORTS
+        # --------------------------------------------------
+
     @app.route("/reports")
     @login_required
     @roles_required("admin")
     def reports_page():
         date_from = request.args.get("date_from", "").strip()
         date_to = request.args.get("date_to", "").strip()
-        
+
         query = Sale.query
-        
+
         try:
-            query = apply_date_filters(
-                        query, Sale, date_from, date_to
-                    )
+            query = apply_date_filters(query, Sale, date_from, date_to)
         except ValueError:
-                    flash("Please enter valid report dates.", "warning")
-                    return redirect(url_for("reports_page"))
-        
+            flash("Please enter valid report dates.", "warning")
+            return redirect(url_for("reports_page"))
+
         sales = query.order_by(Sale.id.desc()).all()
-        
-        payments = Payment.query.filter_by(
-                    status="completed"
-                ).all()
-        
+
+        payments = Payment.query.filter_by(status="completed").all()
+
         paid_by_sale = {}
         for payment in payments:
-                    paid_by_sale[payment.sale_id] = (
-                        paid_by_sale.get(payment.sale_id, 0.0)
-                        + float(payment.amount or 0)
-                    )
-        
-        report_total = sum(
-                    float(sale.total_amount or 0) for sale in sales
-                )
-        
-        report_paid = sum(
-                    paid_by_sale.get(sale.id, 0.0) for sale in sales
-                )
-        
+            paid_by_sale[payment.sale_id] = paid_by_sale.get(
+                payment.sale_id, 0.0
+            ) + float(payment.amount or 0)
+
+        report_total = sum(float(sale.total_amount or 0) for sale in sales)
+
+        report_paid = sum(paid_by_sale.get(sale.id, 0.0) for sale in sales)
+
         return render_template(
-                    "admin/reports.html",
-                    sales=sales,
-                    date_from=date_from,
-                    date_to=date_to,
-                    report_count=len(sales),
-                    report_total=report_total,
-                    report_paid=report_paid,
-                    report_balance=max(report_total - report_paid, 0.0),
-                    paid_by_sale=paid_by_sale,
-                )
+            "admin/reports.html",
+            sales=sales,
+            date_from=date_from,
+            date_to=date_to,
+            report_count=len(sales),
+            report_total=report_total,
+            report_paid=report_paid,
+            report_balance=max(report_total - report_paid, 0.0),
+            paid_by_sale=paid_by_sale,
+        )
+
     # --------------------------------------------------
     # ADMIN: USER ACCOUNTS
     # --------------------------------------------------
@@ -457,12 +474,12 @@ def create_app():
             flash("User not found.", "warning")
             return redirect(url_for("users_accounts_page"))
 
-    # Protect every admin account.
+        # Protect every admin account.
         if (user.role or "").lower() == "admin":
             flash("Admin accounts cannot be deleted.", "danger")
             return redirect(url_for("users_accounts_page"))
 
-    # Prevent deleting the currently logged-in user.
+        # Prevent deleting the currently logged-in user.
         if user.id == current_user.id:
             flash("You cannot delete your own account.", "danger")
             return redirect(url_for("users_accounts_page"))
@@ -526,179 +543,121 @@ def create_app():
         try:
             value = converter(raw)
         except (ValueError, TypeError):
-            raise ValueError(
-                f"Enter a valid value for {field_name.replace('_', ' ')}."
-            )
+            raise ValueError(f"Enter a valid value for {field_name.replace('_', ' ')}.")
 
         if isinstance(value, float) and not math.isfinite(value):
-            raise ValueError(
-                f"Enter a valid value for {field_name.replace('_', ' ')}."
-            )
+            raise ValueError(f"Enter a valid value for {field_name.replace('_', ' ')}.")
 
         return value
 
-    
-def product_form_values():
-    """Validate and return product form values."""
+    # --------------------------------------------------
+    # PRODUCT FORM VALIDATION HELPER
+    # --------------------------------------------------
 
-    product_code = request.form.get("product_code", "").strip()
-    name = request.form.get("name", "").strip()
-    product_type = (
-        request.form.get("product_type", "Sealed").strip().title()
-    )
+    def product_form_values():
+        """Validate and return values matching the Product model."""
 
-    if not product_code:
-        while True:
-            product_code = (
-                f"PRD-{datetime.now().strftime('%y%m%d%H%M%S')}-"
-                f"{os.urandom(2).hex().upper()}"
-            )
-            if not Product.query.filter_by(
-                product_code=product_code
-            ).first():
-                break
+        product_code = request.form.get("product_code", "").strip()
+        name = request.form.get("name", "").strip()
+        condition = request.form.get("condition", "Sealed").strip().title()
 
-    if len(product_code) > 50:
-        raise ValueError("Product code must be 50 characters or fewer.")
+        if condition not in {"Sealed", "Used"}:
+            raise ValueError("Choose Sealed or Used.")
 
-    if not name:
-        raise ValueError("Product name is required.")
+        if not product_code:
+            while True:
+                product_code = (
+                    f"PRD-{datetime.now().strftime('%y%m%d%H%M%S')}-"
+                    f"{os.urandom(2).hex().upper()}"
+                )
+                if not Product.query.filter_by(product_code=product_code).first():
+                    break
 
-    if len(name) > 150:
-        raise ValueError("Product name must be 150 characters or fewer.")
+        if len(product_code) > 50:
+            raise ValueError("Product code must be 50 characters or fewer.")
 
-    if product_type not in {"Sealed", "Used"}:
-        raise ValueError("Choose Sealed or Used.")
+        if not name:
+            raise ValueError("Product name is required.")
 
-    condition = request.form.get("condition", "").strip() or None
+        if len(name) > 150:
+            raise ValueError("Product name must be 150 characters or fewer.")
 
-    if product_type == "Used":
-        allowed_conditions = {
-            "Excellent", "Good", "Fair", "For Parts"
-        }
-        if condition not in allowed_conditions:
-            raise ValueError("Choose a valid used-phone condition.")
-    else:
-        condition = None
+        def number(field, default=0.0):
+            raw = request.form.get(field, "").strip()
+            if not raw:
+                return float(default)
 
-    def number(field, default=0.0):
-        raw = request.form.get(field, "").strip()
-        if not raw:
-            return default
-        try:
-            value = float(raw)
-        except ValueError:
-            raise ValueError(f"Enter a valid number for {field}.")
-        if not __import__("math").isfinite(value):
-            raise ValueError(f"Enter a valid number for {field}.")
-        return value
+            try:
+                value = float(raw)
+            except (ValueError, TypeError, OverflowError):
+                raise ValueError(f"Enter a valid number for {field.replace('_', ' ')}.")
 
-    def integer(field, default=0):
-        value = number(field, default)
-        if not value.is_integer():
-            raise ValueError(f"{field} must be a whole number.")
-        return int(value)
+            if not math.isfinite(value):
+                raise ValueError(f"Enter a valid number for {field.replace('_', ' ')}.")
 
-    cost_price = number("cost_price")
-    selling_price = number("selling_price")
-    gst_percent = number("gst_percent")
-    stock_quantity = integer("stock_quantity")
-    reorder_level = integer("reorder_level", 5)
+            return value
 
-    if cost_price < 0 or selling_price < 0:
-        raise ValueError("Prices cannot be negative.")
+        def integer(field, default=0):
+            value = number(field, default)
+            if not value.is_integer():
+                raise ValueError(
+                    f"{field.replace('_', ' ').title()} must be a whole number."
+                )
+            return int(value)
 
-    if not 0 <= gst_percent <= 100:
-        raise ValueError("GST must be between 0 and 100.")
+        cost_price = number("cost_price")
+        selling_price = number("selling_price")
+        gst_percent = number("gst_percent")
+        stock_quantity = integer("stock_quantity")
+        reorder_level = integer("reorder_level", 5)
+        warranty_months = integer("warranty_months", 0)
 
-    if stock_quantity < 0 or reorder_level < 0:
-        raise ValueError("Stock and reorder level cannot be negative.")
+        if cost_price < 0 or selling_price < 0:
+            raise ValueError("Prices cannot be negative.")
 
-    warranty_raw = request.form.get("warranty_months", "").strip()
-    warranty_months = None
+        if not 0 <= gst_percent <= 100:
+            raise ValueError("GST must be between 0 and 100.")
 
-    if warranty_raw:
-        try:
-            warranty_months = int(warranty_raw)
-        except ValueError:
-            raise ValueError("Warranty must be a whole number of months.")
+        if stock_quantity < 0 or reorder_level < 0:
+            raise ValueError("Stock and reorder level cannot be negative.")
 
         if not 0 <= warranty_months <= 120:
             raise ValueError("Warranty must be between 0 and 120 months.")
 
-    barcode = request.form.get("barcode", "").strip() or None
+        used_grade = request.form.get("used_grade", "").strip() or None
 
-    if barcode and len(barcode) > 100:
-        raise ValueError("Barcode must be 100 characters or fewer.")
+        if condition == "Used":
+            allowed_grades = {"Excellent", "Good", "Fair", "For Parts"}
+            if used_grade not in allowed_grades:
+                raise ValueError("Choose a valid grade for the used phone.")
+        else:
+            used_grade = None
 
-    return {
-        "product_code": product_code,
-        "barcode": barcode,
-        "name": name,
-        "brand": request.form.get("brand", "").strip() or None,
-        "model": request.form.get("model", "").strip() or None,
-        "category": request.form.get("category", "Mobile").strip() or "Mobile",
-        "color": request.form.get("color", "").strip() or None,
-        "ram": request.form.get("ram", "").strip() or None,
-        "storage": request.form.get("storage", "").strip() or None,
-        "hsn_code": request.form.get("hsn_code", "").strip() or None,
-        "gst_percent": gst_percent,
-        "cost_price": cost_price,
-        "selling_price": selling_price,
-        "stock_quantity": stock_quantity,
-        "reorder_level": reorder_level,
-        "track_imei": "track_imei" in request.form,
-        "is_active": "is_active" in request.form,
-        "product_type": product_type,
-        "condition": condition,
-        "warranty_months": warranty_months,
-    }
+        barcode = request.form.get("barcode", "").strip() or None
+        if barcode and len(barcode) > 100:
+            raise ValueError("Barcode must be 100 characters or fewer.")
 
-    # --------------------------------------------------
-    # PRODUCTS: BARCODE LOOKUP
-    # --------------------------------------------------
-
-    @app.route("/products/barcode-lookup")
-    @login_required
-    def product_barcode_lookup():
-        barcode = request.args.get("barcode", "").strip()
-
-        if not barcode:
-            return jsonify({
-            "found": False,
-            "message": "Enter or scan a barcode.",
-        }), 400
-
-        product = Product.query.filter_by(barcode=barcode).first()
-
-        if not product:
-            return jsonify({
-            "found": False,
-            "message": "Barcode not found. You can enter the details manually.",
-        })
-
-        return jsonify({
-        "found": True,
-        "product": {
-            "product_code": product.product_code,
-            "barcode": product.barcode or "",
-            "name": product.name or "",
-            "brand": product.brand or "",
-            "model": product.model or "",
-            "category": product.category or "Mobile",
-            "color": product.color or "",
-            "ram": product.ram or "",
-            "storage": product.storage or "",
-            "hsn_code": product.hsn_code or "",
-            "gst_percent": product.gst_percent or 0,
-            "cost_price": product.cost_price or 0,
-            "selling_price": product.selling_price or 0,
-            "product_type": product.product_type or "Sealed",
-            "condition": product.condition or "",
-            "warranty_months": product.warranty_months or "",
-        },
-    })
-
+        return {
+            "product_code": product_code,
+            "barcode": barcode,
+            "name": name,
+            "brand": request.form.get("brand", "").strip() or None,
+            "model": request.form.get("model", "").strip() or None,
+            "category": request.form.get("category", "Mobile").strip() or "Mobile",
+            "variant": request.form.get("variant", "").strip() or None,
+            "color": request.form.get("color", "").strip() or None,
+            "condition": condition,
+            "used_grade": used_grade,
+            "warranty_months": warranty_months,
+            "hsn_code": request.form.get("hsn_code", "").strip() or None,
+            "gst_percent": gst_percent,
+            "cost_price": cost_price,
+            "selling_price": selling_price,
+            "stock_quantity": stock_quantity,
+            "reorder_level": reorder_level,
+            "track_imei": "track_imei" in request.form,
+            "is_active": "is_active" in request.form,
+        }
 
     # --------------------------------------------------
     # PRODUCTS: DEACTIVATE
@@ -713,25 +672,299 @@ def product_form_values():
             flash("Product not found.", "danger")
             return redirect(url_for("products_list"))
 
-        if not product.is_active:
-            flash("This product is already inactive.", "warning")
-            return redirect(url_for("products_list"))
+        product.is_active = False
 
         try:
-            product.is_active = False
             db.session.commit()
-            flash(
-            f"{product.name} has been deactivated. "
-            "Its transaction history has been preserved.",
-            "success",
-        )
+            flash(f"{product.name} has been deactivated.", "success")
         except Exception:
             db.session.rollback()
             app.logger.exception("Product deactivation failed")
-            flash("Could not deactivate this product.", "danger")
+            flash("Could not deactivate the product.", "danger")
 
         return redirect(url_for("products_list"))
-   
+
+    # --------------------------------------------------
+    # PRODUCTS: CREATE
+    # --------------------------------------------------
+
+    @app.route("/products/create", methods=["GET", "POST"])
+    @login_required
+    def product_create():
+        selected_type = (
+            (request.args.get("type") or request.form.get("condition") or "Sealed")
+            .strip()
+            .title()
+        )
+
+        if selected_type not in {"Sealed", "Used"}:
+            selected_type = "Sealed"
+
+        if request.method == "POST":
+            try:
+                values = product_form_values()
+
+                # Read IMEI numbers from the product form.
+                imei1 = request.form.get("imei1", "").strip()
+                imei2 = request.form.get("imei2", "").strip()
+
+                # IMEI 1 is required when IMEI tracking is enabled.
+                if values.get("track_imei", True) and not imei1:
+                    raise ValueError(
+                        "IMEI Number 1 is required when IMEI tracking is enabled."
+                    )
+
+                # Validate both IMEI numbers.
+                for label, imei in (
+                    ("IMEI Number 1", imei1),
+                    ("IMEI Number 2", imei2),
+                ):
+                    if imei and (len(imei) != 15 or not imei.isdigit()):
+                        raise ValueError(f"{label} must contain exactly 15 digits.")
+
+                if imei1 and imei2 and imei1 == imei2:
+                    raise ValueError(
+                        "IMEI Number 1 and IMEI Number 2 cannot be the same."
+                    )
+
+                # Check both IMEIs against both database columns.
+                for imei in (imei1, imei2):
+                    if not imei:
+                        continue
+
+                    duplicate = IMEIRecord.query.filter(
+                        db.or_(
+                            IMEIRecord.imei1 == imei,
+                            IMEIRecord.imei2 == imei,
+                        )
+                    ).first()
+
+                    if duplicate:
+                        raise ValueError(f"IMEI {imei} is already registered.")
+
+                # Keep your existing product-code and barcode checks here.
+
+                if imei1:
+                    values["track_imei"] = True
+
+                # Create product.
+                product = Product(**values)
+                db.session.add(product)
+                db.session.flush()
+
+                # One record per physical phone, storing both IMEIs.
+                if imei1:
+                    db.session.add(
+                        IMEIRecord(
+                            product_id=product.id,
+                            imei1=imei1,
+                            imei2=imei2 or None,
+                            status="in_stock",
+                        )
+                    )
+
+                db.session.commit()
+
+                flash(
+                    "Product created successfully.",
+                    "success",
+                )
+                return redirect(url_for("products_list"))
+
+            except ValueError as exc:
+                db.session.rollback()
+                flash(str(exc), "danger")
+
+            except Exception:
+                db.session.rollback()
+                app.logger.exception("Product creation failed")
+                flash(
+                    "Could not save the product. "
+                    "Check the application log for details.",
+                    "danger",
+                )
+
+        return render_template(
+            "products/form.html",
+            product=None,
+            selected_type=selected_type,
+        )
+
+    @app.route("/products/edit/<int:product_id>", methods=["GET", "POST"])
+    @login_required
+    def product_edit(product_id):
+        product = db.session.get(Product, product_id)
+
+        if product is None:
+            flash("Product not found.", "danger")
+            return redirect(url_for("products_list"))
+
+        selected_type = product.condition or "Sealed"
+
+        if request.method == "POST":
+            try:
+                values = product_form_values()
+
+                # Prevent duplicate product codes on other products.
+                existing_code = Product.query.filter(
+                    Product.product_code == values["product_code"],
+                    Product.id != product.id,
+                ).first()
+
+                if existing_code:
+                    raise ValueError("This product code already exists.")
+
+                # Prevent duplicate barcodes on other products.
+                if values.get("barcode"):
+                    existing_barcode = Product.query.filter(
+                        Product.barcode == values["barcode"],
+                        Product.id != product.id,
+                    ).first()
+
+                    if existing_barcode:
+                        raise ValueError("This barcode already exists.")
+
+                # Update the existing product.
+                for field, value in values.items():
+                    setattr(product, field, value)
+
+                db.session.commit()
+
+                flash("Product updated successfully.", "success")
+                return redirect(url_for("products_list"))
+
+            except ValueError as exc:
+                db.session.rollback()
+                flash(str(exc), "danger")
+
+            except Exception:
+                db.session.rollback()
+                app.logger.exception("Product update failed")
+
+                flash(
+                    "Could not update the product. "
+                    "Check the application log for details.",
+                    "danger",
+                )
+
+        return render_template(
+            "products/form.html",
+            product=product,
+            selected_type=selected_type,
+        )
+
+    # --------------------------------------------------
+    # PRODUCTS: BARCODE LOOKUP
+    # --------------------------------------------------
+
+    @app.route("/products/barcode-lookup")
+    @login_required
+    def product_barcode_lookup():
+        barcode = request.args.get("barcode", "").strip()
+
+        if not barcode:
+            return (
+                jsonify(
+                    {
+                        "found": False,
+                        "message": "Enter or scan a barcode.",
+                    }
+                ),
+                400,
+            )
+
+        product = Product.query.filter_by(barcode=barcode).first()
+
+        if not product:
+            return jsonify(
+                {
+                    "found": False,
+                    "message": "Barcode not found. You can enter the details manually.",
+                }
+            )
+
+        return jsonify(
+            {
+                "found": True,
+                "product": {
+                    "product_code": product.product_code,
+                    "barcode": product.barcode or "",
+                    "name": product.name or "",
+                    "brand": product.brand or "",
+                    "model": product.model or "",
+                    "category": product.category or "Mobile",
+                    "color": product.color or "",
+                    "ram": product.ram or "",
+                    "storage": product.storage or "",
+                    "hsn_code": product.hsn_code or "",
+                    "gst_percent": product.gst_percent or 0,
+                    "cost_price": product.cost_price or 0,
+                    "selling_price": product.selling_price or 0,
+                    "product_type": product.product_type or "Sealed",
+                    "condition": product.condition or "",
+                    "warranty_months": product.warranty_months or "",
+                },
+            }
+        )
+
+    # --------------------------------------------------
+    # IMEI RECORDS: LIST AND TRACKING
+    # --------------------------------------------------
+
+    @app.route("/imei-records")
+    @login_required
+    def imei_records_list():
+        search = request.args.get("q", "").strip()
+        selected_status = request.args.get("status", "").strip()
+
+        allowed_statuses = {
+            "in_stock",
+            "sold",
+            "returned",
+            "damaged",
+        }
+
+        query = IMEIRecord.query.join(
+            Product,
+            IMEIRecord.product_id == Product.id,
+        )
+
+        if search:
+            pattern = f"%{search}%"
+            query = query.filter(
+                db.or_(
+                    IMEIRecord.imei1.ilike(pattern),
+                    IMEIRecord.imei2.ilike(pattern),
+                    Product.name.ilike(pattern),
+                    Product.product_code.ilike(pattern),
+                    Product.brand.ilike(pattern),
+                    Product.model.ilike(pattern),
+                )
+            )
+
+        if selected_status in allowed_statuses:
+            query = query.filter(IMEIRecord.status == selected_status)
+        else:
+            selected_status = ""
+
+        records = query.order_by(IMEIRecord.id.desc()).all()
+
+        counts = {
+            "total": IMEIRecord.query.count(),
+            "in_stock": IMEIRecord.query.filter_by(status="in_stock").count(),
+            "sold": IMEIRecord.query.filter_by(status="sold").count(),
+            "returned": IMEIRecord.query.filter_by(status="returned").count(),
+            "damaged": IMEIRecord.query.filter_by(status="damaged").count(),
+        }
+
+        return render_template(
+            "imei/list.html",
+            records=records,
+            search=search,
+            selected_status=selected_status,
+            counts=counts,
+        )
+
     # --------------------------------------------------
     # BILLING: LIST AND SEARCH
     # --------------------------------------------------
@@ -758,9 +991,7 @@ def product_form_values():
         for sale in sales:
             payment_totals[sale.id] = sum(
                 float(payment.amount or 0)
-                for payment in Payment.query.filter_by(
-                    sale_id=sale.id
-                ).all()
+                for payment in Payment.query.filter_by(sale_id=sale.id).all()
             )
 
         return render_template(
@@ -778,24 +1009,20 @@ def product_form_values():
     @login_required
     def billing_create():
         customers = Customer.query.order_by(Customer.name.asc()).all()
-        products = Product.query.filter_by(is_active=True).order_by(
-            Product.name.asc()
-        ).all()
+        products = (
+            Product.query.filter_by(is_active=True).order_by(Product.name.asc()).all()
+        )
 
         if request.method == "POST":
             customer_value = request.form.get("customer_id", "").strip()
             discount_text = request.form.get("discount_amount", "0").strip()
-            payment_method = request.form.get(
-                "payment_method", "cash"
-            ).strip().lower()
+            payment_method = request.form.get("payment_method", "cash").strip().lower()
             reference = request.form.get("payment_reference", "").strip()
 
             try:
                 customer_id = int(customer_value) if customer_value else None
                 discount = float(discount_text or 0)
-                paid_amount = float(
-                    request.form.get("paid_amount", "0") or 0
-                )
+                paid_amount = float(request.form.get("paid_amount", "0") or 0)
             except (ValueError, TypeError):
                 flash(
                     "Enter valid customer, discount, and payment values.",
@@ -832,9 +1059,7 @@ def product_form_values():
             try:
                 requested_items = {}
 
-                for product_id_text, quantity_text in zip(
-                    product_ids, quantities
-                ):
+                for product_id_text, quantity_text in zip(product_ids, quantities):
                     if not product_id_text:
                         continue
 
@@ -842,9 +1067,7 @@ def product_form_values():
                     quantity = int(quantity_text)
 
                     if quantity <= 0:
-                        raise ValueError(
-                            "Product quantity must be at least 1."
-                        )
+                        raise ValueError("Product quantity must be at least 1.")
 
                     requested_items[product_id] = (
                         requested_items.get(product_id, 0) + quantity
@@ -854,16 +1077,12 @@ def product_form_values():
                     raise ValueError("Add at least one valid product.")
 
                 selected_products = (
-                    Product.query.filter(
-                        Product.id.in_(requested_items.keys())
-                    )
+                    Product.query.filter(Product.id.in_(requested_items.keys()))
                     .order_by(Product.id.asc())
                     .with_for_update()
                     .all()
                 )
-                product_map = {
-                    product.id: product for product in selected_products
-                }
+                product_map = {product.id: product for product in selected_products}
 
                 subtotal = 0.0
                 tax_total = 0.0
@@ -896,30 +1115,26 @@ def product_form_values():
                     subtotal += line_subtotal
                     tax_total += line_tax
 
-                    item_rows.append({
-                        "product": product,
-                        "quantity": quantity,
-                        "unit_price": unit_price,
-                        "subtotal": line_subtotal,
-                        "tax_amount": line_tax,
-                    })
+                    item_rows.append(
+                        {
+                            "product": product,
+                            "quantity": quantity,
+                            "unit_price": unit_price,
+                            "subtotal": line_subtotal,
+                            "tax_amount": line_tax,
+                        }
+                    )
 
                 subtotal = round(subtotal, 2)
                 tax_total = round(tax_total, 2)
 
                 if discount > subtotal + tax_total:
-                    raise ValueError(
-                        "Discount cannot exceed the bill total."
-                    )
+                    raise ValueError("Discount cannot exceed the bill total.")
 
-                grand_total = round(
-                    subtotal + tax_total - discount, 2
-                )
+                grand_total = round(subtotal + tax_total - discount, 2)
 
                 if paid_amount > grand_total:
-                    raise ValueError(
-                        "Paid amount cannot exceed the bill total."
-                    )
+                    raise ValueError("Paid amount cannot exceed the bill total.")
 
                 invoice_number = (
                     f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}-"
@@ -954,9 +1169,7 @@ def product_form_values():
                         )
                     )
 
-                    product.stock_quantity = (
-                        int(product.stock_quantity or 0) - quantity
-                    )
+                    product.stock_quantity = int(product.stock_quantity or 0) - quantity
 
                     db.session.add(
                         StockMovement(
@@ -965,9 +1178,7 @@ def product_form_values():
                             movement_type="sale",
                             quantity_change=-quantity,
                             reference=invoice_number,
-                            notes=(
-                                f"Stock deducted for invoice {invoice_number}"
-                            ),
+                            notes=(f"Stock deducted for invoice {invoice_number}"),
                         )
                     )
 
@@ -1001,9 +1212,7 @@ def product_form_values():
                     f"Invoice {invoice_number} created successfully.",
                     "success",
                 )
-                return redirect(
-                    url_for("billing_detail", sale_id=sale.id)
-                )
+                return redirect(url_for("billing_detail", sale_id=sale.id))
 
             except ValueError as exc:
                 db.session.rollback()
@@ -1042,18 +1251,14 @@ def product_form_values():
             return redirect(url_for("billing_list"))
 
         customers = Customer.query.order_by(Customer.name.asc()).all()
-        products = Product.query.filter_by(is_active=True).order_by(
-            Product.name.asc()
-        ).all()
+        products = (
+            Product.query.filter_by(is_active=True).order_by(Product.name.asc()).all()
+        )
 
         if request.method == "POST":
             try:
-                customer_value = request.form.get(
-                    "customer_id", ""
-                ).strip()
-                discount = float(
-                    request.form.get("discount_amount", "0") or 0
-                )
+                customer_value = request.form.get("customer_id", "").strip()
+                discount = float(request.form.get("discount_amount", "0") or 0)
                 customer_id = int(customer_value) if customer_value else None
 
                 if (
@@ -1069,14 +1274,10 @@ def product_form_values():
                 quantities = request.form.getlist("quantity[]")
 
                 if not product_ids or len(product_ids) != len(quantities):
-                    raise ValueError(
-                        "Add at least one product to the invoice."
-                    )
+                    raise ValueError("Add at least one product to the invoice.")
 
                 requested_items = {}
-                for product_id_text, quantity_text in zip(
-                    product_ids, quantities
-                ):
+                for product_id_text, quantity_text in zip(product_ids, quantities):
                     if not product_id_text:
                         continue
 
@@ -1095,21 +1296,15 @@ def product_form_values():
 
                 # Lock selected product rows.
                 selected_products = (
-                    Product.query.filter(
-                        Product.id.in_(requested_items.keys())
-                    )
+                    Product.query.filter(Product.id.in_(requested_items.keys()))
                     .order_by(Product.id.asc())
                     .with_for_update()
                     .all()
                 )
-                product_map = {
-                    product.id: product for product in selected_products
-                }
+                product_map = {product.id: product for product in selected_products}
 
                 if len(product_map) != len(requested_items):
-                    raise ValueError(
-                        "One or more selected products were not found."
-                    )
+                    raise ValueError("One or more selected products were not found.")
 
                 for product in selected_products:
                     if not product.is_active:
@@ -1119,10 +1314,9 @@ def product_form_values():
 
                 old_quantities = {}
                 for item in sale.items:
-                    old_quantities[item.product_id] = (
-                        old_quantities.get(item.product_id, 0)
-                        + int(item.quantity or 0)
-                    )
+                    old_quantities[item.product_id] = old_quantities.get(
+                        item.product_id, 0
+                    ) + int(item.quantity or 0)
 
                 subtotal = 0.0
                 tax_total = 0.0
@@ -1131,10 +1325,9 @@ def product_form_values():
                 for product_id, quantity in requested_items.items():
                     product = product_map[product_id]
 
-                    available_stock = (
-                        int(product.stock_quantity or 0)
-                        + old_quantities.get(product_id, 0)
-                    )
+                    available_stock = int(
+                        product.stock_quantity or 0
+                    ) + old_quantities.get(product_id, 0)
                     if available_stock < quantity:
                         raise ValueError(
                             f"Insufficient stock for {product.name}. "
@@ -1155,25 +1348,23 @@ def product_form_values():
                     subtotal += line_subtotal
                     tax_total += line_tax
 
-                    item_rows.append({
-                        "product": product,
-                        "quantity": quantity,
-                        "unit_price": unit_price,
-                        "subtotal": line_subtotal,
-                        "tax_amount": line_tax,
-                    })
+                    item_rows.append(
+                        {
+                            "product": product,
+                            "quantity": quantity,
+                            "unit_price": unit_price,
+                            "subtotal": line_subtotal,
+                            "tax_amount": line_tax,
+                        }
+                    )
 
                 subtotal = round(subtotal, 2)
                 tax_total = round(tax_total, 2)
 
                 if discount > subtotal + tax_total:
-                    raise ValueError(
-                        "Discount cannot exceed the bill total."
-                    )
+                    raise ValueError("Discount cannot exceed the bill total.")
 
-                grand_total = round(
-                    subtotal + tax_total - discount, 2
-                )
+                grand_total = round(subtotal + tax_total - discount, 2)
 
                 paid_amount = round(
                     sum(
@@ -1196,16 +1387,12 @@ def product_form_values():
                 # Lock all products involved, including removed old items.
                 all_product_ids = set(old_quantities) | set(requested_items)
                 stock_products = (
-                    Product.query.filter(
-                        Product.id.in_(all_product_ids)
-                    )
+                    Product.query.filter(Product.id.in_(all_product_ids))
                     .order_by(Product.id.asc())
                     .with_for_update()
                     .all()
                 )
-                stock_map = {
-                    product.id: product for product in stock_products
-                }
+                stock_map = {product.id: product for product in stock_products}
 
                 for product_id in all_product_ids:
                     product = stock_map.get(product_id)
@@ -1281,9 +1468,7 @@ def product_form_values():
                     f"Invoice {sale.invoice_number} updated successfully.",
                     "success",
                 )
-                return redirect(
-                    url_for("billing_detail", sale_id=sale.id)
-                )
+                return redirect(url_for("billing_detail", sale_id=sale.id))
 
             except (ValueError, TypeError) as exc:
                 db.session.rollback()
@@ -1293,14 +1478,11 @@ def product_form_values():
                 db.session.rollback()
                 app.logger.exception("Invoice edit failed")
                 flash(
-                    "Could not update the invoice. "
-                    "No changes were committed.",
+                    "Could not update the invoice. " "No changes were committed.",
                     "danger",
                 )
 
-            return redirect(
-                url_for("billing_edit", sale_id=sale_id)
-            )
+            return redirect(url_for("billing_edit", sale_id=sale_id))
 
         return render_template(
             "billing/edit.html",
@@ -1322,9 +1504,9 @@ def product_form_values():
             flash("Invoice not found.", "danger")
             return redirect(url_for("billing_list"))
 
-        payments = Payment.query.filter_by(
-            sale_id=sale.id
-        ).order_by(Payment.id.asc()).all()
+        payments = (
+            Payment.query.filter_by(sale_id=sale.id).order_by(Payment.id.asc()).all()
+        )
 
         # Only completed payments count toward the amount received.
         paid_amount = round(
@@ -1481,7 +1663,7 @@ def product_form_values():
     # STORE SETTINGS
     # --------------------------------------------------
 
-        # --------------------------------------------------
+    # --------------------------------------------------
     # STORE SETTINGS
     # --------------------------------------------------
 
@@ -1502,12 +1684,8 @@ def product_form_values():
                 phone = request.form.get("phone", "").strip()
                 gstin = request.form.get("gstin", "").strip()
                 paper_size = request.form.get("paper_size", "A4").strip()
-                orientation = request.form.get(
-                    "orientation", "portrait"
-                ).strip()
-                footer_text = request.form.get(
-                    "footer_text", ""
-                ).strip()
+                orientation = request.form.get("orientation", "portrait").strip()
+                footer_text = request.form.get("footer_text", "").strip()
 
                 if not store_name:
                     raise ValueError("Store name is required.")
@@ -1528,16 +1706,10 @@ def product_form_values():
 
                 if paper_size == "custom":
                     try:
-                        width = float(
-                            request.form.get("custom_width_mm", "100")
-                        )
-                        height = float(
-                            request.form.get("custom_height_mm", "150")
-                        )
+                        width = float(request.form.get("custom_width_mm", "100"))
+                        height = float(request.form.get("custom_height_mm", "150"))
                     except (TypeError, ValueError):
-                        raise ValueError(
-                            "Enter valid custom paper dimensions."
-                        )
+                        raise ValueError("Enter valid custom paper dimensions.")
 
                     if (
                         not math.isfinite(width)
@@ -1564,9 +1736,7 @@ def product_form_values():
 
             except Exception:
                 db.session.rollback()
-                current_app.logger.exception(
-                    "Failed to save store settings."
-                )
+                current_app.logger.exception("Failed to save store settings.")
                 flash(
                     "Could not save store settings. Please try again.",
                     "danger",
@@ -1805,9 +1975,7 @@ def product_form_values():
             )
 
         try:
-            query = apply_date_filters(
-                query, Customer, date_from, date_to
-            )
+            query = apply_date_filters(query, Customer, date_from, date_to)
         except ValueError:
             flash("Please enter valid filter dates.", "warning")
             return redirect(url_for("customers_list"))
@@ -1840,9 +2008,7 @@ def product_form_values():
 
             if not name:
                 flash("Customer name is required.", "danger")
-                return render_template(
-                    "customers/form.html", customer=None
-                )
+                return render_template("customers/form.html", customer=None)
 
             customer = Customer(
                 name=name,
@@ -1885,23 +2051,13 @@ def product_form_values():
 
             if not name:
                 flash("Customer name is required.", "danger")
-                return render_template(
-                    "customers/form.html", customer=customer
-                )
+                return render_template("customers/form.html", customer=customer)
 
             customer.name = name
-            customer.phone = (
-                request.form.get("phone", "").strip() or None
-            )
-            customer.email = (
-                request.form.get("email", "").strip() or None
-            )
-            customer.address = (
-                request.form.get("address", "").strip() or None
-            )
-            customer.gst_number = (
-                request.form.get("gst_number", "").strip() or None
-            )
+            customer.phone = request.form.get("phone", "").strip() or None
+            customer.email = request.form.get("email", "").strip() or None
+            customer.address = request.form.get("address", "").strip() or None
+            customer.gst_number = request.form.get("gst_number", "").strip() or None
 
             try:
                 db.session.commit()
@@ -1912,9 +2068,7 @@ def product_form_values():
                 app.logger.exception("Customer update failed")
                 flash("Could not update the customer.", "danger")
 
-        return render_template(
-            "customers/form.html", customer=customer
-        )
+        return render_template("customers/form.html", customer=customer)
 
     # --------------------------------------------------
     # PRODUCTS: LIST, SEARCH AND DATE FILTERS
@@ -1943,9 +2097,7 @@ def product_form_values():
             )
 
         try:
-            query = apply_date_filters(
-                query, Product, date_from, date_to
-            )
+            query = apply_date_filters(query, Product, date_from, date_to)
         except ValueError:
             flash("Please enter valid filter dates.", "warning")
             return redirect(url_for("products_list"))
@@ -1962,64 +2114,6 @@ def product_form_values():
             filtered_count=len(products),
         )
 
-    # --------------------------------------------------
-    # PRODUCTS: CREATE
-    # --------------------------------------------------
-    @app.route("/products/create", methods=["GET", "POST"])
-    @login_required
-    def product_create():
-        selected_type = (
-            request.args.get("type")
-            or request.form.get("product_type")
-            or "Sealed"
-        ).strip().title()
-
-        if selected_type not in {"Sealed", "Used"}:
-            selected_type = "Sealed"
-
-        if request.method == "POST":
-            try:
-                values = product_form_values()
-
-                existing_code = Product.query.filter_by(
-                    product_code=values["product_code"]
-                ).first()
-
-                if existing_code:
-                    raise ValueError("That product code already exists.")
-
-                if values.get("barcode"):
-                    existing_barcode = Product.query.filter_by(
-                        barcode=values["barcode"]
-                    ).first()
-
-                    if existing_barcode:
-                        raise ValueError(
-                            "That barcode already exists. "
-                            "Use the existing product or enter another barcode."
-                        )
-
-                product = Product(**values)
-                db.session.add(product)
-                db.session.commit()
-
-                flash("Product created successfully.", "success")
-                return redirect(url_for("products_list"))
-
-            except ValueError as exc:
-                db.session.rollback()
-                flash(str(exc), "danger")
-
-            except Exception as exc:
-                db.session.rollback()
-                app.logger.exception("Product creation failed")
-                flash(f"Could not save the product: {exc}", "danger")
-
-        return render_template(
-            "products/form.html",
-            product=None,
-            selected_type=selected_type,
-        )
     # --------------------------------------------------
     # DASHBOARD
     # --------------------------------------------------
@@ -2057,6 +2151,241 @@ def product_form_values():
         db.session.rollback()
         app.logger.exception("Internal server error")
         return "An internal server error occurred.", 500
+
+
+        # --------------------------------------------------
+    # SUPPLIER MANAGEMENT
+    # --------------------------------------------------
+
+    @app.route("/suppliers")
+    @login_required
+    def suppliers_list():
+        search = request.args.get("search", "").strip()
+        status = request.args.get("status", "all").strip().lower()
+
+        query = Supplier.query
+
+        if search:
+            term = f"%{search}%"
+            query = query.filter(
+                or_(
+                    Supplier.name.ilike(term),
+                    Supplier.company_name.ilike(term),
+                    Supplier.contact_person.ilike(term),
+                    Supplier.phone.ilike(term),
+                    Supplier.mobile_number_2.ilike(term),
+                    Supplier.email.ilike(term),
+                    Supplier.gst_number.ilike(term),
+                )
+            )
+
+        if status == "active":
+            query = query.filter(Supplier.is_active.is_(True))
+        elif status == "inactive":
+            query = query.filter(Supplier.is_active.is_(False))
+
+        suppliers = query.order_by(Supplier.name.asc()).all()
+
+        return render_template(
+            "suppliers/list.html",
+            suppliers=suppliers,
+            search=search,
+            status=status,
+            total_suppliers=Supplier.query.count(),
+            active_suppliers=Supplier.query.filter_by(is_active=True).count(),
+            inactive_suppliers=Supplier.query.filter_by(is_active=False).count(),
+        )
+
+    # --------------------------------------------------
+    # SUPPLIER FORM HELPER
+    # --------------------------------------------------
+
+    def supplier_form_values():
+        name = request.form.get("name", "").strip()
+        phone = request.form.get("phone", "").strip()
+        mobile_number_2 = request.form.get("mobile_number_2", "").strip()
+        email = request.form.get("email", "").strip()
+        lead_time_text = request.form.get("delivery_lead_time", "0").strip()
+
+        if not name:
+            raise ValueError("Supplier name is required.")
+
+        if len(name) > 150:
+            raise ValueError("Supplier name cannot exceed 150 characters.")
+
+        for label, number in (
+            ("Mobile number 1", phone),
+            ("Mobile number 2", mobile_number_2),
+        ):
+            if number and (not number.isdigit() or len(number) != 10):
+                raise ValueError(f"{label} must contain exactly 10 digits.")
+
+        if phone and mobile_number_2 and phone == mobile_number_2:
+            raise ValueError("The two mobile numbers must be different.")
+
+        if email and (
+            "@" not in email
+            or email.startswith("@")
+            or email.endswith("@")
+            or " " in email
+        ):
+            raise ValueError("Please enter a valid email address.")
+
+        try:
+            delivery_lead_time = int(lead_time_text or 0)
+        except (ValueError, TypeError):
+            raise ValueError("Delivery lead time must be a whole number.")
+
+        if delivery_lead_time < 0:
+            raise ValueError("Delivery lead time cannot be negative.")
+
+        return {
+            "name": name,
+            "company_name": request.form.get("company_name", "").strip() or None,
+            "contact_person": request.form.get("contact_person", "").strip() or None,
+            "phone": phone or None,
+            "mobile_number_2": mobile_number_2 or None,
+            "email": email or None,
+            "address": request.form.get("address", "").strip() or None,
+            "gst_number": request.form.get("gst_number", "").strip().upper() or None,
+            "supplier_category": request.form.get("supplier_category", "").strip() or None,
+            "payment_terms": request.form.get("payment_terms", "").strip() or None,
+            "delivery_lead_time": delivery_lead_time,
+            "notes": request.form.get("notes", "").strip() or None,
+        }
+
+    # --------------------------------------------------
+    # CREATE SUPPLIER
+    # --------------------------------------------------
+
+    @app.route("/suppliers/create", methods=["GET", "POST"])
+    @login_required
+    def supplier_create():
+        if request.method == "POST":
+            try:
+                values = supplier_form_values()
+
+                supplier = Supplier(
+                    **values,
+                    is_active=True,
+                )
+
+                db.session.add(supplier)
+                db.session.commit()
+
+                flash("Supplier added successfully.", "success")
+                return redirect(url_for("suppliers_list"))
+
+            except ValueError as exc:
+                db.session.rollback()
+                flash(str(exc), "danger")
+
+            except Exception:
+                db.session.rollback()
+                current_app.logger.exception("Supplier creation failed")
+                flash("Unable to save the supplier.", "danger")
+
+        return render_template("suppliers/form.html", supplier=None)
+
+    # --------------------------------------------------
+    # EDIT SUPPLIER
+    # --------------------------------------------------
+
+    @app.route("/suppliers/<int:supplier_id>/edit", methods=["GET", "POST"])
+    @login_required
+    def supplier_edit(supplier_id):
+        supplier = db.session.get(Supplier, supplier_id)
+
+        if supplier is None:
+            flash("Supplier not found.", "warning")
+            return redirect(url_for("suppliers_list"))
+
+        if request.method == "POST":
+            try:
+                values = supplier_form_values()
+
+                for field, value in values.items():
+                    setattr(supplier, field, value)
+
+                db.session.commit()
+
+                flash("Supplier updated successfully.", "success")
+                return redirect(
+                    url_for("supplier_detail", supplier_id=supplier.id)
+                )
+
+            except ValueError as exc:
+                db.session.rollback()
+                flash(str(exc), "danger")
+
+            except Exception:
+                db.session.rollback()
+                current_app.logger.exception("Supplier update failed")
+                flash("Unable to update the supplier.", "danger")
+
+        return render_template("suppliers/form.html", supplier=supplier)
+
+    # --------------------------------------------------
+    # SUPPLIER DETAILS
+    # --------------------------------------------------
+
+    @app.route("/suppliers/<int:supplier_id>")
+    @login_required
+    def supplier_detail(supplier_id):
+        supplier = db.session.get(Supplier, supplier_id)
+
+        if supplier is None:
+            flash("Supplier not found.", "warning")
+            return redirect(url_for("suppliers_list"))
+
+        purchases = (
+            Purchase.query.filter_by(supplier_id=supplier.id)
+            .order_by(Purchase.purchase_date.desc())
+            .all()
+        )
+
+        purchase_total = sum(
+            float(purchase.total_amount or 0)
+            for purchase in purchases
+        )
+
+        return render_template(
+            "suppliers/detail.html",
+            supplier=supplier,
+            purchases=purchases,
+            purchase_total=purchase_total,
+        )
+
+    # --------------------------------------------------
+    # ACTIVATE / DEACTIVATE SUPPLIER
+    # --------------------------------------------------
+
+    @app.route(
+        "/suppliers/<int:supplier_id>/toggle-status",
+        methods=["POST"],
+    )
+    @login_required
+    def supplier_toggle_status(supplier_id):
+        supplier = db.session.get(Supplier, supplier_id)
+
+        if supplier is None:
+            flash("Supplier not found.", "warning")
+            return redirect(url_for("suppliers_list"))
+
+        supplier.is_active = not supplier.is_active
+
+        try:
+            db.session.commit()
+
+            message = "activated" if supplier.is_active else "deactivated"
+            flash(f"Supplier {message} successfully.", "success")
+
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Supplier status update failed")
+            flash("Unable to change supplier status.", "danger")
+
+        return redirect(url_for("suppliers_list"))
 
     return app
 
@@ -2097,9 +2426,7 @@ if __name__ == "__main__":
             time_module.sleep(0.2)
 
     if not server_ready:
-        raise RuntimeError(
-            "Flask server failed to start on port 5001."
-        )
+        raise RuntimeError("Flask server failed to start on port 5001.")
 
     webview.create_window(
         "MobileStore ERP",

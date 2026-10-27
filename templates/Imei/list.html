@@ -1,0 +1,177 @@
+
+{% extends "base.html" %}
+
+{% block title %}IMEI Records | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">IMEI Records</h2>
+            <p class="text-secondary mb-0">
+                Track individual handsets and their stock status.
+            </p>
+        </div>
+        <a href="{{ url_for('products_list') }}"
+           class="btn btn-outline-primary">
+            <i class="bi bi-box-seam me-1"></i>
+            Products
+        </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        {% for key, label in [
+            ('total', 'Total Handsets'),
+            ('in_stock', 'In Stock'),
+            ('sold', 'Sold'),
+            ('returned', 'Returned'),
+            ('damaged', 'Damaged')
+        ] %}
+        <div class="col-6 col-md-4 col-xl">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-secondary mb-2">
+                        {{ label }}
+                    </div>
+                    <div class="fs-3 fw-bold">
+                        {{ counts[key] }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+
+            <form method="GET"
+                  action="{{ url_for('imei_records_list') }}"
+                  class="row g-2 mb-4">
+
+                <div class="col-12 col-lg-7">
+                    <input type="search"
+                           name="q"
+                           class="form-control"
+                           value="{{ search }}"
+                           placeholder="Search IMEI, product, brand or code">
+                </div>
+
+                <div class="col-8 col-lg-3">
+                    <select name="status" class="form-select">
+                        <option value="">All statuses</option>
+                        <option value="in_stock"
+                            {% if selected_status == 'in_stock' %}selected{% endif %}>
+                            In Stock
+                        </option>
+                        <option value="sold"
+                            {% if selected_status == 'sold' %}selected{% endif %}>
+                            Sold
+                        </option>
+                        <option value="returned"
+                            {% if selected_status == 'returned' %}selected{% endif %}>
+                            Returned
+                        </option>
+                        <option value="damaged"
+                            {% if selected_status == 'damaged' %}selected{% endif %}>
+                            Damaged
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-4 col-lg-2 d-grid">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-search me-1"></i>
+                        Search
+                    </button>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th>Product Code</th>
+                            <th>IMEI Number 1</th>
+                            <th>IMEI Number 2</th>
+                            <th>Status</th>
+                            <th>Invoice ID</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">
+                                    {{ record.product.name }}
+                                </div>
+                                <div class="small text-secondary">
+                                    {{ record.product.brand or '' }}
+                                    {{ record.product.model or '' }}
+                                </div>
+                            </td>
+
+                            <td>{{ record.product.product_code }}</td>
+
+                            <td>
+                                <code>{{ record.imei1 }}</code>
+                            </td>
+
+                            <td>
+                                {% if record.imei2 %}
+                                    <code>{{ record.imei2 }}</code>
+                                {% else %}
+                                    <span class="text-secondary">—</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if record.status == 'in_stock' %}
+                                    <span class="badge text-bg-success">In Stock</span>
+                                {% elif record.status == 'sold' %}
+                                    <span class="badge text-bg-primary">Sold</span>
+                                {% elif record.status == 'returned' %}
+                                    <span class="badge text-bg-warning">Returned</span>
+                                {% elif record.status == 'damaged' %}
+                                    <span class="badge text-bg-danger">Damaged</span>
+                                {% else %}
+                                    <span class="badge text-bg-secondary">
+                                        {{ record.status }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if record.sale_id %}
+                                    #{{ record.sale_id }}
+                                {% else %}
+                                    <span class="text-secondary">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="fs-5 fw-semibold mb-1">
+                                    No IMEI records found
+                                </div>
+                                <div class="text-secondary">
+                                    Add a tracked product with an IMEI, or change your search.
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="small text-secondary">
+                Showing {{ records|length }} matching handset record(s).
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

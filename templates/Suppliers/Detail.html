@@ -1,0 +1,155 @@
+
+{% extends "base.html" %}
+
+{% block title %}Supplier Details | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <a href="{{ url_for('suppliers_list') }}" class="text-secondary text-decoration-none">
+                <i class="bi bi-arrow-left me-1"></i> Back to suppliers
+            </a>
+            <div class="d-flex align-items-center gap-2 mt-3">
+                <h2 class="fw-bold mb-0">{{ supplier.name }}</h2>
+                {% if supplier.is_active %}
+                    <span class="badge text-bg-success">Active</span>
+                {% else %}
+                    <span class="badge text-bg-secondary">Inactive</span>
+                {% endif %}
+            </div>
+            <p class="text-secondary mb-0">{{ supplier.company_name or 'Supplier profile' }}</p>
+        </div>
+        <a href="{{ url_for('supplier_edit', supplier_id=supplier.id) }}"
+           class="btn btn-primary">
+            <i class="bi bi-pencil me-1"></i> Edit Supplier
+        </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="text-secondary small">Linked Purchases</div>
+                    <h3 class="fw-bold mb-0">{{ purchases|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="text-secondary small">Total Purchase Value</div>
+                    <h3 class="fw-bold mb-0">₹{{ "{:,.2f}".format(purchase_total) }}</h3>
+                    <div class="small text-secondary mt-1">Not an outstanding balance</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="text-secondary small">Delivery Lead Time</div>
+                    <h3 class="fw-bold mb-0">{{ supplier.delivery_lead_time or 0 }} days</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-white border-0 px-4 pt-4">
+            <h5 class="fw-bold mb-0">Supplier Information</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-md-6 col-xl-4">
+                    <div class="small text-secondary mb-1">Company Name</div>
+                    <div class="fw-semibold">{{ supplier.company_name or '-' }}</div>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                    <div class="small text-secondary mb-1">Contact Person</div>
+                    <div class="fw-semibold">{{ supplier.contact_person or '-' }}</div>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                    <div class="small text-secondary mb-1">Category</div>
+                    <div class="fw-semibold">{{ supplier.supplier_category or '-' }}</div>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                    <div class="small text-secondary mb-1">Mobile Number 1</div>
+                    <div class="fw-semibold">{{ supplier.phone or '-' }}</div>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                    <div class="small text-secondary mb-1">Mobile Number 2</div>
+                    <div class="fw-semibold">{{ supplier.mobile_number_2 or '-' }}</div>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                    <div class="small text-secondary mb-1">Email</div>
+                    <div class="fw-semibold">{{ supplier.email or '-' }}</div>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                    <div class="small text-secondary mb-1">GST Number</div>
+                    <div class="fw-semibold">{{ supplier.gst_number or '-' }}</div>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                    <div class="small text-secondary mb-1">Payment Terms</div>
+                    <div class="fw-semibold">{{ supplier.payment_terms or '-' }}</div>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                    <div class="small text-secondary mb-1">Address</div>
+                    <div class="fw-semibold">{{ supplier.address or '-' }}</div>
+                </div>
+                <div class="col-12">
+                    <div class="small text-secondary mb-1">Notes</div>
+                    <div>{{ supplier.notes or 'No notes added.' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 px-4 pt-4">
+            <h5 class="fw-bold mb-1">Purchase History</h5>
+            <p class="small text-secondary mb-0">
+                Purchases currently recorded against this supplier.
+            </p>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Invoice Number</th>
+                            <th>Purchase Date</th>
+                            <th>Status</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for purchase in purchases %}
+                        <tr>
+                            <td class="fw-semibold">{{ purchase.invoice_number }}</td>
+                            <td>
+                                {{ purchase.purchase_date.strftime('%d-%m-%Y') if purchase.purchase_date else '-' }}
+                            </td>
+                            <td>
+                                <span class="badge text-bg-light border">
+                                    {{ (purchase.status or 'Unknown')|replace('_', ' ')|title }}
+                                </span>
+                            </td>
+                            <td class="text-end fw-semibold">
+                                ₹{{ "{:,.2f}".format(purchase.total_amount or 0) }}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-secondary py-4">
+                                No purchases have been recorded for this supplier yet.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

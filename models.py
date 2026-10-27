@@ -36,39 +36,58 @@ class User(UserMixin, TimestampMixin, db.Model):
 
     def to_dict(self):
         return {
-            "id": self.id, "username": self.username, "full_name": self.full_name,
-            "role": self.role, "is_active": self.is_active,
+            "id": self.id,
+            "username": self.username,
+            "full_name": self.full_name,
+            "role": self.role,
+            "is_active": self.is_active,
         }
+
 
 class Product(TimestampMixin, db.Model):
     __tablename__ = "products"
 
     id = db.Column(db.Integer, primary_key=True)
+
+    # Product identification
     product_code = db.Column(db.String(50), unique=True, nullable=False)
-    barcode = db.Column(db.String(100), unique=True)
+    barcode = db.Column(db.String(100), unique=True, nullable=True)
+
+    # Product details
     name = db.Column(db.String(150), nullable=False, index=True)
     brand = db.Column(db.String(100))
     model = db.Column(db.String(100))
     category = db.Column(db.String(80), default="Mobile")
+
+    # Variant details
+    variant = db.Column(db.String(100))
     color = db.Column(db.String(50))
-    ram = db.Column(db.String(30))
-    storage = db.Column(db.String(30))
-    hsn_code = db.Column(db.String(30))
+
+    # Sealed or Used
+    condition = db.Column(db.String(30), nullable=False, default="Sealed")
+    used_grade = db.Column(db.String(30))
+    warranty_months = db.Column(db.Integer, default=0)
+
+    # Tax and pricing
+    hsn_code = db.Column(db.String(30), nullable=True)
     gst_percent = db.Column(db.Float, default=0, nullable=False)
     cost_price = db.Column(db.Float, default=0, nullable=False)
     selling_price = db.Column(db.Float, default=0, nullable=False)
+
+    # Stock quantity
     stock_quantity = db.Column(db.Integer, default=0, nullable=False)
     reorder_level = db.Column(db.Integer, default=5, nullable=False)
+
+    # Individual handset tracking
     track_imei = db.Column(db.Boolean, default=True, nullable=False)
+
+    # Product activation status
     is_active = db.Column(db.Boolean, default=True, nullable=False)
 
-    # New Product Management fields
-    product_type = db.Column(
-        db.String(20), nullable=False, default="Sealed"
-    )
-    condition = db.Column(db.String(30), nullable=True)
-    warranty_months = db.Column(db.Integer, nullable=True)
+    # Relationship with individual handset IMEI records
+    imei_records = db.relationship("IMEIRecord", back_populates="product", lazy=True)
 
+    # Convert product object to dictionary
     def to_dict(self):
         return {
             "id": self.id,
@@ -78,9 +97,11 @@ class Product(TimestampMixin, db.Model):
             "brand": self.brand,
             "model": self.model,
             "category": self.category,
+            "variant": self.variant,
             "color": self.color,
-            "ram": self.ram,
-            "storage": self.storage,
+            "condition": self.condition,
+            "used_grade": self.used_grade,
+            "warranty_months": self.warranty_months,
             "hsn_code": self.hsn_code,
             "gst_percent": self.gst_percent,
             "cost_price": self.cost_price,
@@ -89,20 +110,39 @@ class Product(TimestampMixin, db.Model):
             "reorder_level": self.reorder_level,
             "track_imei": self.track_imei,
             "is_active": self.is_active,
-            "product_type": self.product_type,
-            "condition": self.condition,
-            "warranty_months": self.warranty_months,
         }
 
 
 class IMEIRecord(TimestampMixin, db.Model):
     __tablename__ = "imei_records"
     id = db.Column(db.Integer, primary_key=True)
-    product_id = db.Column(db.Integer, db.ForeignKey("products.id"), nullable=False)
-    imei = db.Column(db.String(30), unique=True, nullable=False, index=True)
+    
+    product_id = db.Column(
+    db.Integer,
+    db.ForeignKey("products.id"),
+    nullable=False,
+    index=True
+)
+    
+     # First IMEI — required
+    imei1 = db.Column(
+        db.String(15),
+        unique=True,
+        nullable=False,
+        index=True
+    )
+
+    # Second IMEI — optional
+    imei2 = db.Column(
+        db.String(15),
+        unique=True,
+        nullable=True,
+        index=True
+    )
+    
     status = db.Column(db.String(20), default="in_stock", nullable=False)
     sale_id = db.Column(db.Integer, db.ForeignKey("sales.id"))
-    product = db.relationship("Product", backref="imei_records")
+    product = db.relationship("Product", back_populates="imei_records")
 
 
 class Customer(TimestampMixin, db.Model):
@@ -116,20 +156,49 @@ class Customer(TimestampMixin, db.Model):
 
     def to_dict(self):
         return {
-            "id": self.id, "name": self.name, "phone": self.phone,
-            "email": self.email, "address": self.address, "gst_number": self.gst_number,
+            "id": self.id,
+            "name": self.name,
+            "phone": self.phone,
+            "email": self.email,
+            "address": self.address,
+            "gst_number": self.gst_number,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
 
+
+
 class Supplier(TimestampMixin, db.Model):
     __tablename__ = "suppliers"
+
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(150), nullable=False)
+
+    # Basic information
+    name = db.Column(db.String(150), nullable=False, index=True)
+    company_name = db.Column(db.String(150))
+    contact_person = db.Column(db.String(100))
+
+    # Contact information
     phone = db.Column(db.String(20))
+    mobile_number_2 = db.Column(db.String(20))
     email = db.Column(db.String(150))
     address = db.Column(db.Text)
+
+    # Business information
     gst_number = db.Column(db.String(30))
+    supplier_category = db.Column(db.String(80))
+    payment_terms = db.Column(db.String(50))
+    delivery_lead_time = db.Column(db.Integer, default=0)
+
+    # Additional information
+    notes = db.Column(db.Text)
+    is_active = db.Column(
+        db.Boolean,
+        default=True,
+        nullable=False,
+    )
+
+
 
 
 class Purchase(TimestampMixin, db.Model):
@@ -172,7 +241,9 @@ class Sale(TimestampMixin, db.Model):
     total_amount = db.Column(db.Float, default=0, nullable=False)
     status = db.Column(db.String(30), default="completed", nullable=False)
     payments = db.relationship(
-        "Payment", back_populates="sale", lazy="select",
+        "Payment",
+        back_populates="sale",
+        lazy="select",
         cascade="all, delete-orphan",
     )
     customer = db.relationship("Customer")
@@ -188,7 +259,9 @@ class SaleItem(db.Model):
     unit_price = db.Column(db.Float, nullable=False)
     tax_amount = db.Column(db.Float, default=0, nullable=False)
     subtotal = db.Column(db.Float, nullable=False)
-    sale = db.relationship("Sale", backref=db.backref("items", cascade="all, delete-orphan"))
+    sale = db.relationship(
+        "Sale", backref=db.backref("items", cascade="all, delete-orphan")
+    )
     product = db.relationship("Product")
 
 
@@ -242,25 +315,20 @@ class AuditLog(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), default=utc_now)
     user = db.relationship("User")
 
+
 class StoreSettings(TimestampMixin, db.Model):
     __tablename__ = "store_settings"
 
     id = db.Column(db.Integer, primary_key=True)
 
-    store_name = db.Column(
-        db.String(150), nullable=False, default="My Store"
-    )
+    store_name = db.Column(db.String(150), nullable=False, default="My Store")
     logo_filename = db.Column(db.String(255))
     address = db.Column(db.Text)
     phone = db.Column(db.String(30))
     gstin = db.Column(db.String(30))
 
-    paper_size = db.Column(
-        db.String(20), nullable=False, default="A4"
-    )
-    orientation = db.Column(
-        db.String(20), nullable=False, default="portrait"
-    )
+    paper_size = db.Column(db.String(20), nullable=False, default="A4")
+    orientation = db.Column(db.String(20), nullable=False, default="portrait")
 
     custom_width_mm = db.Column(db.Float, default=100)
     custom_height_mm = db.Column(db.Float, default=150)
