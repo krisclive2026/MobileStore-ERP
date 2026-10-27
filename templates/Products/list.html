@@ -1,12 +1,16 @@
 
 {% extends "base.html" %}
 
+{% block title %}Products | Mobile Store ERP{% endblock %}
+
 {% block content %}
+
 <style>
 .products-page {
     padding: 24px;
     color: #1e293b;
 }
+
 .products-header {
     display: flex;
     justify-content: space-between;
@@ -15,20 +19,25 @@
     flex-wrap: wrap;
     margin-bottom: 24px;
 }
+
 .products-header h1 {
     margin: 0 0 6px;
     font-size: 28px;
     font-weight: 700;
 }
+
 .products-header p {
     margin: 0;
     color: #64748b;
 }
+
 .header-actions {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    align-items: center;
 }
+
 .btn {
     display: inline-block;
     padding: 10px 16px;
@@ -39,66 +48,100 @@
     font-size: 14px;
     font-weight: 600;
 }
+
 .btn-primary {
     color: white;
     background: #2563eb;
 }
+
+.btn-primary:hover {
+    background: #1d4ed8;
+    color: white;
+}
+
 .btn-secondary {
     color: #334155;
     background: #e2e8f0;
 }
+
+.btn-secondary:hover {
+    background: #cbd5e1;
+}
+
+.btn-danger {
+    color: white;
+    background: #dc2626;
+}
+
+.btn-danger:hover {
+    background: #b91c1c;
+}
+
 .summary-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 18px;
     margin-bottom: 24px;
 }
-.summary-card, .panel {
+
+.summary-card,
+.panel {
     background: white;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     box-shadow: 0 3px 12px rgba(15, 23, 42, .04);
 }
+
 .summary-card {
     padding: 20px;
 }
+
 .summary-label {
     color: #64748b;
     font-size: 14px;
 }
+
 .summary-number {
     font-size: 28px;
     font-weight: 700;
     margin-top: 8px;
 }
+
 .panel {
     overflow: hidden;
     margin-bottom: 22px;
 }
+
 .panel-heading {
     padding: 18px 20px;
     border-bottom: 1px solid #e2e8f0;
 }
+
 .panel-heading h2 {
     margin: 0;
     font-size: 18px;
 }
+
 .panel-body {
     padding: 20px;
 }
+
 .filter-grid {
     display: grid;
     grid-template-columns: 2fr 1fr 1fr auto;
     gap: 12px;
     align-items: end;
 }
+
 .field label {
     display: block;
     font-size: 13px;
     font-weight: 600;
     margin-bottom: 7px;
 }
-.field input, .field select {
+
+.field input,
+.field select {
     width: 100%;
     box-sizing: border-box;
     padding: 11px 12px;
@@ -107,14 +150,17 @@
     background: white;
     font-size: 14px;
 }
+
 .table-wrap {
     overflow-x: auto;
 }
+
 .products-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 850px;
+    min-width: 1050px;
 }
+
 .products-table th {
     background: #f8fafc;
     color: #64748b;
@@ -123,99 +169,282 @@
     letter-spacing: .04em;
     text-align: left;
     padding: 14px 16px;
+    white-space: nowrap;
 }
+
 .products-table td {
     padding: 15px 16px;
     border-top: 1px solid #e2e8f0;
     font-size: 14px;
 }
+
 .product-name {
     font-weight: 600;
     color: #0f172a;
 }
+
 .muted {
     color: #64748b;
     font-size: 12px;
     margin-top: 4px;
 }
+
 .stock-badge {
     display: inline-block;
     padding: 5px 9px;
     border-radius: 20px;
     font-size: 12px;
     font-weight: 600;
+    white-space: nowrap;
 }
+
 .stock-ok {
     color: #166534;
     background: #dcfce7;
 }
+
 .stock-low {
     color: #92400e;
     background: #fef3c7;
 }
+
 .stock-out {
     color: #991b1b;
     background: #fee2e2;
 }
+
+.stock-inactive {
+    color: #475569;
+    background: #e2e8f0;
+}
+
 .edit-link {
     color: #2563eb;
     text-decoration: none;
     font-weight: 600;
+    margin-right: 8px;
 }
+
+.edit-link:hover {
+    text-decoration: underline;
+}
+
+.action-form {
+    display: inline;
+}
+
+.action-button {
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
 .empty-state {
     text-align: center;
-    padding: 40px 20px;
+    padding: 40px 20px !important;
     color: #64748b;
 }
+
+/* Product type modal */
+
+.product-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1055;
+    background: rgba(15, 23, 42, .6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.product-modal.d-none {
+    display: none !important;
+}
+
+.product-modal-card {
+    width: 100%;
+    max-width: 500px;
+    background: #fff;
+    border-radius: 18px;
+    padding: 26px;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, .2);
+}
+
+.modal-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+.modal-heading h2 {
+    font-size: 23px;
+    font-weight: 700;
+    margin: 0 0 6px;
+}
+
+.modal-heading p {
+    color: #64748b;
+    margin: 0;
+    font-size: 14px;
+}
+
+.modal-close {
+    border: 0;
+    background: #f1f5f9;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    font-size: 22px;
+    cursor: pointer;
+    color: #334155;
+}
+
+.product-type-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #0f172a;
+    margin-bottom: 12px;
+    transition: border-color .2s, background .2s;
+}
+
+.product-type-option:hover {
+    border-color: #93c5fd;
+    background: #f8fbff;
+    color: #0f172a;
+}
+
+.type-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    font-size: 25px;
+    font-weight: 700;
+}
+
+.type-sealed {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.type-used {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.type-description strong {
+    display: block;
+    font-size: 15px;
+    margin-bottom: 5px;
+}
+
+.type-description small {
+    display: block;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.type-arrow {
+    margin-left: auto;
+    color: #64748b;
+    font-size: 22px;
+}
+
+.modal-footer-note {
+    color: #64748b;
+    font-size: 12px;
+    text-align: center;
+    margin: 16px 0 0;
+}
+
 @media (max-width: 850px) {
-    .summary-grid { grid-template-columns: 1fr; }
-    .filter-grid { grid-template-columns: 1fr; }
-    .products-page { padding: 14px; }
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .products-page {
+        padding: 14px;
+    }
+
+    .products-header h1 {
+        font-size: 24px;
+    }
 }
 </style>
 
+{% set product_items = products|default([], true)|list %}
+{% set active_products = product_items|selectattr('is_active')|list %}
+{% set low_stock_count = active_products|selectattr('stock_quantity', 'le', 5)|list|length %}
+{% set out_stock_count = active_products|selectattr('stock_quantity', 'equalto', 0)|list|length %}
+
 <div class="products-page">
+
+    <!-- Page Header -->
+
     <div class="products-header">
         <div>
             <h1>Products</h1>
             <p>Manage your mobile phones, accessories, pricing and stock.</p>
         </div>
+
         <div class="header-actions">
-            <a href="{{ url_for('dashboard_page') }}" class="btn btn-secondary">
+            <a href="{{ url_for('dashboard_page') }}"
+               class="btn btn-secondary">
                 Back to Dashboard
             </a>
-            <a href="{{ url_for('product_create') }}" class="btn btn-primary">
+
+            <button type="button"
+                    class="btn btn-primary"
+                    id="openProductModal">
                 + Add Product
-            </a>
+            </button>
         </div>
     </div>
 
-    {% set product_items = products|default([], true)|list %}
-    {% set low_stock_count = product_items|selectattr('stock_quantity', 'le', 5)|list|length %}
-    {% set out_stock_count = product_items|selectattr('stock_quantity', 'equalto', 0)|list|length %}
+    <!-- Summary Cards -->
 
     <div class="summary-grid">
         <div class="summary-card">
-            <div class="summary-label">Products Listed</div>
-            <div class="summary-number">{{ product_items|length }}</div>
+            <div class="summary-label">Active Products</div>
+            <div class="summary-number">{{ active_products|length }}</div>
         </div>
+
         <div class="summary-card">
             <div class="summary-label">Low Stock (5 or less)</div>
             <div class="summary-number">{{ low_stock_count }}</div>
         </div>
+
         <div class="summary-card">
             <div class="summary-label">Out of Stock</div>
             <div class="summary-number">{{ out_stock_count }}</div>
         </div>
     </div>
 
+    <!-- Search and Filters -->
+
     <div class="panel">
         <div class="panel-heading">
             <h2>Search &amp; Filter Products</h2>
         </div>
+
         <div class="panel-body">
             <form method="GET" action="{{ url_for('products_list') }}">
                 <div class="filter-grid">
+
                     <div class="field">
                         <label for="search">Search</label>
                         <input
@@ -223,13 +452,14 @@
                             id="search"
                             name="search"
                             placeholder="Product name, code, brand or model"
-                            value="{{ request.args.get('search', '') }}"
-                        >
+                            value="{{ request.args.get('search', '') }}">
                     </div>
+
                     <div class="field">
                         <label for="category">Category</label>
                         <select id="category" name="category">
                             <option value="">All Categories</option>
+
                             {% for category in categories|default([], true) %}
                             <option value="{{ category }}"
                                 {% if request.args.get('category') == category %}selected{% endif %}>
@@ -238,88 +468,165 @@
                             {% endfor %}
                         </select>
                     </div>
+
                     <div class="field">
                         <label for="stock">Stock Status</label>
                         <select id="stock" name="stock">
                             <option value="">All Stock</option>
+
                             <option value="in"
                                 {% if request.args.get('stock') == 'in' %}selected{% endif %}>
                                 In Stock
                             </option>
+
                             <option value="low"
                                 {% if request.args.get('stock') == 'low' %}selected{% endif %}>
                                 Low Stock
                             </option>
+
                             <option value="out"
                                 {% if request.args.get('stock') == 'out' %}selected{% endif %}>
                                 Out of Stock
                             </option>
                         </select>
                     </div>
+
                     <div class="header-actions">
-                        <button type="submit" class="btn btn-primary">Search</button>
-                        <a href="{{ url_for('products_list') }}" class="btn btn-secondary">Reset</a>
+                        <button type="submit" class="btn btn-primary">
+                            Search
+                        </button>
+
+                        <a href="{{ url_for('products_list') }}"
+                           class="btn btn-secondary">
+                            Reset
+                        </a>
                     </div>
+
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Product Table -->
+
     <div class="panel">
         <div class="panel-heading">
             <h2>Product List</h2>
         </div>
+
         <div class="table-wrap">
             <table class="products-table">
                 <thead>
                     <tr>
                         <th>Product</th>
                         <th>Product Code</th>
+                        <th>Type</th>
                         <th>Category</th>
                         <th>Cost Price</th>
                         <th>Selling Price</th>
                         <th>Stock</th>
                         <th>Status</th>
-                        <th>Action</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
+
                 <tbody>
-                    {% for product in products %}
+                    {% for product in product_items %}
                     <tr>
                         <td>
-                            <div class="product-name">{{ product.name }}</div>
+                            <div class="product-name">
+                                {{ product.name }}
+                            </div>
+
                             <div class="muted">
                                 {{ product.brand or '' }}
-                                {% if product.model %} · {{ product.model }}{% endif %}
-                                {% if product.ram %} · {{ product.ram }}{% endif %}
-                                {% if product.storage %}/ {{ product.storage }}{% endif %}
+                                {% if product.model %}
+                                    · {{ product.model }}
+                                {% endif %}
+                                {% if product.ram %}
+                                    · {{ product.ram }}
+                                {% endif %}
+                                {% if product.storage %}
+                                    / {{ product.storage }}
+                                {% endif %}
+                                {% if product.condition and product.product_type == 'Used' %}
+                                    · {{ product.condition }}
+                                {% endif %}
                             </div>
                         </td>
+
                         <td>{{ product.product_code or '-' }}</td>
-                        <td>{{ product.category or '-' }}</td>
-                        <td>₹{{ "%.2f"|format(product.cost_price or 0) }}</td>
-                        <td>₹{{ "%.2f"|format(product.selling_price or 0) }}</td>
-                        <td>{{ product.stock_quantity or 0 }}</td>
+
                         <td>
-                            {% if (product.stock_quantity or 0) == 0 %}
-                                <span class="stock-badge stock-out">Out of Stock</span>
-                            {% elif (product.stock_quantity or 0) <= (product.reorder_level or 5) %}
-                                <span class="stock-badge stock-low">Low Stock</span>
+                            {% if product.product_type == 'Used' %}
+                                <span class="stock-badge stock-low">Used</span>
                             {% else %}
-                                <span class="stock-badge stock-ok">In Stock</span>
+                                <span class="stock-badge stock-ok">Sealed</span>
                             {% endif %}
                         </td>
+
+                        <td>{{ product.category or '-' }}</td>
+
                         <td>
+                            ₹{{ "%.2f"|format(product.cost_price or 0) }}
+                        </td>
+
+                        <td>
+                            ₹{{ "%.2f"|format(product.selling_price or 0) }}
+                        </td>
+
+                        <td>{{ product.stock_quantity or 0 }}</td>
+
+                        <td>
+                            {% if not product.is_active %}
+                                <span class="stock-badge stock-inactive">
+                                    Inactive
+                                </span>
+                            {% elif (product.stock_quantity or 0) == 0 %}
+                                <span class="stock-badge stock-out">
+                                    Out of Stock
+                                </span>
+                            {% elif (product.stock_quantity or 0) <= (product.reorder_level or 5) %}
+                                <span class="stock-badge stock-low">
+                                    Low Stock
+                                </span>
+                            {% else %}
+                                <span class="stock-badge stock-ok">
+                                    In Stock
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-nowrap">
                             <a class="edit-link"
                                href="{{ url_for('product_edit', product_id=product.id) }}">
                                 Edit
                             </a>
+
+                            {% if product.is_active %}
+                            <form method="POST"
+                                  action="{{ url_for('product_deactivate', product_id=product.id) }}"
+                                  class="action-form"
+                                  onsubmit="return confirm('Deactivate this product? Its transaction history will be preserved.');">
+
+                                <input type="hidden"
+                                       name="csrf_token"
+                                       value="{{ csrf_token() }}">
+
+                                <button type="submit"
+                                        class="btn btn-danger action-button">
+                                    Deactivate
+                                </button>
+                            </form>
+                            {% endif %}
                         </td>
                     </tr>
+
                     {% else %}
                     <tr>
-                        <td colspan="8" class="empty-state">
-                            No products found. Click “Add Product” to create your first product.
+                        <td colspan="9" class="empty-state">
+                            No products found. Click “Add Product” to register
+                            your first product.
                         </td>
                     </tr>
                     {% endfor %}
@@ -328,4 +635,103 @@
         </div>
     </div>
 </div>
+
+<!-- Sealed / Used Product Selection Modal -->
+
+<div id="productTypeModal"
+     class="product-modal d-none"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="productTypeTitle">
+
+    <div class="product-modal-card">
+
+        <div class="modal-heading">
+            <div>
+                <h2 id="productTypeTitle">Register Product</h2>
+                <p>Choose the type of phone you want to add.</p>
+            </div>
+
+            <button type="button"
+                    class="modal-close"
+                    id="closeProductModal"
+                    aria-label="Close">
+                &times;
+            </button>
+        </div>
+
+        <a href="{{ url_for('product_create', type='Sealed') }}"
+           class="product-type-option">
+
+            <span class="type-icon type-sealed">S</span>
+
+            <span class="type-description">
+                <strong>Sealed Phone</strong>
+                <small>
+                    Register a brand-new sealed phone with pricing,
+                    stock and warranty details.
+                </small>
+            </span>
+
+            <span class="type-arrow">&rsaquo;</span>
+        </a>
+
+        <a href="{{ url_for('product_create', type='Used') }}"
+           class="product-type-option">
+
+            <span class="type-icon type-used">U</span>
+
+            <span class="type-description">
+                <strong>Used Phone</strong>
+                <small>
+                    Register a pre-owned phone with its condition
+                    and applicable warranty.
+                </small>
+            </span>
+
+            <span class="type-arrow">&rsaquo;</span>
+        </a>
+
+        <p class="modal-footer-note">
+            You can manage pricing and stock on the product form.
+        </p>
+
+    </div>
+</div>
+
+<script>
+(function () {
+    const modal = document.getElementById("productTypeModal");
+    const openButton = document.getElementById("openProductModal");
+    const closeButton = document.getElementById("closeProductModal");
+
+    function openModal() {
+        modal.classList.remove("d-none");
+        document.body.style.overflow = "hidden";
+        closeButton.focus();
+    }
+
+    function closeModal() {
+        modal.classList.add("d-none");
+        document.body.style.overflow = "";
+        openButton.focus();
+    }
+
+    openButton.addEventListener("click", openModal);
+    closeButton.addEventListener("click", closeModal);
+
+    modal.addEventListener("click", function (event) {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && !modal.classList.contains("d-none")) {
+            closeModal();
+        }
+    });
+})();
+</script>
+
 {% endblock %}

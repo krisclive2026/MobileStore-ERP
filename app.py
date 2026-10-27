@@ -41,7 +41,7 @@ from flask import (
     redirect,
     url_for,
     flash,
-    current_app
+    current_app,jsonify
 )
 from flask_login import (
     LoginManager,
@@ -537,63 +537,201 @@ def create_app():
 
         return value
 
-    def product_form_values():
-        """Validate and return product form values."""
-        product_code = request.form.get("product_code", "").strip()
-        name = request.form.get("name", "").strip()
+    
+def product_form_values():
+    """Validate and return product form values."""
 
-        if not product_code:
-            raise ValueError("Product code is required.")
+    product_code = request.form.get("product_code", "").strip()
+    name = request.form.get("name", "").strip()
+    product_type = (
+        request.form.get("product_type", "Sealed").strip().title()
+    )
 
-        if len(product_code) > 50:
-            raise ValueError("Product code must be 50 characters or fewer.")
+    if not product_code:
+        while True:
+            product_code = (
+                f"PRD-{datetime.now().strftime('%y%m%d%H%M%S')}-"
+                f"{os.urandom(2).hex().upper()}"
+            )
+            if not Product.query.filter_by(
+                product_code=product_code
+            ).first():
+                break
 
-        if not name:
-            raise ValueError("Product name is required.")
+    if len(product_code) > 50:
+        raise ValueError("Product code must be 50 characters or fewer.")
 
-        if len(name) > 150:
-            raise ValueError("Product name must be 150 characters or fewer.")
+    if not name:
+        raise ValueError("Product name is required.")
 
-        values = {
-            "product_code": product_code,
-            "barcode": request.form.get("barcode", "").strip() or None,
-            "name": name,
-            "brand": request.form.get("brand", "").strip() or None,
-            "model": request.form.get("model", "").strip() or None,
-            "category": request.form.get("category", "").strip() or "Mobile",
-            "color": request.form.get("color", "").strip() or None,
-            "ram": request.form.get("ram", "").strip() or None,
-            "storage": request.form.get("storage", "").strip() or None,
-            "hsn_code": request.form.get("hsn_code", "").strip() or None,
-            "gst_percent": parse_number("gst_percent", 0.0, float),
-            "cost_price": parse_number("cost_price", 0.0, float),
-            "selling_price": parse_number("selling_price", 0.0, float),
-            "stock_quantity": parse_number("stock_quantity", 0, int),
-            "reorder_level": parse_number("reorder_level", 5, int),
-            "track_imei": request.form.get("track_imei") in ("on", "true", "1"),
-            "is_active": request.form.get("is_active") in ("on", "true", "1"),
+    if len(name) > 150:
+        raise ValueError("Product name must be 150 characters or fewer.")
+
+    if product_type not in {"Sealed", "Used"}:
+        raise ValueError("Choose Sealed or Used.")
+
+    condition = request.form.get("condition", "").strip() or None
+
+    if product_type == "Used":
+        allowed_conditions = {
+            "Excellent", "Good", "Fair", "For Parts"
         }
+        if condition not in allowed_conditions:
+            raise ValueError("Choose a valid used-phone condition.")
+    else:
+        condition = None
 
-        for field in ("gst_percent", "cost_price", "selling_price"):
-            if values[field] < 0:
-                raise ValueError(
-                    f"{field.replace('_', ' ').title()} cannot be negative."
-                )
+    def number(field, default=0.0):
+        raw = request.form.get(field, "").strip()
+        if not raw:
+            return default
+        try:
+            value = float(raw)
+        except ValueError:
+            raise ValueError(f"Enter a valid number for {field}.")
+        if not __import__("math").isfinite(value):
+            raise ValueError(f"Enter a valid number for {field}.")
+        return value
 
-        for field in ("stock_quantity", "reorder_level"):
-            if values[field] < 0:
-                raise ValueError(
-                    f"{field.replace('_', ' ').title()} cannot be negative."
-                )
+    def integer(field, default=0):
+        value = number(field, default)
+        if not value.is_integer():
+            raise ValueError(f"{field} must be a whole number.")
+        return int(value)
 
-        if values["gst_percent"] > 100:
-            raise ValueError("GST percentage cannot exceed 100.")
+    cost_price = number("cost_price")
+    selling_price = number("selling_price")
+    gst_percent = number("gst_percent")
+    stock_quantity = integer("stock_quantity")
+    reorder_level = integer("reorder_level", 5)
 
-        if values["barcode"] and len(values["barcode"]) > 100:
-            raise ValueError("Barcode must be 100 characters or fewer.")
+    if cost_price < 0 or selling_price < 0:
+        raise ValueError("Prices cannot be negative.")
 
-        return values
+    if not 0 <= gst_percent <= 100:
+        raise ValueError("GST must be between 0 and 100.")
 
+    if stock_quantity < 0 or reorder_level < 0:
+        raise ValueError("Stock and reorder level cannot be negative.")
+
+    warranty_raw = request.form.get("warranty_months", "").strip()
+    warranty_months = None
+
+    if warranty_raw:
+        try:
+            warranty_months = int(warranty_raw)
+        except ValueError:
+            raise ValueError("Warranty must be a whole number of months.")
+
+        if not 0 <= warranty_months <= 120:
+            raise ValueError("Warranty must be between 0 and 120 months.")
+
+    barcode = request.form.get("barcode", "").strip() or None
+
+    if barcode and len(barcode) > 100:
+        raise ValueError("Barcode must be 100 characters or fewer.")
+
+    return {
+        "product_code": product_code,
+        "barcode": barcode,
+        "name": name,
+        "brand": request.form.get("brand", "").strip() or None,
+        "model": request.form.get("model", "").strip() or None,
+        "category": request.form.get("category", "Mobile").strip() or "Mobile",
+        "color": request.form.get("color", "").strip() or None,
+        "ram": request.form.get("ram", "").strip() or None,
+        "storage": request.form.get("storage", "").strip() or None,
+        "hsn_code": request.form.get("hsn_code", "").strip() or None,
+        "gst_percent": gst_percent,
+        "cost_price": cost_price,
+        "selling_price": selling_price,
+        "stock_quantity": stock_quantity,
+        "reorder_level": reorder_level,
+        "track_imei": "track_imei" in request.form,
+        "is_active": "is_active" in request.form,
+        "product_type": product_type,
+        "condition": condition,
+        "warranty_months": warranty_months,
+    }
+
+    # --------------------------------------------------
+    # PRODUCTS: BARCODE LOOKUP
+    # --------------------------------------------------
+
+    @app.route("/products/barcode-lookup")
+    @login_required
+    def product_barcode_lookup():
+        barcode = request.args.get("barcode", "").strip()
+
+        if not barcode:
+            return jsonify({
+            "found": False,
+            "message": "Enter or scan a barcode.",
+        }), 400
+
+        product = Product.query.filter_by(barcode=barcode).first()
+
+        if not product:
+            return jsonify({
+            "found": False,
+            "message": "Barcode not found. You can enter the details manually.",
+        })
+
+        return jsonify({
+        "found": True,
+        "product": {
+            "product_code": product.product_code,
+            "barcode": product.barcode or "",
+            "name": product.name or "",
+            "brand": product.brand or "",
+            "model": product.model or "",
+            "category": product.category or "Mobile",
+            "color": product.color or "",
+            "ram": product.ram or "",
+            "storage": product.storage or "",
+            "hsn_code": product.hsn_code or "",
+            "gst_percent": product.gst_percent or 0,
+            "cost_price": product.cost_price or 0,
+            "selling_price": product.selling_price or 0,
+            "product_type": product.product_type or "Sealed",
+            "condition": product.condition or "",
+            "warranty_months": product.warranty_months or "",
+        },
+    })
+
+
+    # --------------------------------------------------
+    # PRODUCTS: DEACTIVATE
+    # --------------------------------------------------
+
+    @app.route("/products/<int:product_id>/deactivate", methods=["POST"])
+    @login_required
+    def product_deactivate(product_id):
+        product = db.session.get(Product, product_id)
+
+        if product is None:
+            flash("Product not found.", "danger")
+            return redirect(url_for("products_list"))
+
+        if not product.is_active:
+            flash("This product is already inactive.", "warning")
+            return redirect(url_for("products_list"))
+
+        try:
+            product.is_active = False
+            db.session.commit()
+            flash(
+            f"{product.name} has been deactivated. "
+            "Its transaction history has been preserved.",
+            "success",
+        )
+        except Exception:
+            db.session.rollback()
+            app.logger.exception("Product deactivation failed")
+            flash("Could not deactivate this product.", "danger")
+
+        return redirect(url_for("products_list"))
+   
     # --------------------------------------------------
     # BILLING: LIST AND SEARCH
     # --------------------------------------------------
@@ -1827,23 +1965,39 @@ def create_app():
     # --------------------------------------------------
     # PRODUCTS: CREATE
     # --------------------------------------------------
-
     @app.route("/products/create", methods=["GET", "POST"])
     @login_required
     def product_create():
+        selected_type = (
+            request.args.get("type")
+            or request.form.get("product_type")
+            or "Sealed"
+        ).strip().title()
+
+        if selected_type not in {"Sealed", "Used"}:
+            selected_type = "Sealed"
+
         if request.method == "POST":
             try:
                 values = product_form_values()
 
-                if Product.query.filter_by(
+                existing_code = Product.query.filter_by(
                     product_code=values["product_code"]
-                ).first():
+                ).first()
+
+                if existing_code:
                     raise ValueError("That product code already exists.")
 
-                if values["barcode"] and Product.query.filter_by(
-                    barcode=values["barcode"]
-                ).first():
-                    raise ValueError("That barcode already exists.")
+                if values.get("barcode"):
+                    existing_barcode = Product.query.filter_by(
+                        barcode=values["barcode"]
+                    ).first()
+
+                    if existing_barcode:
+                        raise ValueError(
+                            "That barcode already exists. "
+                            "Use the existing product or enter another barcode."
+                        )
 
                 product = Product(**values)
                 db.session.add(product)
@@ -1855,73 +2009,17 @@ def create_app():
             except ValueError as exc:
                 db.session.rollback()
                 flash(str(exc), "danger")
-            except Exception:
+
+            except Exception as exc:
                 db.session.rollback()
                 app.logger.exception("Product creation failed")
-                flash(
-                    "Could not save the product. Check its code and barcode.",
-                    "danger",
-                )
+                flash(f"Could not save the product: {exc}", "danger")
 
-        return render_template("products/form.html", product=None)
-
-    # --------------------------------------------------
-    # PRODUCTS: EDIT
-    # --------------------------------------------------
-
-    @app.route(
-        "/products/<int:product_id>/edit",
-        methods=["GET", "POST"],
-    )
-    @login_required
-    def product_edit(product_id):
-        product = db.session.get(Product, product_id)
-
-        if product is None:
-            flash("Product not found.", "danger")
-            return redirect(url_for("products_list"))
-
-        if request.method == "POST":
-            try:
-                values = product_form_values()
-
-                duplicate_code = Product.query.filter(
-                    Product.product_code == values["product_code"],
-                    Product.id != product.id,
-                ).first()
-
-                if duplicate_code:
-                    raise ValueError("That product code already exists.")
-
-                if values["barcode"]:
-                    duplicate_barcode = Product.query.filter(
-                        Product.barcode == values["barcode"],
-                        Product.id != product.id,
-                    ).first()
-
-                    if duplicate_barcode:
-                        raise ValueError("That barcode already exists.")
-
-                for field, value in values.items():
-                    setattr(product, field, value)
-
-                db.session.commit()
-                flash("Product updated successfully.", "success")
-                return redirect(url_for("products_list"))
-
-            except ValueError as exc:
-                db.session.rollback()
-                flash(str(exc), "danger")
-                product = db.session.get(Product, product_id)
-            except Exception:
-                db.session.rollback()
-                app.logger.exception("Product update failed")
-                flash("Could not update the product.", "danger")
-                product = db.session.get(Product, product_id)
-
-        return render_template("products/form.html", product=product)
-    
-
+        return render_template(
+            "products/form.html",
+            product=None,
+            selected_type=selected_type,
+        )
     # --------------------------------------------------
     # DASHBOARD
     # --------------------------------------------------

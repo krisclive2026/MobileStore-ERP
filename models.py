@@ -40,7 +40,6 @@ class User(UserMixin, TimestampMixin, db.Model):
             "role": self.role, "is_active": self.is_active,
         }
 
-
 class Product(TimestampMixin, db.Model):
     __tablename__ = "products"
 
@@ -63,16 +62,36 @@ class Product(TimestampMixin, db.Model):
     track_imei = db.Column(db.Boolean, default=True, nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
 
+    # New Product Management fields
+    product_type = db.Column(
+        db.String(20), nullable=False, default="Sealed"
+    )
+    condition = db.Column(db.String(30), nullable=True)
+    warranty_months = db.Column(db.Integer, nullable=True)
+
     def to_dict(self):
         return {
-            "id": self.id, "product_code": self.product_code, "barcode": self.barcode,
-            "name": self.name, "brand": self.brand, "model": self.model,
-            "category": self.category, "color": self.color, "ram": self.ram,
-            "storage": self.storage, "hsn_code": self.hsn_code,
-            "gst_percent": self.gst_percent, "cost_price": self.cost_price,
-            "selling_price": self.selling_price, "stock_quantity": self.stock_quantity,
-            "reorder_level": self.reorder_level, "track_imei": self.track_imei,
+            "id": self.id,
+            "product_code": self.product_code,
+            "barcode": self.barcode,
+            "name": self.name,
+            "brand": self.brand,
+            "model": self.model,
+            "category": self.category,
+            "color": self.color,
+            "ram": self.ram,
+            "storage": self.storage,
+            "hsn_code": self.hsn_code,
+            "gst_percent": self.gst_percent,
+            "cost_price": self.cost_price,
+            "selling_price": self.selling_price,
+            "stock_quantity": self.stock_quantity,
+            "reorder_level": self.reorder_level,
+            "track_imei": self.track_imei,
             "is_active": self.is_active,
+            "product_type": self.product_type,
+            "condition": self.condition,
+            "warranty_months": self.warranty_months,
         }
 
 
