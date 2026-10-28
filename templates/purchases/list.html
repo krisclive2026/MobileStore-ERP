@@ -1,0 +1,295 @@
+
+{% extends "base.html" %}
+
+{% block title %}Purchases | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <span class="text-primary fw-semibold small">INVENTORY MANAGEMENT</span>
+            <h2 class="fw-bold mt-1 mb-1">Purchase Orders</h2>
+            <p class="text-secondary mb-0">
+                Manage supplier invoices, incoming stock and payments.
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('suppliers_list') }}"
+               class="btn btn-outline-secondary rounded-3">
+                <i class="bi bi-house-door me-1"></i> All Suppliers
+            </a>
+
+            <a href="{{ url_for('purchase_create') }}"
+               class="btn btn-primary rounded-3">
+                <i class="bi bi-plus-lg me-1"></i> New Purchase
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3">
+                {{ message }}
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endwith %}
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-secondary small">Total Purchases</span>
+                        <i class="bi bi-receipt text-primary fs-4"></i>
+                    </div>
+                    <h3 class="fw-bold mt-3 mb-0">
+                        {{ purchases|length }}
+                    </h3>
+                    <div class="small text-secondary mt-1">
+                        Orders matching your filters
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-secondary small">Total Purchase Value</span>
+                        <i class="bi bi-currency-rupee text-success fs-4"></i>
+                    </div>
+                    <h3 class="fw-bold mt-3 mb-0">
+                        ₹{{ "%.2f"|format(purchases|sum(attribute='total_amount')) }}
+                    </h3>
+                    <div class="small text-secondary mt-1">
+                        Value of listed orders
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-secondary small">Pending Orders</span>
+                        <i class="bi bi-clock-history text-warning fs-4"></i>
+                    </div>
+                    <h3 class="fw-bold mt-3 mb-0">
+                        {{ purchases|selectattr('status', 'ne', 'received')|list|length }}
+                    </h3>
+                    <div class="small text-secondary mt-1">
+                        Not yet received
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchases Table -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+
+        <!-- Search and Supplier Filter -->
+        <div class="card-header bg-white border-0 p-4">
+            <div class="mb-3">
+                <h5 class="fw-bold mb-1">All Purchase Orders</h5>
+                <p class="small text-secondary mb-0">
+                    Filter by supplier company or search by invoice number.
+                </p>
+            </div>
+
+            <form method="GET"
+                  action="{{ url_for('purchase_list') }}"
+                  class="row g-2">
+
+                <div class="col-12 col-md-5 col-lg-4">
+                    <label for="company_name" class="form-label small fw-semibold">
+                        Supplier Company
+                    </label>
+                    <select name="company_name"
+                            id="company_name"
+                            class="form-select">
+                        <option value="">All Supplier Companies</option>
+
+                        {% for company in companies %}
+                        <option value="{{ company }}"
+                            {% if selected_company == company %}selected{% endif %}>
+                            {{ company }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-5 col-lg-5">
+                    <label for="search" class="form-label small fw-semibold">
+                        Search Invoice
+                    </label>
+                    <input type="text"
+                           id="search"
+                           name="search"
+                           class="form-control"
+                           placeholder="Enter invoice number..."
+                           value="{{ search|default('') }}">
+                </div>
+
+                <div class="col-12 col-md-2 col-lg-3 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-dark flex-grow-1">
+                        <i class="bi bi-funnel me-1"></i> Filter
+                    </button>
+
+                    <a href="{{ url_for('purchase_list') }}"
+                       class="btn btn-outline-secondary"
+                       title="Clear filters">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Table -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4 py-3">Invoice</th>
+                        <th class="py-3">Supplier / Company</th>
+                        <th class="py-3">Purchase Date</th>
+                        <th class="py-3">Total Amount</th>
+                        <th class="py-3">Payment Status</th>
+                        <th class="py-3">Order Status</th>
+                        <th class="text-end pe-4 py-3">Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for purchase in purchases %}
+                    <tr>
+                        <!-- Invoice -->
+                        <td class="ps-4">
+                            <div class="fw-semibold">
+                                {{ purchase.invoice_number }}
+                            </div>
+                            <div class="small text-secondary">
+                                ID: {{ purchase.id }}
+                            </div>
+                        </td>
+
+                        <!-- Supplier and Company -->
+                        <td>
+                            <div class="fw-semibold">
+                                {{ purchase.supplier.name
+                                   if purchase.supplier else "Unknown" }}
+                            </div>
+                            <div class="small text-secondary">
+                                {% if purchase.supplier and purchase.supplier.company_name %}
+                                    {{ purchase.supplier.company_name }}
+                                {% else %}
+                                    No company name
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Purchase Date -->
+                        <td>
+                            {{ purchase.purchase_date.strftime('%d %b %Y')
+                               if purchase.purchase_date else "—" }}
+                        </td>
+
+                        <!-- Amount -->
+                        <td>
+                            <div class="fw-semibold">
+                                ₹{{ "%.2f"|format(purchase.total_amount or 0) }}
+                            </div>
+                            <div class="small text-danger">
+                                Due: ₹{{ "%.2f"|format(purchase.balance_due or 0) }}
+                            </div>
+                        </td>
+
+                        <!-- Payment Status -->
+                        <td>
+                            {% if purchase.payment_status|lower == 'paid' %}
+                                <span class="badge rounded-pill text-bg-success">
+                                    Paid
+                                </span>
+                            {% elif purchase.payment_status|lower in ['partial', 'partially paid'] %}
+                                <span class="badge rounded-pill text-bg-warning">
+                                    Partially Paid
+                                </span>
+                            {% else %}
+                                <span class="badge rounded-pill text-bg-danger">
+                                    {{ purchase.payment_status|title }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Order Status -->
+                        <td>
+                            {% if purchase.status|lower == 'received' %}
+                                <span class="badge rounded-pill text-bg-success">
+                                    Received
+                                </span>
+                            {% elif purchase.status|lower == 'cancelled' %}
+                                <span class="badge rounded-pill text-bg-danger">
+                                    Cancelled
+                                </span>
+                            {% else %}
+                                <span class="badge rounded-pill text-bg-info">
+                                    {{ purchase.status|replace('_', ' ')|title }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="text-end pe-4">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{{ url_for('purchase_detail', purchase_id=purchase.id) }}"
+                                   class="btn btn-sm btn-outline-primary rounded-3">
+                                    <i class="bi bi-eye me-1"></i> View
+                                </a>
+
+                                <a href="{{ url_for('purchase_edit', purchase_id=purchase.id) }}"
+                                   class="btn btn-sm btn-outline-success rounded-3">
+                                    <i class="bi bi-pencil-square me-1"></i> Edit
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <i class="bi bi-inbox display-5 text-secondary"></i>
+                            <h6 class="fw-bold mt-3">No purchases found</h6>
+                            <p class="text-secondary small">
+                                No purchase orders match your selected filters.
+                            </p>
+                            <a href="{{ url_for('purchase_create') }}"
+                               class="btn btn-primary btn-sm rounded-3">
+                                <i class="bi bi-plus-lg me-1"></i>
+                                Create Purchase
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="card-footer bg-white border-0 px-4 py-3">
+            <div class="small text-secondary">
+                Showing {{ purchases|length }} purchase order(s)
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

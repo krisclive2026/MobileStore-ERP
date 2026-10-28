@@ -1,214 +1,795 @@
- 
+
 {% extends "base.html" %}
 
+{% block title %}Invoice Details | Mobile Store ERP{% endblock %}
+
 {% block content %}
-<div class="container" style="max-width:1100px; margin:30px auto; padding:20px;">
 
-    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:24px;">
-        <div>
-            <h1 style="margin:0;">Invoice Details</h1>
-            <p style="color:#64748b; margin-top:6px;">
-                Invoice: {{ sale.invoice_number }}
-            </p>
-        </div>
+{% set total_paid = paid_amount if paid_amount is defined else 0 %}
+{% set amount_due = balance if balance is defined else 0 %}
 
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+<style>
+    .invoice-page {
+        max-width: 1000px;
+        margin: 25px auto;
+    }
+
+    .invoice-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .invoice-paper {
+        background: #fff;
+        color: #222;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 32px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    /* STORE HEADER: LOGO | STORE DETAILS | CONTACT */
+    .invoice-store-header {
+        display: grid;
+        grid-template-columns: 115px minmax(0, 1fr) 190px;
+        align-items: center;
+        gap: 18px;
+        padding-bottom: 22px;
+        border-bottom: 2px solid #222;
+    }
+
+    .store-header-left {
+        text-align: left;
+    }
+
+    .invoice-logo {
+        max-width: 105px;
+        max-height: 90px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+    }
+
+    .store-header-center {
+        text-align: center;
+        overflow-wrap: anywhere;
+    }
+
+    .invoice-store-name {
+        font-size: 25px;
+        font-weight: 800;
+        margin: 0 0 8px;
+        overflow-wrap: anywhere;
+    }
+
+    .store-header-center .store-address {
+        white-space: pre-line;
+        line-height: 1.6;
+    }
+
+    .store-header-right {
+        text-align: right;
+        font-size: 12px;
+        line-height: 1.9;
+        overflow-wrap: anywhere;
+    }
+
+    .invoice-muted {
+        color: #666;
+        font-size: 13px;
+        line-height: 1.7;
+        overflow-wrap: anywhere;
+    }
+
+    /* CENTERED BILLING DETAILS */
+    .billing-title-section {
+        text-align: center;
+        margin: 25px 0;
+        line-height: 1.9;
+    }
+
+    .billing-title-section h2 {
+        font-size: 24px;
+        font-weight: 800;
+        margin-bottom: 10px;
+    }
+
+    .invoice-status {
+        display: inline-block;
+        padding: 5px 11px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .status-paid {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-partial {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-due {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    /* CUSTOMER AND PAYMENT INFORMATION */
+    .invoice-info {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+        margin: 25px 0;
+    }
+
+    .invoice-info-box {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 15px;
+        min-width: 0;
+    }
+
+    .invoice-section-title {
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: #555;
+        margin-bottom: 10px;
+    }
+
+    /* PRODUCT TABLE */
+    .invoice-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        font-size: 13px;
+    }
+
+    .invoice-table th {
+        background: #f3f4f6;
+        font-weight: 700;
+        text-align: left;
+        padding: 11px 8px;
+        border: 1px solid #ddd;
+        white-space: nowrap;
+    }
+
+    .invoice-table td {
+        padding: 10px 8px;
+        border: 1px solid #ddd;
+        vertical-align: top;
+    }
+
+    .invoice-table .text-end {
+        text-align: right;
+    }
+
+    .invoice-table .text-center {
+        text-align: center;
+    }
+
+    /* TOTALS */
+    .invoice-summary {
+        width: 100%;
+        max-width: 370px;
+        margin-left: auto;
+        margin-top: 20px;
+    }
+
+    .invoice-summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 7px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .invoice-summary-row.grand-total {
+        font-size: 18px;
+        font-weight: 800;
+        border-bottom: 2px solid #222;
+        padding: 12px 0;
+    }
+
+    .invoice-summary-row.balance-row {
+        font-weight: 800;
+        color: #b42318;
+    }
+
+    .invoice-summary-row.paid-row {
+        color: #087443;
+        font-weight: 700;
+    }
+
+    /* FOOTER AND SOCIAL QR CODES */
+    .invoice-footer {
+        margin-top: 35px;
+        padding-top: 22px;
+        border-top: 1px dashed #bbb;
+        text-align: center;
+        font-size: 12px;
+        color: #555;
+        line-height: 1.8;
+    }
+
+    .social-qr-container {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 25px;
+        flex-wrap: wrap;
+        margin: 22px 0;
+    }
+
+    .social-qr-item {
+        width: 115px;
+        text-align: center;
+        overflow-wrap: anywhere;
+    }
+
+    .social-qr-item img {
+        width: 95px;
+        height: 95px;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto 7px;
+    }
+
+    .social-qr-item a {
+        color: #222;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .social-qr-item a:hover {
+        text-decoration: underline;
+    }
+
+    @media screen and (max-width: 650px) {
+        .invoice-page {
+            margin: 10px auto;
+        }
+
+        .invoice-paper {
+            padding: 16px;
+        }
+
+        .invoice-store-header {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .store-header-left,
+        .store-header-center,
+        .store-header-right {
+            text-align: center;
+        }
+
+        .invoice-store-name {
+            font-size: 22px;
+        }
+
+        .invoice-info {
+            grid-template-columns: 1fr;
+        }
+
+        .social-qr-container {
+            gap: 15px;
+        }
+    }
+
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 10mm 8mm;
+        }
+
+        body {
+            background: #fff !important;
+            color: #222 !important;
+            font-size: 10pt !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        nav,
+        aside,
+        .sidebar,
+        .invoice-actions,
+        .no-print,
+        footer.site-footer {
+            display: none !important;
+        }
+
+        .invoice-page {
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .invoice-paper {
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+        }
+
+        .invoice-store-header {
+            grid-template-columns: 95px minmax(0, 1fr) 165px;
+            gap: 10px;
+        }
+
+        .invoice-table-wrap {
+            overflow: visible !important;
+        }
+
+        .invoice-table {
+            width: 100% !important;
+        }
+
+        .invoice-table tr,
+        .invoice-info,
+        .invoice-store-header,
+        .billing-title-section,
+        .invoice-footer {
+            break-inside: avoid;
+        }
+
+        a {
+            color: inherit !important;
+            text-decoration: none !important;
+        }
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="invoice-page">
+
+        <!-- ACTION BUTTONS -->
+        <div class="invoice-actions no-print">
             <a href="{{ url_for('billing_list') }}"
-               style="padding:10px 16px; background:#64748b; color:white; text-decoration:none; border-radius:6px;">
-                Back to Billing
+               class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Back to Bills
             </a>
 
-            {% if balance > 0.009 %}
-            <a href="{{ url_for('billing_receive_payment', sale_id=sale.id) }}"
-               style="padding:10px 16px; background:#16a34a; color:white; text-decoration:none; border-radius:6px;">
-                Receive Due Payment
-            </a>
-            {% endif %}
+            <div class="d-flex flex-wrap gap-2">
+                {% if amount_due > 0.009 %}
+                    <a href="{{ url_for('billing_receive_payment', sale_id=sale.id) }}"
+                       class="btn btn-success">
+                        <i class="bi bi-cash-coin"></i>
+                        Receive Due Payment
+                    </a>
+                {% endif %}
 
-            <button type="button" onclick="window.print()"
-                    style="padding:10px 16px; background:#2563eb; color:white; border:0; border-radius:6px; cursor:pointer;">
-                Print Invoice
-            </button>
+                <button type="button"
+                        class="btn btn-primary"
+                        onclick="window.print()">
+                    <i class="bi bi-printer"></i>
+                    Print Invoice
+                </button>
+            </div>
         </div>
-    </div>
 
-    <div style="background:white; padding:24px; border:1px solid #e2e8f0; border-radius:10px;">
+        <div class="invoice-paper">
 
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px; margin-bottom:24px;">
-            <div>
-                <strong>Invoice Number</strong>
-                <div>{{ sale.invoice_number }}</div>
+            <!-- STORE HEADER -->
+            <div class="invoice-store-header">
+
+                <!-- LEFT: LOGO -->
+                <div class="store-header-left">
+                    {% if store and store.logo_filename %}
+                        <img
+                            src="{{ url_for('store_logo_file', filename=store.logo_filename) }}"
+                            alt="Store Logo"
+                            class="invoice-logo"
+                            onerror="this.style.display='none';"
+                        >
+                    {% endif %}
+                </div>
+
+                <!-- CENTER: STORE NAME AND ADDRESS -->
+                <div class="store-header-center">
+                    <h1 class="invoice-store-name">
+                        {{ store.store_name if store and store.store_name else 'Mobile Store' }}
+                    </h1>
+
+                    {% if store and store.address %}
+                        <div class="store-address">{{ store.address }}</div>
+                    {% endif %}
+
+                    {% if store and store.gstin and store.show_gstin %}
+                        <div class="invoice-muted">
+                            GSTIN: {{ store.gstin }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- RIGHT: CONTACT AND BUSINESS HOURS -->
+                <div class="store-header-right">
+                    {% if store and store.phone %}
+                        <div>
+                            <strong>Contact:</strong>
+                            {{ store.phone }}
+                        </div>
+                    {% endif %}
+
+                    {% if store and store.opening_time %}
+                        <div>
+                            <strong>Opening:</strong>
+                            {{ store.opening_time }}
+                        </div>
+                    {% endif %}
+
+                    {% if store and store.closing_time %}
+                        <div>
+                            <strong>Closing:</strong>
+                            {{ store.closing_time }}
+                        </div>
+                    {% endif %}
+                </div>
+
             </div>
 
-            <div>
-                <strong>Date</strong>
+            <!-- CENTERED BILLING DETAILS -->
+            <div class="billing-title-section">
+                <h2>TAX INVOICE</h2>
+
                 <div>
+                    <strong>Invoice No:</strong>
+                    {{ sale.invoice_number }}
+                </div>
+
+                <div>
+                    <strong>Date:</strong>
                     {% if sale.sale_date %}
                         {{ sale.sale_date.strftime('%d-%m-%Y %I:%M %p') }}
                     {% else %}
                         —
                     {% endif %}
                 </div>
+
+                <div class="mt-2">
+                    <strong>Payment Status:</strong>
+
+                    {% if amount_due <= 0.009 %}
+                        <span class="invoice-status status-paid">PAID</span>
+                    {% elif total_paid > 0 %}
+                        <span class="invoice-status status-partial">PARTIALLY PAID</span>
+                    {% else %}
+                        <span class="invoice-status status-due">PAYMENT DUE</span>
+                    {% endif %}
+                </div>
             </div>
 
-            <div>
-                <strong>Customer</strong>
-                <div>
+            <!-- CUSTOMER AND PAYMENT SUMMARY -->
+            <div class="invoice-info">
+
+                <div class="invoice-info-box">
+                    <div class="invoice-section-title">Bill To</div>
+
                     {% if sale.customer %}
-                        {{ sale.customer.name }}
+                        <div class="fw-bold">
+                            {{ sale.customer.name }}
+                        </div>
+
+                        {% if sale.customer.customer_code %}
+                            <div class="invoice-muted">
+                                Customer ID: {{ sale.customer.customer_code }}
+                            </div>
+                        {% elif sale.customer.id %}
+                            <div class="invoice-muted">
+                                Customer ID: CUST-{{ '%06d'|format(sale.customer.id) }}
+                            </div>
+                        {% endif %}
+
                         {% if sale.customer.phone %}
-                            <br>{{ sale.customer.phone }}
+                            <div class="invoice-muted">
+                                Phone: {{ sale.customer.phone }}
+                            </div>
+                        {% endif %}
+
+                        {% if sale.customer.email %}
+                            <div class="invoice-muted">
+                                Email: {{ sale.customer.email }}
+                            </div>
+                        {% endif %}
+
+                        {% if sale.customer.address %}
+                            <div class="invoice-muted">
+                                Address: {{ sale.customer.address }}
+                            </div>
                         {% endif %}
                     {% else %}
-                        Walk-in Customer
+                        <div class="fw-bold">Walk-in Customer</div>
                     {% endif %}
                 </div>
-            </div>
 
-            <div>
-                <strong>Payment Status</strong>
-                <div style="margin-top:6px;">
-                    {% if balance <= 0.009 %}
-                        <span style="padding:6px 10px; background:#dcfce7; color:#166534; border-radius:6px;">
-                            PAID / CLOSED
-                        </span>
-                    {% elif paid_amount > 0 %}
-                        <span style="padding:6px 10px; background:#fef3c7; color:#92400e; border-radius:6px;">
-                            PARTIALLY PAID
-                        </span>
-                    {% else %}
-                        <span style="padding:6px 10px; background:#fee2e2; color:#991b1b; border-radius:6px;">
-                            PAYMENT DUE
-                        </span>
-                    {% endif %}
+                <div class="invoice-info-box">
+                    <div class="invoice-section-title">Payment Summary</div>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Invoice Total</span>
+                        <strong>
+                            ₹{{ '%.2f'|format(sale.total_amount or 0) }}
+                        </strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Amount Paid</span>
+                        <strong class="text-success">
+                            ₹{{ '%.2f'|format(total_paid) }}
+                        </strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <span>Balance Due</span>
+                        <strong class="{% if amount_due > 0.009 %}text-danger{% else %}text-success{% endif %}">
+                            ₹{{ '%.2f'|format(amount_due) }}
+                        </strong>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <h3>Items</h3>
-
-        <div style="overflow-x:auto;">
-            <table style="width:100%; border-collapse:collapse; margin-bottom:24px;">
-                <thead>
-                    <tr style="background:#f1f5f9; text-align:left;">
-                        <th style="padding:12px; border-bottom:1px solid #cbd5e1;">Product</th>
-                        <th style="padding:12px; border-bottom:1px solid #cbd5e1;">Qty</th>
-                        <th style="padding:12px; border-bottom:1px solid #cbd5e1;">Unit Price</th>
-                        <th style="padding:12px; border-bottom:1px solid #cbd5e1;">Tax</th>
-                        <th style="padding:12px; border-bottom:1px solid #cbd5e1; text-align:right;">Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in sale.items %}
-                    <tr>
-                        <td style="padding:12px; border-bottom:1px solid #e2e8f0;">
-                            {{ item.product.name if item.product else 'Product unavailable' }}
-                        </td>
-                        <td style="padding:12px; border-bottom:1px solid #e2e8f0;">{{ item.quantity }}</td>
-                        <td style="padding:12px; border-bottom:1px solid #e2e8f0;">₹{{ "%.2f"|format(item.unit_price or 0) }}</td>
-                        <td style="padding:12px; border-bottom:1px solid #e2e8f0;">₹{{ "%.2f"|format(item.tax_amount or 0) }}</td>
-                        <td style="padding:12px; border-bottom:1px solid #e2e8f0; text-align:right;">₹{{ "%.2f"|format(item.subtotal or 0) }}</td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="5" style="padding:16px; text-align:center;">No invoice items found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <div style="max-width:360px; margin-left:auto;">
-            <div style="display:flex; justify-content:space-between; padding:8px 0;">
-                <span>Subtotal</span>
-                <strong>₹{{ "%.2f"|format(sale.subtotal or 0) }}</strong>
             </div>
 
-            <div style="display:flex; justify-content:space-between; padding:8px 0;">
-                <span>Tax</span>
-                <strong>₹{{ "%.2f"|format(sale.tax_amount or 0) }}</strong>
-            </div>
-
-            <div style="display:flex; justify-content:space-between; padding:8px 0;">
-                <span>Discount</span>
-                <strong>₹{{ "%.2f"|format(sale.discount_amount or 0) }}</strong>
-            </div>
-
-            <div style="display:flex; justify-content:space-between; padding:12px 0; border-top:2px solid #cbd5e1; font-size:20px;">
-                <strong>Total</strong>
-                <strong>₹{{ "%.2f"|format(sale.total_amount or 0) }}</strong>
-            </div>
-
-            <div style="display:flex; justify-content:space-between; padding:8px 0;">
-                <span>Paid</span>
-                <strong>₹{{ "%.2f"|format(paid_amount or 0) }}</strong>
-            </div>
-
-            <div style="display:flex; justify-content:space-between; padding:8px 0;">
-                <span>Balance</span>
-                <strong>₹{{ "%.2f"|format(balance or 0) }}</strong>
-            </div>
-        </div>
-
-        <h3 style="margin-top:28px;">Payment History</h3>
-
-        <div style="overflow-x:auto;">
-            <table style="width:100%; border-collapse:collapse;">
-                <thead>
-                    <tr style="background:#f1f5f9; text-align:left;">
-                        <th style="padding:10px;">Date</th>
-                        <th style="padding:10px;">Method</th>
-                        <th style="padding:10px;">Reference</th>
-                        <th style="padding:10px; text-align:right;">Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for payment in payments %}
-                        {% if payment.status == 'completed' %}
+            <!-- PRODUCTS TABLE -->
+            <div class="invoice-table-wrap">
+                <table class="invoice-table">
+                    <thead>
                         <tr>
-                            <td style="padding:10px; border-bottom:1px solid #e2e8f0;">
-                                {{ payment.created_at.strftime('%d-%m-%Y') if payment.created_at else '—' }}
-                            </td>
-                            <td style="padding:10px; border-bottom:1px solid #e2e8f0;">
-                                {{ payment.method|replace('_', ' ')|title }}
-                            </td>
-                            <td style="padding:10px; border-bottom:1px solid #e2e8f0;">
-                                {{ payment.reference or '—' }}
-                            </td>
-                            <td style="padding:10px; border-bottom:1px solid #e2e8f0; text-align:right;">
-                                ₹{{ "%.2f"|format(payment.amount or 0) }}
-                            </td>
+                            <th style="width: 45px;">#</th>
+                            <th>Product</th>
+                            <th class="text-center">Qty</th>
+                            <th class="text-end">Unit Price</th>
+                            <th class="text-end">Tax</th>
+                            <th class="text-end">Amount</th>
                         </tr>
-                        {% endif %}
-                    {% else %}
-                        <tr>
-                            <td colspan="4" style="padding:12px; text-align:center;">
-                                No payment records found.
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                    </thead>
 
+                    <tbody>
+                        {% for item in sale.items %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+
+                                <td>
+                                    <strong>
+                                        {{ item.product.name if item.product else 'Product' }}
+                                    </strong>
+
+                                    {% if item.product and item.product.code %}
+                                        <div class="invoice-muted">
+                                            Code: {{ item.product.code }}
+                                        </div>
+                                    {% endif %}
+
+                                    {% if item.product and item.product.imei %}
+                                        <div class="invoice-muted">
+                                            IMEI: {{ item.product.imei }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-center">
+                                    {{ item.quantity }}
+                                </td>
+
+                                <td class="text-end">
+                                    ₹{{ '%.2f'|format(item.unit_price or 0) }}
+                                </td>
+
+                                <td class="text-end">
+                                    ₹{{ '%.2f'|format(item.tax_amount or 0) }}
+                                </td>
+
+                                <td class="text-end">
+                                    ₹{{ '%.2f'|format(item.subtotal or 0) }}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    No items found for this invoice.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TOTALS -->
+            <div class="invoice-summary">
+
+                <div class="invoice-summary-row">
+                    <span>Subtotal</span>
+                    <span>
+                        ₹{{ '%.2f'|format(sale.subtotal or 0) }}
+                    </span>
+                </div>
+
+                <div class="invoice-summary-row">
+                    <span>Tax</span>
+                    <span>
+                        ₹{{ '%.2f'|format(sale.tax_amount or 0) }}
+                    </span>
+                </div>
+
+                <div class="invoice-summary-row">
+                    <span>Discount</span>
+                    <span>
+                        ₹{{ '%.2f'|format(sale.discount_amount or 0) }}
+                    </span>
+                </div>
+
+                <div class="invoice-summary-row grand-total">
+                    <span>Grand Total</span>
+                    <span>
+                        ₹{{ '%.2f'|format(sale.total_amount or 0) }}
+                    </span>
+                </div>
+
+                <div class="invoice-summary-row paid-row">
+                    <span>Total Paid</span>
+                    <span>
+                        ₹{{ '%.2f'|format(total_paid) }}
+                    </span>
+                </div>
+
+                <div class="invoice-summary-row balance-row">
+                    <span>Balance Due</span>
+                    <span>
+                        ₹{{ '%.2f'|format(amount_due) }}
+                    </span>
+                </div>
+
+            </div>
+
+            <!-- PAYMENT HISTORY -->
+            {% if payments %}
+                <div class="mt-5">
+                    <h6 class="fw-bold mb-3">Payment History</h6>
+
+                    <div class="invoice-table-wrap">
+                        <table class="invoice-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Date</th>
+                                    <th>Method</th>
+                                    <th>Reference</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for payment in payments %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+
+                                        <td>
+                                            {% if payment.created_at %}
+                                                {{ payment.created_at.strftime('%d-%m-%Y %I:%M %p') }}
+                                            {% elif payment.payment_date is defined and payment.payment_date %}
+                                                {{ payment.payment_date.strftime('%d-%m-%Y') }}
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
+
+                                        <td>
+                                            {{ (payment.method or 'cash')|replace('_', ' ')|title }}
+                                        </td>
+
+                                        <td>{{ payment.reference or '—' }}</td>
+
+                                        <td class="text-end">
+                                            ₹{{ '%.2f'|format(payment.amount or 0) }}
+                                        </td>
+
+                                        <td>
+                                            {{ (payment.status or 'completed')|title }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- FOOTER WITH SOCIAL MEDIA QR CODES -->
+            <div class="invoice-footer">
+
+                {% if store and store.footer_text %}
+                    <div class="mb-2">{{ store.footer_text }}</div>
+                {% else %}
+                    <div class="fw-bold mb-1">
+                        Thank you for shopping with us!
+                    </div>
+                    <div>Please keep this invoice for your records.</div>
+                {% endif %}
+
+                <div class="social-qr-container">
+
+                    {% if store and store.instagram_url %}
+                        <div class="social-qr-item">
+                            <a href="{{ store.instagram_url }}"
+                               target="_blank"
+                               rel="noopener noreferrer">
+                                <img
+                                    src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&amp;data={{ store.instagram_url|urlencode }}"
+                                    alt="Instagram QR Code"
+                                >
+                                Instagram
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    {% if store and store.facebook_url %}
+                        <div class="social-qr-item">
+                            <a href="{{ store.facebook_url }}"
+                               target="_blank"
+                               rel="noopener noreferrer">
+                                <img
+                                    src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&amp;data={{ store.facebook_url|urlencode }}"
+                                    alt="Facebook QR Code"
+                                >
+                                Facebook
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    {% if store and store.whatsapp_url %}
+                        <div class="social-qr-item">
+                            <a href="{{ store.whatsapp_url }}"
+                               target="_blank"
+                               rel="noopener noreferrer">
+                                <img
+                                    src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&amp;data={{ store.whatsapp_url|urlencode }}"
+                                    alt="WhatsApp QR Code"
+                                >
+                                WhatsApp
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    {% if qr_url %}
+                        <div class="social-qr-item">
+                            <a href="{{ qr_url }}"
+                               target="_blank"
+                               rel="noopener noreferrer">
+                                <img
+                                    src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&amp;data={{ qr_url|urlencode }}"
+                                    alt="Invoice QR Code"
+                                >
+                                View Invoice
+                            </a>
+                        </div>
+                    {% endif %}
+
+                </div>
+
+                <div class="mt-3">
+                    This is a computer-generated invoice.
+                </div>
+
+            </div>
+
+        </div>
     </div>
 </div>
 
-<style>
-@media print {
-    nav, header, aside, button, a {
-        display: none !important;
-    }
-
-    body {
-        background: white !important;
-    }
-
-    .container {
-        max-width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-}
-</style>
 {% endblock %}

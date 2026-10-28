@@ -4,74 +4,183 @@
 {% block title %}Store Settings | MobileStore ERP{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+<div class="container-fluid py-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <div>
-            <h2 class="mb-1">Store Settings</h2>
-            <p class="text-muted mb-0">Manage your store details and invoice preferences.</p>
+            <h2 class="fw-bold mb-1">Store Settings</h2>
+            <p class="text-secondary mb-0">
+                Manage store information, invoice appearance and social links.
+            </p>
         </div>
-        <a href="{{ url_for('dashboard_page') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Dashboard
-        </a>
+        <span class="badge text-bg-light border p-2">
+            <i class="bi bi-gear me-1"></i> General Settings
+        </span>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
     {% endwith %}
 
-    <form method="POST" action="{{ url_for('store_settings_page') }}">
+    <form method="POST"
+          action="{{ url_for('store_settings_page') }}"
+          enctype="multipart/form-data">
+
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
+        <!-- Store Information -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3">
-                <h5 class="mb-0"><i class="bi bi-shop me-2"></i>Store Information</h5>
+                <h5 class="fw-bold mb-1">
+                    <i class="bi bi-shop me-2"></i>Store Information
+                </h5>
+                <small class="text-secondary">Your business details and working hours.</small>
             </div>
+
             <div class="card-body p-4">
-                <div class="mb-3">
-                    <label for="store_name" class="form-label">Store Name *</label>
-                    <input type="text" class="form-control" id="store_name"
-                           name="store_name" maxlength="150"
-                           value="{{ settings.store_name or '' }}" required>
-                </div>
+                <div class="row g-4">
 
-                <div class="mb-3">
-                    <label for="address" class="form-label">Store Address</label>
-                    <textarea class="form-control" id="address" name="address"
-                              rows="3">{{ settings.address or '' }}</textarea>
-                </div>
+                    <div class="col-lg-4">
+                        <label class="form-label fw-semibold">Store Logo</label>
 
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="phone" class="form-label">Phone Number</label>
-                        <input type="text" class="form-control" id="phone"
-                               name="phone" maxlength="30"
-                               value="{{ settings.phone or '' }}">
+                        <div class="border rounded-3 p-3 text-center mb-3">
+                            {% if settings.logo_filename %}
+                                <img id="logoPreview"
+                                     src="{{ url_for('store_logo_file', filename=settings.logo_filename) }}"
+                                     alt="Store logo"
+                                     class="img-fluid"
+                                     style="max-height:150px;object-fit:contain;">
+                                <div id="noLogoMessage" class="text-secondary"
+                                     style="display:none;">
+                                    No logo selected
+                                </div>
+                            {% else %}
+                                <img id="logoPreview" src="" alt="Logo preview"
+                                     class="img-fluid"
+                                     style="display:none;max-height:150px;object-fit:contain;">
+                                <div id="noLogoMessage" class="text-secondary py-3">
+                                    <i class="bi bi-image fs-1 d-block"></i>
+                                    No logo uploaded
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <input type="file" class="form-control"
+                               id="store_logo" name="store_logo"
+                               accept=".png,.jpg,.jpeg,.webp">
+                        <div class="form-text">PNG, JPG or WebP. Maximum 2 MB.</div>
+
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox"
+                                   id="remove_logo" name="remove_logo" value="1">
+                            <label class="form-check-label" for="remove_logo">
+                                Remove current logo
+                            </label>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <label for="gstin" class="form-label">GSTIN</label>
-                        <input type="text" class="form-control" id="gstin"
-                               name="gstin" maxlength="30"
-                               value="{{ settings.gstin or '' }}">
+
+                    <div class="col-lg-8">
+                        <div class="mb-3">
+                            <label for="store_name" class="form-label fw-semibold">
+                                Store Name *
+                            </label>
+                            <input type="text" class="form-control"
+                                   id="store_name" name="store_name"
+                                   maxlength="150"
+                                   value="{{ settings.store_name or '' }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="address" class="form-label fw-semibold">
+                                Store Address
+                            </label>
+                            <textarea class="form-control" id="address"
+                                      name="address" rows="3"
+                                      placeholder="Enter complete store address">{{ settings.address or '' }}</textarea>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label fw-semibold">
+                                    Phone Number
+                                </label>
+                                <input type="text" class="form-control"
+                                       id="phone" name="phone" maxlength="30"
+                                       value="{{ settings.phone or '' }}">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="gstin" class="form-label fw-semibold">
+                                    Store GSTIN
+                                </label>
+                                <input type="text" class="form-control"
+                                       id="gstin" name="gstin" maxlength="30"
+                                       value="{{ settings.gstin or '' }}">
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h6 class="fw-bold mb-3">Store Working Hours</h6>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="opening_time" class="form-label">
+                                    Opening Time
+                                </label>
+                                <input type="time" class="form-control"
+                                       id="opening_time" name="opening_time"
+                                       value="{{ settings.opening_time or '09:00' }}">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="closing_time" class="form-label">
+                                    Closing Time
+                                </label>
+                                <input type="time" class="form-control"
+                                       id="closing_time" name="closing_time"
+                                       value="{{ settings.closing_time or '21:00' }}">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Invoice and Print Settings -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3">
-                <h5 class="mb-0"><i class="bi bi-printer me-2"></i>Invoice & Print Settings</h5>
+                <h5 class="fw-bold mb-1">
+                    <i class="bi bi-printer me-2"></i>Invoice & Print Settings
+                </h5>
+                <small class="text-secondary">
+                    Customize the appearance of future invoices.
+                </small>
             </div>
+
             <div class="card-body p-4">
                 <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="paper_size" class="form-label">Paper Size</label>
+                    <div class="col-md-4">
+                        <label for="invoice_prefix" class="form-label fw-semibold">
+                            Invoice Prefix
+                        </label>
+                        <input type="text" class="form-control"
+                               id="invoice_prefix" name="invoice_prefix"
+                               maxlength="20"
+                               value="{{ settings.invoice_prefix or 'INV' }}">
+                        <div class="form-text">Example: INV-000001</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="paper_size" class="form-label fw-semibold">
+                            Paper Size
+                        </label>
                         <select class="form-select" id="paper_size" name="paper_size">
                             <option value="A4" {% if settings.paper_size == 'A4' %}selected{% endif %}>A4</option>
                             <option value="A5" {% if settings.paper_size == 'A5' %}selected{% endif %}>A5</option>
@@ -80,8 +189,10 @@
                         </select>
                     </div>
 
-                    <div class="col-md-6">
-                        <label for="orientation" class="form-label">Orientation</label>
+                    <div class="col-md-4">
+                        <label for="orientation" class="form-label fw-semibold">
+                            Orientation
+                        </label>
                         <select class="form-select" id="orientation" name="orientation">
                             <option value="portrait" {% if settings.orientation == 'portrait' %}selected{% endif %}>Portrait</option>
                             <option value="landscape" {% if settings.orientation == 'landscape' %}selected{% endif %}>Landscape</option>
@@ -89,37 +200,211 @@
                     </div>
                 </div>
 
-                <div id="customDimensions" class="row g-3 mt-1">
+                <div id="customDimensions" class="row g-3 mt-2">
                     <div class="col-md-6">
-                        <label for="custom_width_mm" class="form-label">Custom Width (mm)</label>
-                        <input type="number" class="form-control" id="custom_width_mm"
-                               name="custom_width_mm" min="0.1" max="1000" step="0.1"
-                               value="{{ settings.custom_width_mm or 100 }}">
+                        <label for="custom_width_mm" class="form-label">
+                            Custom Width (mm)
+                        </label>
+                        <input type="number" class="form-control"
+                               id="custom_width_mm" name="custom_width_mm"
+                               min="0.1" max="1000" step="0.1"
+                               value="{{ settings.custom_width_mm if settings.custom_width_mm is not none else 100 }}">
                     </div>
+
                     <div class="col-md-6">
-                        <label for="custom_height_mm" class="form-label">Custom Height (mm)</label>
-                        <input type="number" class="form-control" id="custom_height_mm"
-                               name="custom_height_mm" min="0.1" max="1000" step="0.1"
-                               value="{{ settings.custom_height_mm or 150 }}">
+                        <label for="custom_height_mm" class="form-label">
+                            Custom Height (mm)
+                        </label>
+                        <input type="number" class="form-control"
+                               id="custom_height_mm" name="custom_height_mm"
+                               min="0.1" max="1000" step="0.1"
+                               value="{{ settings.custom_height_mm if settings.custom_height_mm is not none else 150 }}">
                     </div>
                 </div>
 
-                <div class="mt-3">
-                    <label for="footer_text" class="form-label">Invoice Footer Text</label>
-                    <textarea class="form-control" id="footer_text" name="footer_text"
-                              rows="3" maxlength="500"
+                <hr class="my-4">
+
+                <h6 class="fw-bold mb-3">Print Layout</h6>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="margin_top_mm" class="form-label">
+                            Top Margin (mm)
+                        </label>
+                        <input type="number" class="form-control"
+                               id="margin_top_mm" name="margin_top_mm"
+                               min="0" max="100" step="0.5"
+                               value="{{ settings.margin_top_mm if settings.margin_top_mm is not none else 10 }}">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="margin_bottom_mm" class="form-label">
+                            Bottom Margin (mm)
+                        </label>
+                        <input type="number" class="form-control"
+                               id="margin_bottom_mm" name="margin_bottom_mm"
+                               min="0" max="100" step="0.5"
+                               value="{{ settings.margin_bottom_mm if settings.margin_bottom_mm is not none else 10 }}">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="font_size" class="form-label">
+                            Invoice Font Size (pt)
+                        </label>
+                        <input type="number" class="form-control"
+                               id="font_size" name="font_size"
+                               min="6" max="30" step="0.5"
+                               value="{{ settings.font_size if settings.font_size is not none else 10 }}">
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <label for="footer_text" class="form-label fw-semibold">
+                        Invoice Footer Message
+                    </label>
+                    <textarea class="form-control" id="footer_text"
+                              name="footer_text" rows="3" maxlength="500"
                               placeholder="Thank you for shopping with us!">{{ settings.footer_text or '' }}</textarea>
-                    <div class="form-text">This text can be displayed at the bottom of printed invoices.</div>
                 </div>
             </div>
         </div>
 
-        <div class="d-flex justify-content-end gap-2 mb-4">
-            <a href="{{ url_for('dashboard_page') }}" class="btn btn-light">Cancel</a>
-            <button type="submit" class="btn btn-primary">
-                <i class="bi bi-save me-1"></i> Save Settings
+        <!-- Invoice Display Options -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-1">
+                    <i class="bi bi-eye me-2"></i>Invoice Display Options
+                </h5>
+                <small class="text-secondary">
+                    Choose which optional details appear on invoices.
+                </small>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="form-check form-switch border rounded-3 p-3 ps-5">
+                            <input class="form-check-input" type="checkbox"
+                                   id="show_customer_id" name="show_customer_id"
+                                   value="1"
+                                   {% if settings.show_customer_id %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold"
+                                   for="show_customer_id">Show Customer ID</label>
+                            <div class="small text-secondary">
+                                Display the customer's registered ID.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-check form-switch border rounded-3 p-3 ps-5">
+                            <input class="form-check-input" type="checkbox"
+                                   id="show_gstin" name="show_gstin" value="1"
+                                   {% if settings.show_gstin %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold"
+                                   for="show_gstin">Show Store GSTIN</label>
+                            <div class="small text-secondary">
+                                Display the store's GST registration number.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-check form-switch border rounded-3 p-3 ps-5">
+                            <input class="form-check-input" type="checkbox"
+                                   id="show_tax_breakdown" name="show_tax_breakdown"
+                                   value="1"
+                                   {% if settings.show_tax_breakdown %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold"
+                                   for="show_tax_breakdown">Show Tax Breakdown</label>
+                            <div class="small text-secondary">
+                                Controls invoice tax-detail visibility; it does not change tax calculation.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-check form-switch border rounded-3 p-3 ps-5">
+                            <input class="form-check-input" type="checkbox"
+                                   id="show_emi_details" name="show_emi_details"
+                                   value="1"
+                                   {% if settings.show_emi_details %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold"
+                                   for="show_emi_details">Show EMI Details</label>
+                            <div class="small text-secondary">
+                                Display EMI information when applicable.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Social Media -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-1">
+                    <i class="bi bi-share me-2"></i>Social Media & QR Code
+                </h5>
+                <small class="text-secondary">
+                    Add your store's public social media profile links.
+                </small>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <label for="instagram_url" class="form-label fw-semibold">
+                        <i class="bi bi-instagram me-1"></i> Instagram URL
+                    </label>
+                    <input type="url" class="form-control"
+                           id="instagram_url" name="instagram_url"
+                           maxlength="255"
+                           placeholder="https://www.instagram.com/yourstore/"
+                           value="{{ settings.instagram_url or '' }}">
+                </div>
+
+                <div class="mb-3">
+                    <label for="facebook_url" class="form-label fw-semibold">
+                        <i class="bi bi-facebook me-1"></i> Facebook URL
+                    </label>
+                    <input type="url" class="form-control"
+                           id="facebook_url" name="facebook_url"
+                           maxlength="255"
+                           placeholder="https://www.facebook.com/yourstore/"
+                           value="{{ settings.facebook_url or '' }}">
+                </div>
+
+                <div class="mb-3">
+                    <label for="whatsapp_url" class="form-label fw-semibold">
+                        <i class="bi bi-whatsapp me-1"></i> WhatsApp Link
+                    </label>
+                    <input type="url" class="form-control"
+                           id="whatsapp_url" name="whatsapp_url"
+                           maxlength="255"
+                           placeholder="https://wa.me/91XXXXXXXXXX"
+                           value="{{ settings.whatsapp_url or '' }}">
+                </div>
+
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    These links can be displayed on the bill and used to generate a
+                    QR code. The QR code itself must be generated and added to the
+                    invoice preview/print template separately.
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        
+            <a href="{{ url_for('dashboard_page') }}"
+           class="btn btn-outline-secondary btn-lg">
+            <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+        </a>
+            <button type="submit" class="btn btn-primary btn-lg px-4">
+                <i class="bi bi-save me-2"></i>Save Settings
             </button>
         </div>
+
     </form>
 </div>
 
@@ -127,13 +412,51 @@
 document.addEventListener("DOMContentLoaded", function () {
     const paperSize = document.getElementById("paper_size");
     const dimensions = document.getElementById("customDimensions");
+    const logoInput = document.getElementById("store_logo");
+    const logoPreview = document.getElementById("logoPreview");
+    const noLogoMessage = document.getElementById("noLogoMessage");
+    const removeLogo = document.getElementById("remove_logo");
 
     function toggleCustomDimensions() {
-        dimensions.style.display = paperSize.value === "custom" ? "flex" : "none";
+        dimensions.style.display =
+            paperSize.value === "custom" ? "flex" : "none";
     }
 
     paperSize.addEventListener("change", toggleCustomDimensions);
     toggleCustomDimensions();
+
+    logoInput.addEventListener("change", function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
+
+        if (!allowedTypes.includes(file.type)) {
+            alert("Please select a PNG, JPG, JPEG or WebP image.");
+            this.value = "";
+            return;
+        }
+
+        if (file.size > 2 * 1024 * 1024) {
+            alert("The logo must be 2 MB or smaller.");
+            this.value = "";
+            return;
+        }
+
+        logoPreview.src = URL.createObjectURL(file);
+        logoPreview.style.display = "block";
+        noLogoMessage.style.display = "none";
+        removeLogo.checked = false;
+    });
+
+    removeLogo.addEventListener("change", function () {
+        if (this.checked) {
+            logoInput.value = "";
+            logoPreview.src = "";
+            logoPreview.style.display = "none";
+            noLogoMessage.style.display = "block";
+        }
+    });
 });
 </script>
 {% endblock %}

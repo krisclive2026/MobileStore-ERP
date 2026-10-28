@@ -1,0 +1,373 @@
+
+{% extends "base.html" %}
+
+{% block title %}Purchase Details | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <div class="text-primary small fw-semibold mb-2">
+                INVENTORY / PURCHASES
+            </div>
+            <h2 class="fw-bold mb-1">Purchase Details</h2>
+            <p class="text-secondary mb-0">
+                Manage your supplier invoice, stock and payments.
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+
+            <a href="{{ url_for('purchase_list') }}"
+               class="btn btn-outline-secondary rounded-3 px-3">
+                <i class="bi bi-arrow-left me-1"></i>
+                All Purchases
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3 shadow-sm">
+                {{ message }}
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endwith %}
+
+    <!-- Invoice Banner -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+        <div class="card-body p-4">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-4 bg-primary bg-opacity-10 text-primary p-3">
+                            <i class="bi bi-receipt fs-2"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small">SUPPLIER INVOICE</div>
+                            <h3 class="fw-bold mb-1">
+                                {{ purchase.invoice_number }}
+                            </h3>
+                            <div class="text-secondary small">
+                                Created by
+                                {{ purchase.user.username if purchase.user else "System" }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 text-lg-end">
+                    {% if purchase.status == "received" %}
+                        <span class="badge rounded-pill text-bg-success px-3 py-2">
+                            <i class="bi bi-check-circle me-1"></i> Received
+                        </span>
+                    {% elif purchase.status == "cancelled" %}
+                        <span class="badge rounded-pill text-bg-danger px-3 py-2">
+                            Cancelled
+                        </span>
+                    {% else %}
+                        <span class="badge rounded-pill text-bg-warning px-3 py-2">
+                            {{ purchase.status|title }}
+                        </span>
+                    {% endif %}
+                    <div class="text-secondary small mt-2">
+                        Purchase date:
+                        {{ purchase.purchase_date.strftime('%d %b %Y')
+                           if purchase.purchase_date else "—" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-secondary small">Invoice Total</span>
+                        <i class="bi bi-currency-rupee text-primary fs-5"></i>
+                    </div>
+                    <h3 class="fw-bold mt-3 mb-1">
+                        ₹{{ "%.2f"|format(purchase.total_amount or 0) }}
+                    </h3>
+                    <span class="small text-secondary">Total purchase value</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-secondary small">Amount Paid</span>
+                        <i class="bi bi-wallet2 text-success fs-5"></i>
+                    </div>
+                    <h3 class="fw-bold text-success mt-3 mb-1">
+                        ₹{{ "%.2f"|format(purchase.amount_paid or 0) }}
+                    </h3>
+                    <span class="small text-secondary">Payments recorded</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-secondary small">Balance Due</span>
+                        <i class="bi bi-hourglass-split text-danger fs-5"></i>
+                    </div>
+                    <h3 class="fw-bold text-danger mt-3 mb-1">
+                        ₹{{ "%.2f"|format(purchase.balance_due or 0) }}
+                    </h3>
+                    <span class="small text-secondary">Outstanding amount</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-secondary small">Payment Status</span>
+                        <i class="bi bi-shield-check text-info fs-5"></i>
+                    </div>
+                    <h4 class="fw-bold mt-3 mb-1">
+                        {{ purchase.payment_status|title }}
+                    </h4>
+                    <span class="small text-secondary">Supplier account</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row g-4">
+
+        <!-- Supplier Information -->
+        <div class="col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 px-4 pt-4">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-building text-primary me-2"></i>
+                        Supplier Information
+                    </h5>
+                </div>
+                <div class="card-body px-4">
+                    <div class="mb-3">
+                        <div class="text-secondary small mb-1">Supplier Name</div>
+                        <div class="fw-semibold">
+                            {{ purchase.supplier.name if purchase.supplier else "Unknown" }}
+                        </div>
+                    </div>
+
+                    <hr class="text-secondary opacity-25">
+
+                    <div class="mb-3">
+                        <div class="text-secondary small mb-1">Expected Delivery</div>
+                        <div class="fw-semibold">
+                            {{ purchase.expected_delivery_date.strftime('%d %b %Y')
+                               if purchase.expected_delivery_date else "Not specified" }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="text-secondary small mb-1">Actual Delivery</div>
+                        <div class="fw-semibold">
+                            {{ purchase.actual_delivery_date.strftime('%d %b %Y')
+                               if purchase.actual_delivery_date else "Not received yet" }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="text-secondary small mb-1">Payment Due Date</div>
+                        <div class="fw-semibold">
+                            {{ purchase.payment_due_date.strftime('%d %b %Y')
+                               if purchase.payment_due_date else "Not specified" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Purchased Items -->
+        <div class="col-xl-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 px-4 pt-4">
+                    <h5 class="fw-bold mb-1">
+                        <i class="bi bi-box-seam text-primary me-2"></i>
+                        Purchased Items
+                    </h5>
+                    <p class="small text-secondary mb-0">
+                        Products and quantities in this invoice
+                    </p>
+                </div>
+
+                <div class="card-body p-0 mt-3">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4 py-3">Product</th>
+                                    <th class="py-3">Qty</th>
+                                    <th class="py-3">Unit Cost</th>
+                                    <th class="pe-4 py-3 text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in purchase.items %}
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-semibold">
+                                            {{ item.product.name if item.product else "Unknown product" }}
+                                        </div>
+                                        {% if item.product and item.product.product_code %}
+                                        <div class="small text-secondary">
+                                            {{ item.product.product_code }}
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>₹{{ "%.2f"|format(item.unit_cost or 0) }}</td>
+                                    <td class="pe-4 text-end fw-semibold">
+                                        ₹{{ "%.2f"|format(item.subtotal or 0) }}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-secondary py-5">
+                                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                                        No purchase items found.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="3" class="text-end py-3">Grand Total</th>
+                                    <th class="text-end pe-4 py-3">
+                                        ₹{{ "%.2f"|format(purchase.total_amount or 0) }}
+                                    </th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Purchase Actions -->
+    <div class="row g-4 mt-1">
+
+        {% if purchase.status != "received" and purchase.status != "cancelled" %}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex gap-3">
+                        <div class="rounded-3 bg-success bg-opacity-10 text-success p-3">
+                            <i class="bi bi-box-arrow-in-down fs-4"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5 class="fw-bold">Receive Stock</h5>
+                            <p class="text-secondary small">
+                                Confirm supplier delivery and add purchased quantities to inventory.
+                            </p>
+                            <form method="POST"
+                                  action="{{ url_for('purchase_receive', purchase_id=purchase.id) }}"
+                                  onsubmit="return confirm('Confirm receipt of all items?');">
+                                <input type="hidden" name="csrf_token"
+                                       value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-success rounded-3">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    Confirm Receipt
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if purchase.status == "received" and purchase.balance_due > 0 %}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 px-4 pt-4">
+                    <h5 class="fw-bold mb-1">
+                        <i class="bi bi-credit-card text-primary me-2"></i>
+                        Record Supplier Payment
+                    </h5>
+                    <p class="text-secondary small mb-0">
+                        Record a full or partial payment
+                    </p>
+                </div>
+
+                <div class="card-body p-4">
+                    <form method="POST"
+                          action="{{ url_for('purchase_add_payment', purchase_id=purchase.id) }}">
+                        <input type="hidden" name="csrf_token"
+                               value="{{ csrf_token() }}">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Amount (₹)</label>
+                            <input type="number" name="amount"
+                                   class="form-control rounded-3"
+                                   min="0.01" step="0.01"
+                                   max="{{ purchase.balance_due }}"
+                                   placeholder="Enter payment amount"
+                                   required>
+                            <div class="form-text">
+                                Remaining balance: ₹{{ "%.2f"|format(purchase.balance_due) }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Payment Method</label>
+                            <select name="method" class="form-select rounded-3" required>
+                                <option value="cash">Cash</option>
+                                <option value="upi">UPI</option>
+                                <option value="card">Card</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Reference</label>
+                            <input type="text" name="reference"
+                                   class="form-control rounded-3"
+                                   placeholder="Transaction ID (optional)">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary rounded-3 w-100">
+                            <i class="bi bi-check2-circle me-1"></i>
+                            Save Payment
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('purchase_list') }}"
+           class="btn btn-outline-dark rounded-3 px-4">
+            <i class="bi bi-house-door me-1"></i>
+            Back to Purchases
+        </a>
+    </div>
+
+</div>
+{% endblock %}

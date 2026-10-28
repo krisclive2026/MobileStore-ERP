@@ -52,21 +52,43 @@
 .billing-error{display:none;padding:12px;background:#fff1f1;border:1px solid #ffcaca;color:#a82020;border-radius:8px;margin-bottom:13px;font-size:12px}
 .billing-empty{grid-column:1/-1;text-align:center;padding:30px 12px;color:#8b90a5;font-size:12px}
 .billing-submit{width:100%;min-height:46px}
+.preview-store-logo{max-width:100px;max-height:70px;object-fit:contain;display:block;margin-bottom:10px}
+.preview-store-address{white-space:pre-line;overflow-wrap:anywhere}
+.preview-social-links{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+.preview-social-links a{font-size:12px;color:#615df5;text-decoration:none;font-weight:700}
+.preview-social-links a:hover{text-decoration:underline}
 @media(max-width:1050px){.billing-layout{grid-template-columns:minmax(0,1fr)}}
-@media(max-width:560px){.billing-page{padding:10px}.billing-panel-body{padding:14px}.billing-products{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.billing-product{padding:9px}.billing-fields{grid-template-columns:1fr;gap:0}.billing-header h1{font-size:21px}}
+@media(max-width:560px){
+    .billing-page{padding:10px}
+    .billing-panel-body{padding:14px}
+    .billing-products{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+    .billing-product{padding:9px}
+    .billing-fields{grid-template-columns:1fr;gap:0}
+    .billing-header h1{font-size:21px}
+}
+@media print{
+    .billing-header,.billing-layout,.no-print{display:none!important}
+    .billing-page{max-width:none;padding:0}
+    #liveInvoicePreview{box-shadow:none;border:0}
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <main class="billing-page">
+
     <header class="billing-header">
         <div>
             <h1>Create New Bill</h1>
             <div class="billing-muted">MobileStore ERP · Invoice and payment entry</div>
         </div>
+
         <div class="billing-actions">
-            <a class="billing-btn billing-secondary" href="{{ url_for('billing_list') }}">Billing History</a>
-            <a class="billing-btn billing-secondary" href="{{ url_for('dashboard_page') }}">← Dashboard</a>
+            <a class="billing-btn billing-secondary"
+               href="{{ url_for('billing_list') }}">Billing History</a>
+
+            <a class="billing-btn billing-secondary"
+               href="{{ url_for('dashboard_page') }}">← Dashboard</a>
         </div>
     </header>
 
@@ -76,55 +98,74 @@
         {% endif %}
 
         <div class="billing-layout">
+
+            <!-- PRODUCT CATALOG -->
             <section class="billing-panel">
                 <div class="billing-panel-head">
-                    <span class="billing-count" id="productCount">{{ products|length }} products</span>
+                    <span class="billing-count" id="productCount">
+                        {{ products|length }} products
+                    </span>
+
                     <h2>Products</h2>
-                    <div class="billing-muted">Search by product name, model, barcode or product code.</div>
+                    <div class="billing-muted">
+                        Search by product name, model, barcode or product code.
+                    </div>
                 </div>
+
                 <div class="billing-panel-body">
                     <div class="billing-search">
-                        <input id="productSearch" class="billing-input" type="search"
-                               placeholder="Search products or scan barcode..." autocomplete="off">
+                        <input id="productSearch"
+                               class="billing-input"
+                               type="search"
+                               placeholder="Search products or scan barcode..."
+                               autocomplete="off">
                     </div>
 
                     <div id="productResults" class="billing-products">
-                        <div class="billing-empty">Enter a product name or scan a barcode to begin.</div>
+                        <div class="billing-empty">
+                            Enter a product name or scan a barcode to begin.
+                        </div>
                     </div>
 
                     <select id="productCatalog" hidden>
                         {% for product in products %}
-                        {% if product.is_active and product.stock_quantity > 0 %}
-                        <option value="{{ product.id }}"
-                            data-name="{{ product.name }}"
-                            data-code="{{ product.product_code or '' }}"
-                            data-barcode="{{ product.barcode or '' }}"
-                            data-brand="{{ product.brand or '' }}"
-                            data-model="{{ product.model or '' }}"
-                            data-price="{{ product.selling_price or 0 }}"
-                            data-gst="{{ product.gst_percent or 0 }}"
-                            data-stock="{{ product.stock_quantity }}">
-                            {{ product.name }}{% if product.product_code %} — {{ product.product_code }}{% endif %}
-                        </option>
-                        {% endif %}
+                            {% if product.is_active and product.stock_quantity > 0 %}
+                            <option value="{{ product.id }}"
+                                    data-name="{{ product.name }}"
+                                    data-code="{{ product.product_code or '' }}"
+                                    data-barcode="{{ product.barcode or '' }}"
+                                    data-brand="{{ product.brand or '' }}"
+                                    data-model="{{ product.model or '' }}"
+                                    data-price="{{ product.selling_price or 0 }}"
+                                    data-gst="{{ product.gst_percent or 0 }}"
+                                    data-stock="{{ product.stock_quantity }}">
+                                {{ product.name }}{% if product.product_code %} — {{ product.product_code }}{% endif %}
+                            </option>
+                            {% endif %}
                         {% endfor %}
                     </select>
                 </div>
             </section>
 
+            <!-- INVOICE ENTRY -->
             <section class="billing-panel">
                 <div class="billing-panel-head">
                     <span class="billing-count" id="cartCount">0 items</span>
                     <h2>Invoice Details</h2>
-                    <div class="billing-muted">Select a customer, review items and enter payment.</div>
+                    <div class="billing-muted">
+                        Select a customer, review items and enter payment.
+                    </div>
                 </div>
+
                 <div class="billing-panel-body">
                     <div id="formError" class="billing-error" role="alert"></div>
 
                     <div class="billing-customer">
                         <label class="billing-label" for="customer_id">Customer</label>
+
                         <select class="billing-select" id="customer_id" name="customer_id">
                             <option value="">Walk-in Customer</option>
+
                             {% for customer in customers %}
                             <option value="{{ customer.id }}">
                                 {{ customer.name }}{% if customer.phone %} — {{ customer.phone }}{% endif %}
@@ -137,40 +178,71 @@
                         <table class="billing-table">
                             <thead>
                                 <tr>
-                                    <th>Product</th><th>Price</th><th>Qty</th><th>GST</th><th>Total</th><th></th>
+                                    <th>Product</th>
+                                    <th>Price</th>
+                                    <th>Qty</th>
+                                    <th>GST</th>
+                                    <th>Total</th>
+                                    <th></th>
                                 </tr>
                             </thead>
+
                             <tbody id="cartRows">
                                 <tr id="emptyCartRow">
-                                    <td colspan="6" class="billing-empty">No products added yet.</td>
+                                    <td colspan="6" class="billing-empty">
+                                        No products added yet.
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
+                    <!-- BILL TOTALS -->
                     <div class="billing-summary">
                         <div class="billing-total-row">
-                            <span>Subtotal (before GST)</span><strong id="subtotalDisplay">₹0.00</strong>
+                            <span>Subtotal (before GST)</span>
+                            <strong id="subtotalDisplay">₹0.00</strong>
                         </div>
+
                         <div class="billing-total-row">
-                            <span>GST</span><strong id="taxDisplay">₹0.00</strong>
+                            <span>GST</span>
+                            <strong id="taxDisplay">₹0.00</strong>
                         </div>
+
                         <div class="billing-total-row">
                             <label for="discount_amount">Discount (₹)</label>
-                            <input class="billing-discount" id="discount_amount" name="discount_amount"
-                                   type="number" min="0" step="0.01" value="0" required>
+                            <input class="billing-discount"
+                                   id="discount_amount"
+                                   name="discount_amount"
+                                   type="number"
+                                   min="0"
+                                   step="0.01"
+                                   value="0"
+                                   required>
                         </div>
+
                         <div class="billing-total-row billing-grand">
-                            <span>Grand Total</span><strong id="totalDisplay">₹0.00</strong>
+                            <span>Grand Total</span>
+                            <strong id="totalDisplay">₹0.00</strong>
                         </div>
                     </div>
 
+                    <!-- PAYMENT DETAILS -->
                     <div class="billing-payment">
-                        <h3 style="font-size:14px;margin:0 0 14px">Payment Details</h3>
+                        <h3 style="font-size:14px;margin:0 0 14px">
+                            Payment Details
+                        </h3>
+
                         <div class="billing-fields">
                             <div class="billing-field">
-                                <label class="billing-label" for="payment_method">Payment Method</label>
-                                <select class="billing-select" id="payment_method" name="payment_method" required>
+                                <label class="billing-label" for="payment_method">
+                                    Payment Method
+                                </label>
+
+                                <select class="billing-select"
+                                        id="payment_method"
+                                        name="payment_method"
+                                        required>
                                     <option value="cash">Cash</option>
                                     <option value="upi">UPI</option>
                                     <option value="card">Card</option>
@@ -178,35 +250,208 @@
                                     <option value="other">Other</option>
                                 </select>
                             </div>
+
                             <div class="billing-field">
-                                <label class="billing-label" for="paid_amount">Amount Paid (₹)</label>
-                                <input class="billing-input" id="paid_amount" name="paid_amount"
-                                       type="number" min="0" step="0.01" value="0" required>
+                                <label class="billing-label" for="paid_amount">
+                                    Amount Paid (₹)
+                                </label>
+
+                                <input class="billing-input"
+                                       id="paid_amount"
+                                       name="paid_amount"
+                                       type="number"
+                                       min="0"
+                                       step="0.01"
+                                       value="0"
+                                       required>
                             </div>
                         </div>
+
                         <div class="billing-field">
-                            <label class="billing-label" for="payment_reference">Payment Reference</label>
-                            <input class="billing-input" id="payment_reference" name="payment_reference"
-                                   maxlength="100" placeholder="UPI transaction ID or receipt number">
+                            <label class="billing-label" for="payment_reference">
+                                Payment Reference
+                            </label>
+
+                            <input class="billing-input"
+                                   id="payment_reference"
+                                   name="payment_reference"
+                                   maxlength="100"
+                                   placeholder="UPI transaction ID or receipt number">
                         </div>
+
                         <div class="billing-balance">
                             <span id="balanceLabel">Balance due</span>
                             <strong id="balanceDisplay">₹0.00</strong>
                         </div>
-                        <button class="billing-btn billing-primary billing-submit" id="saveBillBtn" type="submit">
+
+                        <button class="billing-btn billing-primary billing-submit"
+                                id="saveBillBtn"
+                                type="submit">
                             Save Bill
                         </button>
-                        <button class="billing-btn billing-secondary billing-submit" id="clearBillBtn"
-                                type="button" style="margin-top:8px">
+
+                        <button class="billing-btn billing-secondary billing-submit"
+                                id="clearBillBtn"
+                                type="button"
+                                style="margin-top:8px">
                             Clear Bill
                         </button>
                     </div>
                 </div>
             </section>
         </div>
+
+        <!-- LIVE INVOICE PREVIEW -->
+        <section class="billing-panel mt-4" id="liveInvoicePreview">
+            <div class="billing-panel-head">
+                <h2>Live Invoice Preview</h2>
+                <div class="billing-muted">
+                    Preview of the store details and totals that will appear on the invoice.
+                </div>
+            </div>
+
+            <div class="billing-panel-body">
+
+                <div style="display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;border-bottom:2px solid #e2e8f0;padding-bottom:16px">
+                    <div>
+                        {% if settings and settings.logo_filename %}
+                        <img src="{{ url_for('store_logo_file', filename=settings.logo_filename) }}"
+                             alt="Store logo"
+                             class="preview-store-logo">
+                        {% endif %}
+
+                        <h3 style="font-size:21px;font-weight:800;margin:0 0 8px">
+                            {{ settings.store_name if settings and settings.store_name else 'Mobile Store' }}
+                        </h3>
+
+                        <div class="billing-muted preview-store-address">
+                            {{ settings.address if settings and settings.address else '' }}
+                        </div>
+
+                        {% if settings and settings.phone %}
+                        <div class="billing-muted">Phone: {{ settings.phone }}</div>
+                        {% endif %}
+
+                        {% if settings and settings.gstin and settings.show_gstin %}
+                        <div class="billing-muted">GSTIN: {{ settings.gstin }}</div>
+                        {% endif %}
+
+                        {% if settings and settings.opening_time %}
+                        <div class="billing-muted">
+                            Opening time: {{ settings.opening_time }}
+                        </div>
+                        {% endif %}
+
+                        {% if settings and settings.closing_time %}
+                        <div class="billing-muted">
+                            Closing time: {{ settings.closing_time }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <strong style="font-size:20px">INVOICE</strong>
+
+                        <div class="billing-muted">
+                            Prefix: {{ settings.invoice_prefix if settings and settings.invoice_prefix else 'INV' }}
+                        </div>
+
+                        <div class="billing-muted">
+                            Invoice number assigned when saved
+                        </div>
+                    </div>
+                </div>
+
+                <div style="padding:16px 0">
+                    <strong>Customer:</strong>
+                    <span id="previewCustomer">Walk-in Customer</span>
+                </div>
+
+                <div class="billing-table-wrap">
+                    <table class="billing-table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Qty</th>
+                                <th>Price</th>
+                                <th>Tax</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="previewItems">
+                            <tr>
+                                <td colspan="5" class="billing-empty">
+                                    No products added yet.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="max-width:320px;margin-left:auto;margin-top:12px">
+                    <div class="billing-total-row">
+                        <span>Subtotal</span>
+                        <strong id="previewSubtotal">₹0.00</strong>
+                    </div>
+
+                    <div class="billing-total-row">
+                        <span>GST</span>
+                        <strong id="previewTax">₹0.00</strong>
+                    </div>
+
+                    <div class="billing-total-row">
+                        <span>Discount</span>
+                        <strong id="previewDiscount">₹0.00</strong>
+                    </div>
+
+                    <div class="billing-total-row billing-grand">
+                        <span>Grand Total</span>
+                        <strong id="previewTotal">₹0.00</strong>
+                    </div>
+
+                    <div class="billing-total-row">
+                        <span>Paid</span>
+                        <strong id="previewPaid">₹0.00</strong>
+                    </div>
+
+                    <div class="billing-total-row">
+                        <span>Balance Due</span>
+                        <strong id="previewBalance">₹0.00</strong>
+                    </div>
+                </div>
+
+                <div style="border-top:1px dashed #dfe2ed;margin-top:18px;padding-top:14px">
+                    <div class="billing-muted">
+                        {{ settings.footer_text if settings and settings.footer_text else 'Thank you for your business!' }}
+                    </div>
+
+                    <div class="preview-social-links">
+                        {% if settings and settings.instagram_url %}
+                        <a href="{{ settings.instagram_url }}"
+                           target="_blank"
+                           rel="noopener noreferrer">Instagram</a>
+                        {% endif %}
+
+                        {% if settings and settings.facebook_url %}
+                        <a href="{{ settings.facebook_url }}"
+                           target="_blank"
+                           rel="noopener noreferrer">Facebook</a>
+                        {% endif %}
+
+                        {% if settings and settings.whatsapp_url %}
+                        <a href="{{ settings.whatsapp_url }}"
+                           target="_blank"
+                           rel="noopener noreferrer">WhatsApp</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </section>
     </form>
 </main>
 
+<!-- CART ROW TEMPLATE -->
 <template id="cartRowTemplate">
     <tr class="cart-row">
         <td>
@@ -214,11 +459,27 @@
             <small class="cart-code" style="color:#858ba1"></small>
             <input class="cart-product-id" type="hidden" name="product_id[]">
         </td>
+
         <td class="cart-price"></td>
-        <td><input class="billing-qty cart-qty" type="number" name="quantity[]" min="1" step="1" value="1" required></td>
+
+        <td>
+            <input class="billing-qty cart-qty"
+                   type="number"
+                   name="quantity[]"
+                   min="1"
+                   step="1"
+                   value="1"
+                   required>
+        </td>
+
         <td class="cart-gst"></td>
         <td class="cart-total" style="font-weight:800;white-space:nowrap"></td>
-        <td><button type="button" class="billing-remove remove-row" aria-label="Remove product">×</button></td>
+
+        <td>
+            <button type="button"
+                    class="billing-remove remove-row"
+                    aria-label="Remove product">×</button>
+        </td>
     </tr>
 </template>
 {% endblock %}
@@ -236,8 +497,10 @@
     const rowTemplate = document.getElementById("cartRowTemplate");
     const discountInput = document.getElementById("discount_amount");
     const paidInput = document.getElementById("paid_amount");
+    const customerSelect = document.getElementById("customer_id");
     const errorBox = document.getElementById("formError");
     const saveButton = document.getElementById("saveBillBtn");
+
     const options = Array.from(catalog.options).filter(option => option.value);
     let submitting = false;
 
@@ -252,8 +515,14 @@
     });
 
     const rows = () => Array.from(cart.querySelectorAll(".cart-row"));
-    const optionFor = id => options.find(option => option.value === String(id));
-    const rowFor = id => rows().find(row => row.querySelector(".cart-product-id").value === String(id));
+
+    const optionFor = id =>
+        options.find(option => option.value === String(id));
+
+    const rowFor = id =>
+        rows().find(row =>
+            row.querySelector(".cart-product-id").value === String(id)
+        );
 
     function showError(message) {
         errorBox.textContent = message;
@@ -267,24 +536,35 @@
 
     function renderProducts() {
         results.replaceChildren();
+
         const query = search.value.trim().toLowerCase();
 
         if (!query) {
             const empty = document.createElement("div");
             empty.className = "billing-empty";
-            empty.textContent = "Enter a product name or scan a barcode to begin.";
+            empty.textContent =
+                "Enter a product name or scan a barcode to begin.";
+
             results.appendChild(empty);
-            document.getElementById("productCount").textContent = options.length + " products";
+            document.getElementById("productCount").textContent =
+                options.length + " products";
             return;
         }
 
         const matches = options.filter(option => {
             const d = option.dataset;
-            return [d.name, d.code, d.barcode, d.brand, d.model]
-                .join(" ").toLowerCase().includes(query);
+
+            return [
+                d.name,
+                d.code,
+                d.barcode,
+                d.brand,
+                d.model
+            ].join(" ").toLowerCase().includes(query);
         }).slice(0, 80);
 
-        document.getElementById("productCount").textContent = matches.length + " matches";
+        document.getElementById("productCount").textContent =
+            matches.length + " matches";
 
         if (!matches.length) {
             const empty = document.createElement("div");
@@ -297,7 +577,10 @@
         matches.forEach(option => {
             const d = option.dataset;
             const currentRow = rowFor(option.value);
-            const inCart = currentRow ? num(currentRow.querySelector(".cart-qty").value) : 0;
+            const inCart = currentRow
+                ? num(currentRow.querySelector(".cart-qty").value)
+                : 0;
+
             const available = num(d.stock) - inCart;
 
             const card = document.createElement("article");
@@ -309,8 +592,12 @@
 
             const meta = document.createElement("div");
             meta.className = "billing-product-meta";
-            meta.textContent = [d.brand, d.model, d.code ? "Code: " + d.code : "",
-                d.barcode ? "Barcode: " + d.barcode : ""].filter(Boolean).join(" · ");
+            meta.textContent = [
+                d.brand,
+                d.model,
+                d.code ? "Code: " + d.code : "",
+                d.barcode ? "Barcode: " + d.barcode : ""
+            ].filter(Boolean).join(" · ");
 
             const price = document.createElement("div");
             price.className = "billing-price";
@@ -323,8 +610,10 @@
             const add = document.createElement("button");
             add.type = "button";
             add.className = "billing-add";
-            add.textContent = available > 0 ? "+ Add to Bill" : "Stock limit reached";
+            add.textContent =
+                available > 0 ? "+ Add to Bill" : "Stock limit reached";
             add.disabled = available <= 0;
+
             add.addEventListener("click", () => addProduct(option.value));
 
             card.append(name, meta, price, stock, add);
@@ -334,6 +623,7 @@
 
     function addProduct(id) {
         clearError();
+
         const option = optionFor(id);
         if (!option) return;
 
@@ -343,18 +633,30 @@
         if (existing) {
             const qtyInput = existing.querySelector(".cart-qty");
             const nextQty = num(qtyInput.value) + 1;
+
             if (nextQty > stock) {
-                showError("Only " + stock + " units are available for " + option.dataset.name + ".");
+                showError(
+                    "Only " + stock + " units are available for " +
+                    option.dataset.name + "."
+                );
                 return;
             }
+
             qtyInput.value = String(nextQty);
         } else {
             const fragment = rowTemplate.content.cloneNode(true);
             const row = fragment.querySelector(".cart-row");
+
             row.querySelector(".cart-product-id").value = option.value;
-            row.querySelector(".cart-name").textContent = option.dataset.name || option.textContent.trim();
-            row.querySelector(".cart-code").textContent = option.dataset.code || option.dataset.barcode || "";
+
+            row.querySelector(".cart-name").textContent =
+                option.dataset.name || option.textContent.trim();
+
+            row.querySelector(".cart-code").textContent =
+                option.dataset.code || option.dataset.barcode || "";
+
             row.querySelector(".cart-qty").max = String(stock);
+
             cart.appendChild(fragment);
         }
 
@@ -366,16 +668,21 @@
         let subtotal = 0;
         let tax = 0;
         let itemCount = 0;
+
         const currentRows = rows();
 
         currentRows.forEach(row => {
-            const option = optionFor(row.querySelector(".cart-product-id").value);
+            const option = optionFor(
+                row.querySelector(".cart-product-id").value
+            );
+
             if (!option) return;
 
             const price = num(option.dataset.price);
             const gstRate = num(option.dataset.gst);
             const qtyInput = row.querySelector(".cart-qty");
             const qty = Math.max(0, num(qtyInput.value));
+
             const lineSubtotal = price * qty;
             const lineTax = lineSubtotal * gstRate / 100;
 
@@ -385,47 +692,155 @@
 
             row.querySelector(".cart-price").textContent = money(price);
             row.querySelector(".cart-gst").textContent = gstRate + "%";
-            row.querySelector(".cart-total").textContent = money(lineSubtotal + lineTax);
+            row.querySelector(".cart-total").textContent =
+                money(lineSubtotal + lineTax);
+
             qtyInput.max = String(num(option.dataset.stock));
         });
 
-        const discount = Math.min(Math.max(0, num(discountInput.value)), subtotal + tax);
+        // Calculate values before using them in the preview.
+        const discount = Math.min(
+            Math.max(0, num(discountInput.value)),
+            subtotal + tax
+        );
+
         const total = Math.max(0, subtotal + tax - discount);
         const paid = Math.max(0, num(paidInput.value));
         const balance = total - paid;
 
-        document.getElementById("subtotalDisplay").textContent = money(subtotal);
-        document.getElementById("taxDisplay").textContent = money(tax);
-        document.getElementById("totalDisplay").textContent = money(total);
-        document.getElementById("cartCount").textContent = itemCount + (itemCount === 1 ? " item" : " items");
-        document.getElementById("balanceLabel").textContent = balance < 0 ? "Change" : "Balance due";
-        document.getElementById("balanceDisplay").textContent = money(Math.abs(balance));
+        // Update the billing summary.
+        document.getElementById("subtotalDisplay").textContent =
+            money(subtotal);
 
+        document.getElementById("taxDisplay").textContent =
+            money(tax);
+
+        document.getElementById("totalDisplay").textContent =
+            money(total);
+
+        document.getElementById("cartCount").textContent =
+            itemCount + (itemCount === 1 ? " item" : " items");
+
+        document.getElementById("balanceLabel").textContent =
+            balance < 0 ? "Change" : "Balance due";
+
+        document.getElementById("balanceDisplay").textContent =
+            money(Math.abs(balance));
+
+        // Update the live invoice preview.
+        const previewItems = document.getElementById("previewItems");
+
+        if (previewItems) {
+            previewItems.replaceChildren();
+
+            if (!currentRows.length) {
+                const tr = document.createElement("tr");
+                const td = document.createElement("td");
+
+                td.colSpan = 5;
+                td.className = "billing-empty";
+                td.textContent = "No products added yet.";
+
+                tr.appendChild(td);
+                previewItems.appendChild(tr);
+            }
+
+            currentRows.forEach(row => {
+                const option = optionFor(
+                    row.querySelector(".cart-product-id").value
+                );
+
+                if (!option) return;
+
+                const qty = Math.max(
+                    0,
+                    num(row.querySelector(".cart-qty").value)
+                );
+
+                const price = num(option.dataset.price);
+                const gstRate = num(option.dataset.gst);
+                const lineSubtotal = price * qty;
+                const lineTax = lineSubtotal * gstRate / 100;
+
+                const tr = document.createElement("tr");
+
+                [
+                    option.dataset.name || "Product",
+                    String(qty),
+                    money(price),
+                    money(lineTax),
+                    money(lineSubtotal + lineTax)
+                ].forEach(value => {
+                    const td = document.createElement("td");
+                    td.textContent = value;
+                    tr.appendChild(td);
+                });
+
+                previewItems.appendChild(tr);
+            });
+
+            const selectedCustomer =
+                customerSelect.options[customerSelect.selectedIndex];
+
+            document.getElementById("previewCustomer").textContent =
+                selectedCustomer
+                    ? selectedCustomer.textContent.trim()
+                    : "Walk-in Customer";
+
+            document.getElementById("previewSubtotal").textContent =
+                money(subtotal);
+
+            document.getElementById("previewTax").textContent =
+                money(tax);
+
+            document.getElementById("previewDiscount").textContent =
+                money(discount);
+
+            document.getElementById("previewTotal").textContent =
+                money(total);
+
+            document.getElementById("previewPaid").textContent =
+                money(paid);
+
+            document.getElementById("previewBalance").textContent =
+                money(Math.max(0, balance));
+        }
+
+        // Keep the cart's empty-state message in sync.
         const emptyRow = document.getElementById("emptyCartRow");
-        if (emptyRow) emptyRow.remove();
+
+        if (emptyRow) {
+            emptyRow.remove();
+        }
 
         if (!currentRows.length) {
             const tr = document.createElement("tr");
             tr.id = "emptyCartRow";
+
             const td = document.createElement("td");
             td.colSpan = 6;
             td.className = "billing-empty";
             td.textContent = "No products added yet.";
+
             tr.appendChild(td);
             cart.appendChild(tr);
         }
 
-        return {subtotal, tax, discount, total};
+        return { subtotal, tax, discount, total };
     }
 
+    // Search products as the user types.
     search.addEventListener("input", () => {
         clearError();
         renderProducts();
     });
 
+    // Add a product when a barcode or product code is scanned.
     search.addEventListener("keydown", event => {
         if (event.key !== "Enter") return;
+
         event.preventDefault();
+
         const query = search.value.trim().toLowerCase();
         if (!query) return;
 
@@ -441,8 +856,10 @@
         }
     });
 
+    // Recalculate when quantity changes.
     cart.addEventListener("input", event => {
         if (!event.target.matches(".cart-qty")) return;
+
         clearError();
         updateTotals();
         renderProducts();
@@ -452,28 +869,46 @@
         if (!event.target.matches(".cart-qty")) return;
 
         const row = event.target.closest(".cart-row");
-        const option = optionFor(row.querySelector(".cart-product-id").value);
+
+        const option = optionFor(
+            row.querySelector(".cart-product-id").value
+        );
+
         const stock = option ? num(option.dataset.stock) : 0;
         const quantity = num(event.target.value);
 
-        if (!Number.isInteger(quantity) || quantity < 1 || quantity > stock) {
-            showError("Quantity must be a whole number between 1 and " + stock + ".");
-            event.target.value = String(Math.min(stock, Math.max(1, Math.floor(quantity) || 1)));
+        if (
+            !Number.isInteger(quantity) ||
+            quantity < 1 ||
+            quantity > stock
+        ) {
+            showError(
+                "Quantity must be a whole number between 1 and " +
+                stock + "."
+            );
+
+            event.target.value = String(
+                Math.min(stock, Math.max(1, Math.floor(quantity) || 1))
+            );
         }
 
         updateTotals();
         renderProducts();
     });
 
+    // Remove a product from the cart.
     cart.addEventListener("click", event => {
         const button = event.target.closest(".remove-row");
         if (!button) return;
+
         button.closest(".cart-row").remove();
+
         clearError();
         updateTotals();
         renderProducts();
     });
 
+    // Recalculate after discount or payment changes.
     discountInput.addEventListener("input", () => {
         clearError();
         updateTotals();
@@ -481,18 +916,26 @@
 
     paidInput.addEventListener("input", updateTotals);
 
+    // Register this listener only once.
+    customerSelect.addEventListener("change", updateTotals);
+
+    // Clear the current bill.
     document.getElementById("clearBillBtn").addEventListener("click", () => {
         rows().forEach(row => row.remove());
+
         discountInput.value = "0";
         paidInput.value = "0";
+
         clearError();
         updateTotals();
         renderProducts();
         search.focus();
     });
 
+    // Validate the bill before submitting it to Flask.
     form.addEventListener("submit", event => {
         clearError();
+
         const currentRows = rows();
 
         if (!currentRows.length) {
@@ -520,7 +963,11 @@
 
             if (combinedQty > num(option.dataset.stock)) {
                 event.preventDefault();
-                showError("Requested quantity exceeds stock for " + option.dataset.name + ".");
+
+                showError(
+                    "Requested quantity exceeds stock for " +
+                    option.dataset.name + "."
+                );
                 return;
             }
         }
@@ -528,8 +975,9 @@
         const totals = updateTotals();
         const discount = num(discountInput.value);
         const paid = num(paidInput.value);
+        const grandTotal = totals.subtotal + totals.tax;
 
-        if (discount < 0 || discount > totals.subtotal + totals.tax) {
+        if (discount < 0 || discount > grandTotal) {
             event.preventDefault();
             showError("Discount must be between ₹0 and the bill total.");
             discountInput.focus();
@@ -539,6 +987,13 @@
         if (paid < 0) {
             event.preventDefault();
             showError("Amount paid cannot be negative.");
+            paidInput.focus();
+            return;
+        }
+
+        if (paid > totals.total) {
+            event.preventDefault();
+            showError("Amount paid cannot exceed the grand total.");
             paidInput.focus();
             return;
         }
@@ -553,6 +1008,7 @@
         saveButton.textContent = "Saving Bill...";
     });
 
+    // Initialize the page.
     updateTotals();
     renderProducts();
 })();

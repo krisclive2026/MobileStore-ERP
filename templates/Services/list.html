@@ -1,0 +1,172 @@
+
+{% extends "base.html" %}
+
+{% block title %}Services | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Service Center</h2>
+            <p class="text-secondary mb-0">
+                Manage repairs, maintenance and after-sales service.
+            </p>
+        </div>
+    
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('dashboard_page') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+            </a>
+    
+            <a href="{{ url_for('service_create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> New Service Job
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-xl">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-secondary small">Total Jobs</div>
+                    <h3 class="fw-bold mb-0">{{ counts.total }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-xl">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-secondary small">Received</div>
+                    <h3 class="fw-bold text-primary mb-0">{{ counts.received }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-xl">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-secondary small">In Progress</div>
+                    <h3 class="fw-bold text-warning mb-0">{{ counts.in_progress }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-xl">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-secondary small">Ready for Pickup</div>
+                    <h3 class="fw-bold text-info mb-0">{{ counts.ready }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-xl">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-secondary small">Outstanding Balance</div>
+                    <h3 class="fw-bold text-danger mb-0">₹{{ "%.2f"|format(outstanding) }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('services_list') }}" class="row g-2 mb-4">
+                <div class="col-md-6">
+                    <input type="search" name="search" class="form-control"
+                           placeholder="Search job, customer, phone, model or IMEI"
+                           value="{{ search }}">
+                </div>
+                <div class="col-md-4">
+                    <select name="status" class="form-select">
+                        <option value="">All statuses</option>
+                        {% for status in statuses %}
+                        <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>
+                            {{ status }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button class="btn btn-dark flex-fill" type="submit">Filter</button>
+                    <a class="btn btn-outline-secondary" href="{{ url_for('services_list') }}">Reset</a>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Job Number</th>
+                            <th>Customer</th>
+                            <th>Device</th>
+                            <th>Problem</th>
+                            <th>Status</th>
+                            <th>Amount</th>
+                            <th>Balance</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in jobs %}
+                        <tr>
+                            <td>
+                                <a class="fw-semibold text-decoration-none"
+                                   href="{{ url_for('service_detail', service_id=job.id) }}">
+                                    {{ job.job_number }}
+                                </a>
+                                <div class="small text-secondary">{{ job.service_type }}</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ job.customer_name }}</div>
+                                <div class="small text-secondary">{{ job.customer_phone }}</div>
+                            </td>
+                            <td>
+                                <div>{{ job.device_brand }} {{ job.device_model }}</div>
+                                <div class="small text-secondary">{{ job.imei_number or 'No IMEI' }}</div>
+                            </td>
+                            <td>
+                                <span title="{{ job.problem_description }}">
+                                    {{ job.problem_description|truncate(45) }}
+                                </span>
+                            </td>
+                            <td>
+                                {% set badge_class = {
+                                    'Received': 'primary',
+                                    'Diagnosing': 'info',
+                                    'Waiting for Parts': 'warning',
+                                    'In Progress': 'warning',
+                                    'Completed': 'success',
+                                    'Ready for Pickup': 'success',
+                                    'Delivered': 'secondary',
+                                    'Cancelled': 'danger'
+                                }.get(job.status, 'secondary') %}
+                                <span class="badge text-bg-{{ badge_class }}">
+                                    {{ job.status }}
+                                </span>
+                            </td>
+                            <td>₹{{ "%.2f"|format(job.total_amount or 0) }}</td>
+                            <td class="{% if job.balance_due > 0 %}text-danger{% else %}text-success{% endif %} fw-semibold">
+                                ₹{{ "%.2f"|format(job.balance_due) }}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('service_detail', service_id=job.id) }}"
+                                   class="btn btn-sm btn-outline-primary">View</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <h5 class="text-secondary">No service jobs found</h5>
+                                <p class="text-secondary mb-3">Create a service job to start tracking repairs.</p>
+                                <a href="{{ url_for('service_create') }}" class="btn btn-primary">
+                                    Create Service Job
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

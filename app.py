@@ -1,3 +1,5 @@
+from wrapt import decorator
+
 from models import (
     db,
     User,
@@ -5,6 +7,7 @@ from models import (
     Supplier,
     Product,
     Purchase,
+    PurchaseItem,
     Sale,
     SaleItem,
     Payment,
@@ -13,6 +16,9 @@ from models import (
     StoreSettings,
     Expense,
     IMEIRecord,
+    ServiceJob,
+    ServicePart,
+    ServiceHistory,
 )
 
 from io import BytesIO
@@ -22,11 +28,15 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
+from functools import wraps
+
 import os
 import math
 import threading
 import time as time_module
 import urllib.request
+import uuid
+from werkzeug.utils import secure_filename
 
 from datetime import datetime, time, timedelta
 from functools import wraps
@@ -41,6 +51,7 @@ from flask import (
     flash,
     current_app,
     jsonify,
+    send_from_directory,
 )
 from flask_login import (
     LoginManager,
@@ -66,8 +77,21 @@ ROLES = {"admin", "staff"}
 
 
 def create_app():
+    
     app = Flask(__name__)
     app.config.from_object(Config)
+    
+     # Store logo uploads
+    app.config["UPLOAD_FOLDER"] = os.path.join(
+        app.instance_path, "store_logos"
+    )
+    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+
+    app.config["ALLOWED_LOGO_EXTENSIONS"] = {
+        "png", "jpg", "jpeg", "webp"
+    }
+    app.config["MAX_LOGO_SIZE"] = 2 * 1024 * 1024  # 2 MB
+
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -76,11 +100,12 @@ def create_app():
     login_manager.login_view = "login_page"
     login_manager.login_message = "Please log in to continue."
     login_manager.login_message_category = "warning"
-
+    
     # --------------------------------------------------
     # ROLE AUTHORIZATION
     # --------------------------------------------------
-
+    
+    
     def roles_required(*allowed_roles):
         def decorator(view):
             @wraps(view)
@@ -89,7 +114,7 @@ def create_app():
                 if current_user.role not in allowed_roles:
                     flash(
                         "You do not have permission to access this page.",
-                        "danger",
+                    "danger",
                     )
                     return redirect(url_for("dashboard_page"))
 
@@ -99,35 +124,10 @@ def create_app():
 
         return decorator
 
+    
     # --------------------------------------------------
-    # ADMIN: ANALYTICS
+    # REPORT : PDF
     # --------------------------------------------------
-
-    @app.route("/analytics")
-    @login_required
-    @roles_required("admin")
-    def analytics_page():
-        total_sales = Sale.query.count()
-
-        sales_value = db.session.query(
-            func.coalesce(func.sum(Sale.total_amount), 0)
-        ).scalar()
-
-        completed_payments = (
-            db.session.query(func.coalesce(func.sum(Payment.amount), 0))
-            .filter(Payment.status == "completed")
-            .scalar()
-        )
-
-        return render_template(
-            "admin/analytics.html",
-            total_sales=total_sales,
-            sales_value=float(sales_value or 0),
-            completed_payments=float(completed_payments or 0),
-            total_customers=Customer.query.count(),
-            total_products=Product.query.count(),
-            total_users=User.query.count(),
-        )
 
     @app.route("/reports/pdf/<report_type>")
     @login_required
@@ -403,6 +403,252 @@ def create_app():
     @login_required
     def about_page():
         return render_template("about.html")
+    
+    # --------------------------------------------------
+    # STORE SETTINGS
+    # --------------------------------------------------
+
+    @app.route("/store-logo/<filename>")
+    @login_required
+    def store_logo_file(filename):
+        return send_from_directory(
+            app.config["UPLOAD_FOLDER"],
+            filename
+        )
+
+    @app.route("/store-settings", methods=["GET", "POST"])
+    @login_required
+    def store_settings_page():
+        settings = db.session.get(StoreSettings, 1)
+
+        if settings is None:
+            settings = StoreSettings(id=1)
+            db.session.add(settings)
+            db.session.commit()
+
+        if request.method == "POST":
+            old_logo_filename = settings.logo_filename
+            uploaded_logo_path = None
+
+            try:
+                store_name = request.form.get(
+                    "store_name", ""
+                ).strip()
+                address = request.form.get("address", "").strip()
+                phone = request.form.get("phone", "").strip()
+                gstin = request.form.get("gstin", "").strip()
+                paper_size = request.form.get(
+                    "paper_size", "A4"
+                ).strip()
+                orientation = request.form.get(
+                    "orientation", "portrait"
+                ).strip()
+                footer_text = request.form.get(
+                    "footer_text", ""
+                ).strip()
+
+                if not store_name:
+                    raise ValueError("Store name is required.")
+
+                if paper_size not in {
+                    "A4", "A5", "thermal", "custom"
+                }:
+                    raise ValueError("Invalid paper size.")
+
+                if orientation not in {
+                    "portrait", "landscape"
+                }:
+                    raise ValueError("Invalid paper orientation.")
+
+                # ------------------------------------------
+                # LOGO UPLOAD / REPLACEMENT / REMOVAL
+                # ------------------------------------------
+
+                logo_file = request.files.get("store_logo")
+                remove_logo = (
+                    request.form.get("remove_logo") == "1"
+                )
+
+                new_logo_filename = None
+
+                if logo_file and logo_file.filename:
+                    safe_original_name = secure_filename(
+                        logo_file.filename
+                    )
+
+                    extension = os.path.splitext(
+                        safe_original_name
+                    )[1].lower().lstrip(".")
+
+                    allowed_extensions = app.config[
+                        "ALLOWED_LOGO_EXTENSIONS"
+                    ]
+
+                    if extension not in allowed_extensions:
+                        raise ValueError(
+                            "Logo must be PNG, JPG, JPEG or WebP."
+                        )
+
+                    # Check actual file size
+                    logo_file.stream.seek(0, os.SEEK_END)
+                    file_size = logo_file.stream.tell()
+                    logo_file.stream.seek(0)
+
+                    if file_size == 0:
+                        raise ValueError(
+                            "The selected logo file is empty."
+                        )
+
+                    if file_size > app.config["MAX_LOGO_SIZE"]:
+                        raise ValueError(
+                            "Logo size must not exceed 2 MB."
+                        )
+
+                    # Generate a unique filename
+                    new_logo_filename = (
+                        f"{uuid.uuid4().hex}.{extension}"
+                    )
+
+                    uploaded_logo_path = os.path.join(
+                        app.config["UPLOAD_FOLDER"],
+                        new_logo_filename
+                    )
+
+                    logo_file.save(uploaded_logo_path)
+
+                    # A newly uploaded logo takes priority
+                    # over the remove checkbox.
+                    settings.logo_filename = new_logo_filename
+
+                elif remove_logo:
+                    settings.logo_filename = None
+
+                # ------------------------------------------
+                # SAVE STORE INFORMATION
+                # ------------------------------------------
+
+                settings.store_name = store_name[:150]
+                settings.address = address or None
+                settings.phone = phone[:30] or None
+                settings.gstin = gstin[:30] or None
+                settings.paper_size = paper_size
+                settings.orientation = orientation
+                settings.footer_text = footer_text[:500] or None
+
+                # ------------------------------------------
+                # CUSTOM PAPER DIMENSIONS
+                # ------------------------------------------
+
+                if paper_size == "custom":
+                    try:
+                        width = float(
+                            request.form.get(
+                                "custom_width_mm", "100"
+                            )
+                        )
+                        height = float(
+                            request.form.get(
+                                "custom_height_mm", "150"
+                            )
+                        )
+                    except (TypeError, ValueError):
+                        raise ValueError(
+                            "Enter valid custom paper dimensions."
+                        )
+
+                    if (
+                        not math.isfinite(width)
+                        or not math.isfinite(height)
+                        or not 0 < width <= 1000
+                        or not 0 < height <= 1000
+                    ):
+                        raise ValueError(
+                            "Custom dimensions must be greater than "
+                            "0 and no greater than 1000 mm."
+                        )
+
+                    settings.custom_width_mm = width
+                    settings.custom_height_mm = height
+
+                # Commit all settings together
+                db.session.commit()
+
+                # Remove old logo only after successful commit
+                if (
+                    old_logo_filename
+                    and old_logo_filename != settings.logo_filename
+                ):
+                    old_logo_path = os.path.join(
+                        app.config["UPLOAD_FOLDER"],
+                        os.path.basename(old_logo_filename)
+                    )
+
+                    if os.path.isfile(old_logo_path):
+                        try:
+                            os.remove(old_logo_path)
+                        except OSError:
+                            current_app.logger.warning(
+                                "Could not remove old store logo: %s",
+                                old_logo_path
+                            )
+
+                flash(
+                    "Store settings saved successfully.",
+                    "success"
+                )
+
+                return redirect(
+                    url_for("store_settings_page")
+                )
+
+            except ValueError as exc:
+                db.session.rollback()
+
+                # Delete newly uploaded file if saving failed
+                if (
+                    uploaded_logo_path
+                    and os.path.isfile(uploaded_logo_path)
+                ):
+                    try:
+                        os.remove(uploaded_logo_path)
+                    except OSError:
+                        current_app.logger.exception(
+                            "Could not clean up uploaded logo."
+                        )
+
+                flash(str(exc), "danger")
+
+            except Exception:
+                db.session.rollback()
+
+                # Delete newly uploaded file if saving failed
+                if (
+                    uploaded_logo_path
+                    and os.path.isfile(uploaded_logo_path)
+                ):
+                    try:
+                        os.remove(uploaded_logo_path)
+                    except OSError:
+                        current_app.logger.exception(
+                            "Could not clean up uploaded logo."
+                        )
+
+                current_app.logger.exception(
+                    "Failed to save store settings."
+                )
+
+                flash(
+                    "Could not save store settings. Please try again.",
+                    "danger"
+                )
+
+            settings = db.session.get(StoreSettings, 1)
+
+        return render_template(
+            "store_settings.html",
+            settings=settings,
+        )
+    
 
         # --------------------------------------------------
         # ADMIN: REPORTS
@@ -658,6 +904,135 @@ def create_app():
             "track_imei": "track_imei" in request.form,
             "is_active": "is_active" in request.form,
         }
+        
+        
+    # --------------------------------------------------
+    # ADMIN: ANALYTICS
+    # --------------------------------------------------
+    @app.route("/analytics")
+    @login_required
+    @roles_required("admin")
+    def analytics_page():
+        start_date = request.args.get("start_date", "").strip()
+        end_date = request.args.get("end_date", "").strip()
+
+        sales_query = Sale.query
+
+        if start_date:
+            try:
+                datetime.strptime(start_date, "%Y-%m-%d")
+                sales_query = sales_query.filter(
+                    func.date(Sale.sale_date) >= start_date
+                )
+            except ValueError:
+                start_date = ""
+
+        if end_date:
+            try:
+                datetime.strptime(end_date, "%Y-%m-%d")
+                sales_query = sales_query.filter(
+                    func.date(Sale.sale_date) <= end_date
+                )
+            except ValueError:
+                end_date = ""
+
+        sales_records = sales_query.order_by(
+            Sale.sale_date.desc()
+        ).all()
+
+        transaction_count = len(sales_records)
+
+        total_sales = sum(
+            float(sale.total_amount or 0)
+            for sale in sales_records
+        )
+
+        average_sale = (
+            total_sales / transaction_count
+            if transaction_count else 0
+        )
+
+        sales_rows = []
+        profit_rows = []
+        total_profit = 0
+
+        for sale in sales_records:
+            revenue = 0
+            cost = 0
+
+            items = SaleItem.query.filter_by(
+                sale_id=sale.id
+            ).all()
+
+            for item in items:
+                quantity = float(item.quantity or 0)
+                unit_price = float(item.unit_price or 0)
+                revenue += quantity * unit_price
+
+                product = getattr(item, "product", None)
+                if product:
+                    cost_price = float(
+                        getattr(product, "cost_price", 0) or 0
+                    )
+                    cost += quantity * cost_price
+
+            profit = revenue - cost
+            total_profit += profit
+
+            paid_amount = db.session.query(
+                func.coalesce(func.sum(Payment.amount), 0)
+            ).filter(
+                Payment.sale_id == sale.id,
+                Payment.status == "completed"
+            ).scalar()
+
+            paid_amount = float(paid_amount or 0)
+            sale_amount = float(sale.total_amount or 0)
+
+            if paid_amount >= sale_amount and sale_amount > 0:
+                payment_status = "Paid"
+            elif paid_amount > 0:
+                payment_status = "Partial"
+            else:
+                payment_status = "Unpaid"
+
+            invoice_no = (
+                getattr(sale, "invoice_number", None)
+                or sale.id
+            )
+
+            sales_rows.append({
+                "id": sale.id,
+                "date": sale.sale_date,
+                "invoice_no": invoice_no,
+                "customer": getattr(sale, "customer", None),
+                "total_amount": sale_amount,
+                "payment_status": payment_status,
+            })
+
+            profit_rows.append({
+                "id": sale.id,
+                "date": sale.sale_date,
+                "invoice_no": invoice_no,
+                "revenue": revenue,
+                "cost": cost,
+                "profit": profit,
+            })
+
+        return render_template(
+            "admin/analytics.html",
+            total_sales=total_sales,
+            total_profit=total_profit,
+            transaction_count=transaction_count,
+            average_sale=average_sale,
+            sales_rows=sales_rows,
+            profit_rows=profit_rows,
+            start_date=start_date,
+            end_date=end_date,
+            total_customers=Customer.query.count(),
+            total_products=Product.query.count(),
+            total_users=User.query.count(),
+        )
 
     # --------------------------------------------------
     # PRODUCTS: DEACTIVATE
@@ -1228,10 +1603,13 @@ def create_app():
                 )
                 return redirect(url_for("billing_create"))
 
+        settings = db.session.get(StoreSettings, 1)
+
         return render_template(
             "billing/form.html",
             customers=customers,
             products=products,
+            settings=settings
         )
 
     # --------------------------------------------------
@@ -1490,7 +1868,7 @@ def create_app():
             customers=customers,
             products=products,
         )
-
+        
     # --------------------------------------------------
     # BILLING: INVOICE DETAILS
     # --------------------------------------------------
@@ -1505,31 +1883,48 @@ def create_app():
             return redirect(url_for("billing_list"))
 
         payments = (
-            Payment.query.filter_by(sale_id=sale.id).order_by(Payment.id.asc()).all()
-        )
+        Payment.query
+        .filter_by(sale_id=sale.id)
+        .order_by(Payment.id.asc())
+        .all()
+    )
 
-        # Only completed payments count toward the amount received.
         paid_amount = round(
-            sum(
-                float(payment.amount or 0)
-                for payment in payments
-                if (payment.status or "").lower() == "completed"
-            ),
-            2,
-        )
+        sum(
+            float(payment.amount or 0)
+            for payment in payments
+            if (payment.status or "").lower() == "completed"
+        ),
+        2,
+    )
+
         balance = round(
-            max(float(sale.total_amount or 0) - paid_amount, 0.0),
-            2,
+        max(
+            float(sale.total_amount or 0) - paid_amount,
+            0.0,
+        ),
+        2,
+    )
+
+        store = StoreSettings.query.first()
+
+        qr_url = url_for(
+        "billing_detail",
+        sale_id=sale.id,
+        _external=True,
         )
 
         return render_template(
-            "billing/detail.html",
-            sale=sale,
-            payments=payments,
-            paid_amount=paid_amount,
-            balance=balance,
-        )
-
+        "billing/detail.html",
+        sale=sale,
+        store=store,
+        payments=payments,
+        paid_amount=paid_amount,
+        balance=balance,
+        qr_url=qr_url,
+    )
+    
+    
     # --------------------------------------------------
     # BILLING: RECEIVE DUE PAYMENT
     # --------------------------------------------------
@@ -1658,97 +2053,497 @@ def create_app():
             paid_amount=paid_amount,
             balance=balance,
         )
-
+        
+    
     # --------------------------------------------------
-    # STORE SETTINGS
-    # --------------------------------------------------
-
-    # --------------------------------------------------
-    # STORE SETTINGS
+    # SERVICES: DASHBOARD / LIST
     # --------------------------------------------------
 
-    @app.route("/store-settings", methods=["GET", "POST"])
+    @app.route("/services")
     @login_required
-    def store_settings_page():
-        settings = db.session.get(StoreSettings, 1)
+    def services_list():
+        search = request.args.get("search", "").strip()
+        selected_status = request.args.get("status", "").strip()
+        allowed_statuses = {
+            "Received",
+            "Diagnosing",
+            "Waiting for Parts",
+            "In Progress",
+            "Completed",
+            "Ready for Pickup",
+            "Delivered",
+            "Cancelled",
+        }
 
-        if settings is None:
-            settings = StoreSettings(id=1)
-            db.session.add(settings)
-            db.session.commit()
+        query = ServiceJob.query
+
+        if search:
+            pattern = f"%{search}%"
+            query = query.filter(
+                or_(
+                    ServiceJob.job_number.ilike(pattern),
+                    ServiceJob.customer_name.ilike(pattern),
+                    ServiceJob.customer_phone.ilike(pattern),
+                    ServiceJob.device_brand.ilike(pattern),
+                    ServiceJob.device_model.ilike(pattern),
+                    ServiceJob.imei_number.ilike(pattern),
+                )
+            )
+
+        if selected_status in allowed_statuses:
+            query = query.filter(ServiceJob.status == selected_status)
+        else:
+            selected_status = ""
+
+        jobs = query.order_by(ServiceJob.id.desc()).all()
+
+        counts = {
+            "total": ServiceJob.query.count(),
+            "received": ServiceJob.query.filter_by(status="Received").count(),
+            "in_progress": ServiceJob.query.filter_by(status="In Progress").count(),
+            "ready": ServiceJob.query.filter_by(status="Ready for Pickup").count(),
+            "completed": ServiceJob.query.filter_by(status="Completed").count(),
+        }
+
+        outstanding = sum(
+            float(job.balance_due or 0)
+            for job in ServiceJob.query.all()
+            if job.status != "Cancelled"
+        )
+
+        return render_template(
+            "services/list.html",
+            jobs=jobs,
+            search=search,
+            selected_status=selected_status,
+            counts=counts,
+            outstanding=outstanding,
+            statuses=sorted(allowed_statuses),
+        )
+
+    # --------------------------------------------------
+    # SERVICES: CREATE JOB
+    # --------------------------------------------------
+
+    @app.route("/services/create", methods=["GET", "POST"])
+    @login_required
+    def service_create():
+        customers = Customer.query.order_by(Customer.name.asc()).all()
 
         if request.method == "POST":
             try:
-                store_name = request.form.get("store_name", "").strip()
-                address = request.form.get("address", "").strip()
-                phone = request.form.get("phone", "").strip()
-                gstin = request.form.get("gstin", "").strip()
-                paper_size = request.form.get("paper_size", "A4").strip()
-                orientation = request.form.get("orientation", "portrait").strip()
-                footer_text = request.form.get("footer_text", "").strip()
+                customer_value = request.form.get("customer_id", "").strip()
+                customer_id = int(customer_value) if customer_value else None
 
-                if not store_name:
-                    raise ValueError("Store name is required.")
+                customer = (
+                    db.session.get(Customer, customer_id)
+                    if customer_id else None
+                )
 
-                if paper_size not in {"A4", "A5", "thermal", "custom"}:
-                    raise ValueError("Invalid paper size.")
+                if customer_id and not customer:
+                    raise ValueError("Selected customer was not found.")
 
-                if orientation not in {"portrait", "landscape"}:
-                    raise ValueError("Invalid paper orientation.")
+                customer_name = (
+                    customer.name if customer
+                    else request.form.get("customer_name", "").strip()
+                )
+                
+                customer_phone = (
+                (customer.phone or request.form.get("customer_phone", "").strip())
+                if customer
+                else request.form.get("customer_phone", "").strip()
+                )
 
-                settings.store_name = store_name[:150]
-                settings.address = address or None
-                settings.phone = phone[:30] or None
-                settings.gstin = gstin[:30] or None
-                settings.paper_size = paper_size
-                settings.orientation = orientation
-                settings.footer_text = footer_text[:500] or None
+                device_brand = request.form.get("device_brand", "").strip()
+                device_model = request.form.get("device_model", "").strip()
+                service_type = request.form.get("service_type", "Repair").strip()
+                imei_number = request.form.get("imei_number", "").strip()
+                problem = request.form.get("problem_description", "").strip()
+                technician = request.form.get("technician_name", "").strip()
+                priority = request.form.get("priority", "Normal").strip()
+                accessories = request.form.get("accessories_received", "").strip()
+                estimated_raw = request.form.get("estimated_completion", "").strip()
 
-                if paper_size == "custom":
+                allowed_types = {
+                    "Repair",
+                    "Warranty",
+                    "Software Support",
+                    "Accessories Fitting",
+                    "Maintenance",
+                    "Other",
+                }
+                allowed_priorities = {"Low", "Normal", "High", "Urgent"}
+
+                if service_type not in allowed_types:
+                    raise ValueError("Select a valid service type.")
+
+                if priority not in allowed_priorities:
+                    raise ValueError("Select a valid priority.")
+
+                if not customer_name or not customer_phone:
+                    raise ValueError("Customer name and phone are required.")
+
+                if not device_brand or not device_model:
+                    raise ValueError("Device brand and model are required.")
+
+                if not problem:
+                    raise ValueError("Describe the customer's problem.")
+
+                if imei_number and (
+                    not imei_number.isdigit()
+                    or len(imei_number) not in {14, 15, 16}
+                ):
+                    raise ValueError("Enter a valid device IMEI number.")
+
+                def read_money(field, default=0):
+                    raw = request.form.get(field, "").strip()
                     try:
-                        width = float(request.form.get("custom_width_mm", "100"))
-                        height = float(request.form.get("custom_height_mm", "150"))
-                    except (TypeError, ValueError):
-                        raise ValueError("Enter valid custom paper dimensions.")
-
-                    if (
-                        not math.isfinite(width)
-                        or not math.isfinite(height)
-                        or not 0 < width <= 1000
-                        or not 0 < height <= 1000
-                    ):
+                        value = float(raw) if raw else float(default)
+                    except (TypeError, ValueError, OverflowError):
                         raise ValueError(
-                            "Custom dimensions must be greater than 0 "
-                            "and no greater than 1000 mm."
+                            f"Enter a valid {field.replace('_', ' ')}."
                         )
 
-                    settings.custom_width_mm = width
-                    settings.custom_height_mm = height
+                    if not math.isfinite(value) or value < 0:
+                        raise ValueError(
+                            f"{field.replace('_', ' ').title()} "
+                            "cannot be negative."
+                        )
+                    return round(value, 2)
+
+                service_charge = read_money("service_charge")
+                parts_charge = read_money("parts_charge")
+                discount_amount = read_money("discount_amount")
+                tax_amount = read_money("tax_amount")
+
+                before_discount = service_charge + parts_charge + tax_amount
+
+                if discount_amount > before_discount:
+                    raise ValueError(
+                        "Discount cannot exceed the service total."
+                    )
+
+                total_amount = round(
+                    before_discount - discount_amount, 2
+                )
+
+                paid_amount = read_money("amount_paid")
+
+                if paid_amount > total_amount:
+                    raise ValueError(
+                        "Initial payment cannot exceed the total amount."
+                    )
+
+                estimated_completion = None
+                if estimated_raw:
+                    try:
+                        estimated_completion = datetime.strptime(
+                            estimated_raw, "%Y-%m-%dT%H:%M"
+                        )
+                    except ValueError:
+                        raise ValueError(
+                            "Enter a valid estimated completion date and time."
+                        )
+
+                job_number = (
+                    f"SRV-{datetime.now().strftime('%Y%m%d%H%M%S')}-"
+                    f"{os.urandom(2).hex().upper()}"
+                )
+
+                job = ServiceJob(
+                    job_number=job_number,
+                    service_type=service_type,
+                    device_brand=device_brand,
+                    device_model=device_model,
+                    imei_number=imei_number or None,
+                    customer_id=customer.id if customer else None,
+                    customer_name=customer_name,
+                    customer_phone=customer_phone,
+                    problem_description=problem,
+                    diagnosis=request.form.get("diagnosis", "").strip() or None,
+                    solution=request.form.get("solution", "").strip() or None,
+                    accessories_received=accessories or None,
+                    technician_name=technician or None,
+                    priority=priority,
+                    status="Received",
+                    estimated_completion=estimated_completion,
+                    service_charge=service_charge,
+                    parts_charge=parts_charge,
+                    discount_amount=discount_amount,
+                    tax_amount=tax_amount,
+                    total_amount=total_amount,
+                    amount_paid=paid_amount,
+                    payment_method=(
+                        request.form.get("payment_method", "cash").strip().lower()
+                        if paid_amount > 0 else None
+                    ),
+                    warranty_days=0,
+                    internal_notes=request.form.get("internal_notes", "").strip() or None,
+                    customer_notes=request.form.get("customer_notes", "").strip() or None,
+                    created_by=current_user.id,
+                )
+
+                job.update_payment_status()
+
+                db.session.add(job)
+                db.session.flush()
+
+                db.session.add(
+                    ServiceHistory(
+                        service_job_id=job.id,
+                        old_status=None,
+                        new_status="Received",
+                        remarks="Service job created.",
+                        updated_by=current_user.id,
+                    )
+                )
+
+                if paid_amount > 0:
+                    allowed_methods = {
+                        "cash", "upi", "card", "bank", "credit"
+                    }
+                    method = (
+                        request.form.get("payment_method", "cash")
+                        .strip()
+                        .lower()
+                    )
+                    if method not in allowed_methods:
+                        raise ValueError("Select a valid payment method.")
+
+                db.session.add(
+                    AuditLog(
+                        user_id=current_user.id,
+                        action="create",
+                        entity="ServiceJob",
+                        entity_id=job.id,
+                        details=(
+                            f"Created service job {job_number}; "
+                            f"total {total_amount:.2f}"
+                        ),
+                        ip_address=request.remote_addr,
+                    )
+                )
 
                 db.session.commit()
-                flash("Store settings saved successfully.", "success")
-
-                return redirect(url_for("store_settings_page"))
+                flash(f"Service job {job_number} created successfully.", "success")
+                return redirect(url_for("service_detail", service_id=job.id))
 
             except ValueError as exc:
                 db.session.rollback()
                 flash(str(exc), "danger")
-
             except Exception:
                 db.session.rollback()
-                current_app.logger.exception("Failed to save store settings.")
-                flash(
-                    "Could not save store settings. Please try again.",
-                    "danger",
-                )
-
-            settings = db.session.get(StoreSettings, 1)
+                current_app.logger.exception("Service job creation failed")
+                flash("Could not create the service job.", "danger")
 
         return render_template(
-            "store_settings.html",
-            settings=settings,
+            "services/form.html",
+            customers=customers,
+            job=None,
         )
 
+    # --------------------------------------------------
+    # SERVICES: JOB DETAILS
+    # --------------------------------------------------
+
+    @app.route("/services/<int:service_id>")
+    @login_required
+    def service_detail(service_id):
+        job = db.session.get(ServiceJob, service_id)
+
+        if job is None:
+            flash("Service job not found.", "warning")
+            return redirect(url_for("services_list"))
+
+        statuses = [
+            "Received",
+            "Diagnosing",
+            "Waiting for Parts",
+            "In Progress",
+            "Completed",
+            "Ready for Pickup",
+            "Delivered",
+            "Cancelled",
+        ]
+
+        return render_template(
+            "services/detail.html",
+            job=job,
+            statuses=statuses,
+        )
+
+    # --------------------------------------------------
+    # SERVICES: UPDATE STATUS
+    # --------------------------------------------------
+
+    @app.route(
+        "/services/<int:service_id>/status",
+        methods=["POST"],
+    )
+    @login_required
+    def service_update_status(service_id):
+        job = db.session.get(ServiceJob, service_id)
+
+        if job is None:
+            flash("Service job not found.", "warning")
+            return redirect(url_for("services_list"))
+
+        allowed_statuses = {
+            "Received",
+            "Diagnosing",
+            "Waiting for Parts",
+            "In Progress",
+            "Completed",
+            "Ready for Pickup",
+            "Delivered",
+            "Cancelled",
+        }
+
+        new_status = request.form.get("status", "").strip()
+        remarks = request.form.get("remarks", "").strip()
+
+        if new_status not in allowed_statuses:
+            flash("Select a valid service status.", "danger")
+            return redirect(url_for("service_detail", service_id=job.id))
+
+        if job.status == "Delivered" and new_status != "Delivered":
+            flash("A delivered service job cannot be reopened here.", "warning")
+            return redirect(url_for("service_detail", service_id=job.id))
+
+        if job.status == "Cancelled" and new_status != "Cancelled":
+            flash("A cancelled job cannot be reopened here.", "warning")
+            return redirect(url_for("service_detail", service_id=job.id))
+
+        if new_status == job.status:
+            flash("The service already has that status.", "info")
+            return redirect(url_for("service_detail", service_id=job.id))
+
+        try:
+            old_status = job.status
+            job.status = new_status
+
+            if new_status == "Completed" and not job.completed_date:
+                job.completed_date = datetime.now()
+
+            if new_status == "Delivered":
+                job.delivered_date = datetime.now()
+
+            db.session.add(
+                ServiceHistory(
+                    service_job_id=job.id,
+                    old_status=old_status,
+                    new_status=new_status,
+                    remarks=remarks or None,
+                    updated_by=current_user.id,
+                )
+            )
+
+            db.session.add(
+                AuditLog(
+                    user_id=current_user.id,
+                    action="update",
+                    entity="ServiceJob",
+                    entity_id=job.id,
+                    details=(
+                        f"Service {job.job_number}: "
+                        f"{old_status} -> {new_status}"
+                    ),
+                    ip_address=request.remote_addr,
+                )
+            )
+
+            db.session.commit()
+            flash("Service status updated successfully.", "success")
+
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Service status update failed")
+            flash("Could not update the service status.", "danger")
+
+        return redirect(url_for("service_detail", service_id=job.id))
+
+    # --------------------------------------------------
+    # SERVICES: RECEIVE PAYMENT
+    # --------------------------------------------------
+
+    @app.route(
+        "/services/<int:service_id>/payment",
+        methods=["POST"],
+    )
+    @login_required
+    def service_receive_payment(service_id):
+        job = db.session.get(ServiceJob, service_id)
+
+        if job is None:
+            flash("Service job not found.", "warning")
+            return redirect(url_for("services_list"))
+
+        try:
+            amount_text = request.form.get("amount", "").strip()
+            method = request.form.get("method", "cash").strip().lower()
+            reference = request.form.get("reference", "").strip()
+
+            if not amount_text:
+                raise ValueError("Enter the payment amount.")
+
+            try:
+                amount = float(amount_text)
+            except (ValueError, TypeError, OverflowError):
+                raise ValueError("Enter a valid payment amount.")
+
+            if not math.isfinite(amount) or amount <= 0:
+                raise ValueError("Payment must be greater than zero.")
+
+            amount = round(amount, 2)
+            balance = round(float(job.balance_due or 0), 2)
+
+            if balance <= 0:
+                raise ValueError("This service job is already fully paid.")
+
+            if amount > balance:
+                raise ValueError(
+                    f"Payment cannot exceed the balance of ₹{balance:.2f}."
+                )
+
+            if method not in {"cash", "upi", "card", "bank", "credit"}:
+                raise ValueError("Select a valid payment method.")
+
+            if len(reference) > 100:
+                raise ValueError("Reference cannot exceed 100 characters.")
+
+            job.amount_paid = round(
+                float(job.amount_paid or 0) + amount, 2
+            )
+            job.payment_method = method
+            job.update_payment_status()
+
+            db.session.add(
+                AuditLog(
+                    user_id=current_user.id,
+                    action="payment",
+                    entity="ServiceJob",
+                    entity_id=job.id,
+                    details=(
+                        f"Received ₹{amount:.2f} for {job.job_number}; "
+                        f"method {method}; reference {reference or '-'}"
+                    ),
+                    ip_address=request.remote_addr,
+                )
+            )
+
+            db.session.commit()
+            flash(f"Payment of ₹{amount:.2f} recorded successfully.", "success")
+
+        except ValueError as exc:
+            db.session.rollback()
+            flash(str(exc), "danger")
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Service payment failed")
+            flash("Could not record the service payment.", "danger")
+
+        return redirect(url_for("service_detail", service_id=service_id))
+    
     # --------------------------------------------------
     # HOME
     # --------------------------------------------------
@@ -2011,15 +2806,18 @@ def create_app():
                 return render_template("customers/form.html", customer=None)
 
             customer = Customer(
-                name=name,
-                phone=phone or None,
-                email=email or None,
-                address=address or None,
-                gst_number=gst_number or None,
-            )
+    customer_code=None,  # Assigned safely after saving
+    name=name,
+    phone=phone or None,
+    email=email or None,
+    address=address or None,
+    gst_number=gst_number or None,
+)
 
             try:
                 db.session.add(customer)
+                db.session.flush()
+                customer.customer_code = f"CUST-{customer.id:06d}"
                 db.session.commit()
                 flash("Customer created successfully.", "success")
                 return redirect(url_for("customers_list"))
@@ -2114,6 +2912,7 @@ def create_app():
             filtered_count=len(products),
         )
 
+    
     # --------------------------------------------------
     # DASHBOARD
     # --------------------------------------------------
@@ -2121,10 +2920,93 @@ def create_app():
     @app.route("/dashboard")
     @login_required
     def dashboard_page():
+        today = datetime.now().date()
+        today_start = datetime.combine(today, datetime.min.time())
+        tomorrow_start = today_start + timedelta(days=1)
+
+        # Today's sales value
+        today_sales = (
+            db.session.query(
+                func.coalesce(func.sum(Sale.total_amount), 0)
+            )
+            .filter(
+                Sale.sale_date >= today_start,
+                Sale.sale_date < tomorrow_start,
+            )
+            .scalar()
+        )
+
+        # Number of orders today
+        today_orders = Sale.query.filter(
+            Sale.sale_date >= today_start,
+            Sale.sale_date < tomorrow_start,
+        ).count()
+
+        # Total customers and products
+        total_customers = Customer.query.count()
+        total_products = Product.query.count()
+
+        # Completed payments received from sales
+        paid_amount = (
+            db.session.query(
+                func.coalesce(func.sum(Payment.amount), 0)
+            )
+            .filter(
+                Payment.status == "completed",
+                Payment.sale_id.isnot(None),
+            )
+            .scalar()
+        )
+
+        # Active products at or below their reorder level
+        low_stock = Product.query.filter(
+            Product.is_active.is_(True),
+            Product.stock_quantity <= Product.reorder_level,
+        ).count()
+
+        # Sales overview for the last seven days
+        weekly_sales = []
+        weekly_labels = []
+
+        for days_ago in range(6, -1, -1):
+            day = today - timedelta(days=days_ago)
+            day_start = datetime.combine(day, datetime.min.time())
+            next_day_start = day_start + timedelta(days=1)
+
+            day_total = (
+                db.session.query(
+                    func.coalesce(func.sum(Sale.total_amount), 0)
+                )
+                .filter(
+                    Sale.sale_date >= day_start,
+                    Sale.sale_date < next_day_start,
+                )
+                .scalar()
+            )
+
+            weekly_sales.append(float(day_total or 0))
+            weekly_labels.append(day.strftime("%a"))
+
+        # Latest eight transactions
+        recent_sales = (
+            Sale.query
+            .order_by(Sale.sale_date.desc())
+            .limit(8)
+            .all()
+        )
+
         return render_template(
             "dashboard.html",
             user=current_user,
-            total_customers=Customer.query.count(),
+            today_sales=float(today_sales or 0),
+            today_orders=today_orders,
+            total_customers=total_customers,
+            total_products=total_products,
+            paid_amount=float(paid_amount or 0),
+            low_stock=low_stock,
+            weekly_sales=weekly_sales,
+            weekly_labels=weekly_labels,
+            recent_sales=recent_sales,
         )
 
     # --------------------------------------------------
@@ -2152,8 +3034,8 @@ def create_app():
         app.logger.exception("Internal server error")
         return "An internal server error occurred.", 500
 
-
         # --------------------------------------------------
+
     # SUPPLIER MANAGEMENT
     # --------------------------------------------------
 
@@ -2248,7 +3130,8 @@ def create_app():
             "email": email or None,
             "address": request.form.get("address", "").strip() or None,
             "gst_number": request.form.get("gst_number", "").strip().upper() or None,
-            "supplier_category": request.form.get("supplier_category", "").strip() or None,
+            "supplier_category": request.form.get("supplier_category", "").strip()
+            or None,
             "payment_terms": request.form.get("payment_terms", "").strip() or None,
             "delivery_lead_time": delivery_lead_time,
             "notes": request.form.get("notes", "").strip() or None,
@@ -2310,9 +3193,7 @@ def create_app():
                 db.session.commit()
 
                 flash("Supplier updated successfully.", "success")
-                return redirect(
-                    url_for("supplier_detail", supplier_id=supplier.id)
-                )
+                return redirect(url_for("supplier_detail", supplier_id=supplier.id))
 
             except ValueError as exc:
                 db.session.rollback()
@@ -2345,8 +3226,7 @@ def create_app():
         )
 
         purchase_total = sum(
-            float(purchase.total_amount or 0)
-            for purchase in purchases
+            float(purchase.total_amount or 0) for purchase in purchases
         )
 
         return render_template(
@@ -2387,6 +3267,482 @@ def create_app():
 
         return redirect(url_for("suppliers_list"))
 
+    # --------------------------------------------------
+    # PURCHASES: LIST
+    # --------------------------------------------------
+
+    
+    @app.route("/purchases")
+    @login_required
+    def purchase_list():
+        search = request.args.get("search", "").strip()
+        supplier_id = request.args.get("supplier_id", type=int)
+        status = request.args.get("status", "").strip()
+        payment_status = request.args.get("payment_status", "").strip()
+        selected_company = request.args.get("company_name", "").strip()
+
+        query = Purchase.query.join(Supplier)
+
+        if search:
+            term = f"%{search}%"
+            query = query.filter(
+                db.or_(
+                    Purchase.invoice_number.ilike(term),
+                    Supplier.name.ilike(term),
+                    Supplier.company_name.ilike(term),
+                )
+            )
+
+        if supplier_id:
+            query = query.filter(
+                Purchase.supplier_id == supplier_id
+            )
+
+        if selected_company:
+            query = query.filter(
+                Supplier.company_name == selected_company
+            )
+
+        if status:
+            query = query.filter(
+                Purchase.status == status
+            )
+
+        purchases = query.order_by(Purchase.id.desc()).all()
+
+        if payment_status:
+            purchases = [
+                purchase for purchase in purchases
+                if purchase.payment_status.lower() == payment_status.lower()
+            ]
+
+        suppliers = (
+            Supplier.query
+            .filter_by(is_active=True)
+            .order_by(Supplier.company_name, Supplier.name)
+            .all()
+        )
+
+        companies = sorted({
+            supplier.company_name.strip()
+            for supplier in suppliers
+            if supplier.company_name and supplier.company_name.strip()
+        }, key=str.lower)
+
+        return render_template(
+            "purchases/list.html",
+            purchases=purchases,
+            suppliers=suppliers,
+            companies=companies,
+            search=search,
+            supplier_id=supplier_id,
+            status=status,
+            payment_status=payment_status,
+            selected_company=selected_company,
+        )
+
+    # --------------------------------------------------
+    # PURCHASES: CREATE
+    # --------------------------------------------------
+
+    @app.route("/purchases/create", methods=["GET", "POST"])
+    @login_required
+    def purchase_create():
+        suppliers = (
+            Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
+        )
+
+        products = Product.query.filter_by(is_active=True).order_by(Product.name).all()
+
+        if request.method == "GET":
+            return render_template(
+                "purchases/form.html",
+                suppliers=suppliers,
+                products=products,
+            )
+
+        try:
+            last_purchase = Purchase.query.filter(
+                Purchase.invoice_number.like("SUP-INV-%")
+            ).order_by(Purchase.id.desc()).first()
+
+            next_number = 1001
+
+            if last_purchase and last_purchase.invoice_number:
+                try:
+                    last_number = int(
+                        last_purchase.invoice_number.rsplit("-", 1)[1]
+                    )
+                    next_number = max(1001, last_number + 1)
+                except (ValueError, IndexError):
+                    pass
+
+            invoice_number = f"SUP-INV-{next_number:04d}"
+
+            supplier_id = request.form.get("supplier_id", type=int)
+
+            supplier = (
+                db.session.get(Supplier, supplier_id)
+                if supplier_id else None
+            )
+
+            if not invoice_number:
+                raise ValueError("Enter the supplier invoice number.")
+
+            if not supplier or not supplier.is_active:
+                raise ValueError("Select a valid active supplier.")
+
+            existing_purchase = Purchase.query.filter_by(
+                invoice_number=invoice_number
+            ).first()
+
+            if existing_purchase:
+                raise ValueError("This invoice number already exists.")
+
+            purchase_date_raw = request.form.get("purchase_date", "").strip()
+
+            purchase_date = (
+                datetime.strptime(purchase_date_raw, "%Y-%m-%d")
+                if purchase_date_raw
+                else datetime.now()
+            )
+
+            def parse_optional_date(field_name):
+                raw_date = request.form.get(field_name, "").strip()
+
+                if not raw_date:
+                    return None
+
+                return datetime.strptime(raw_date, "%Y-%m-%d").date()
+
+            expected_delivery_date = parse_optional_date("expected_delivery_date")
+
+            payment_due_date = parse_optional_date("payment_due_date")
+
+            product_ids = request.form.getlist("product_id[]")
+            quantities = request.form.getlist("quantity[]")
+            unit_costs = request.form.getlist("unit_cost[]")
+
+            if not product_ids:
+                raise ValueError("Add at least one purchase item.")
+
+            if not (len(product_ids) == len(quantities) == len(unit_costs)):
+                raise ValueError("Purchase item details are incomplete.")
+
+            purchase = Purchase(
+                invoice_number=invoice_number,
+                supplier_id=supplier.id,
+                user_id=current_user.id,
+                purchase_date=purchase_date,
+                expected_delivery_date=expected_delivery_date,
+                payment_due_date=payment_due_date,
+                total_amount=0,
+                status="ordered",
+            )
+
+            db.session.add(purchase)
+            db.session.flush()
+
+            total_amount = 0.0
+            item_count = 0
+
+            for raw_id, raw_quantity, raw_cost in zip(
+                product_ids,
+                quantities,
+                unit_costs,
+            ):
+                if not raw_id and not raw_quantity and not raw_cost:
+                    continue
+
+                try:
+                    product_id = int(raw_id)
+                    quantity = int(raw_quantity)
+                    unit_cost = float(raw_cost)
+                except (TypeError, ValueError):
+                    raise ValueError("Enter valid product, quantity, and unit cost.")
+
+                product = db.session.get(Product, product_id)
+
+                if not product or not product.is_active:
+                    raise ValueError("A selected product is unavailable.")
+
+                if quantity <= 0:
+                    raise ValueError("Quantity must be greater than zero.")
+
+                if unit_cost < 0:
+                    raise ValueError("Unit cost cannot be negative.")
+
+                subtotal = round(quantity * unit_cost, 2)
+                total_amount += subtotal
+                item_count += 1
+
+                purchase_item = PurchaseItem(
+                    purchase_id=purchase.id,
+                    product_id=product.id,
+                    quantity=quantity,
+                    unit_cost=unit_cost,
+                    subtotal=subtotal,
+                )
+
+                db.session.add(purchase_item)
+
+            if item_count == 0:
+                raise ValueError("Add at least one valid purchase item.")
+
+            purchase.total_amount = round(total_amount, 2)
+
+            db.session.commit()
+
+            flash(
+                "Purchase order created successfully.",
+                "success",
+            )
+
+            return redirect(
+                url_for(
+                    "purchase_detail",
+                    purchase_id=purchase.id,
+                )
+            )
+
+        except ValueError as error:
+            db.session.rollback()
+            flash(str(error), "danger")
+
+        except Exception:
+            db.session.rollback()
+            app.logger.exception("Failed to create purchase order.")
+            flash(
+                "Could not create the purchase order. " "Check the application log.",
+                "danger",
+            )
+
+        return render_template(
+            "purchases/form.html",
+            suppliers=suppliers,
+            products=products,
+        )
+        
+    # PURCHASES: DETAIL
+
+    @app.route("/purchases/<int:purchase_id>")
+    @login_required
+    def purchase_detail(purchase_id):
+        purchase = db.session.get(Purchase, purchase_id)
+
+        if not purchase:
+            flash("Purchase order not found.", "danger")
+            return redirect(url_for("purchase_list"))
+
+        return render_template(
+            "purchases/detail.html",
+            purchase=purchase,
+        )
+        
+    
+    @app.route("/purchases/<int:purchase_id>/edit", methods=["GET", "POST"])
+    @login_required
+    def purchase_edit(purchase_id):
+        purchase = db.session.get(Purchase, purchase_id)
+
+        if not purchase:
+            flash("Purchase order not found.", "danger")
+            return redirect(url_for("purchase_list"))
+
+        suppliers = (
+            Supplier.query
+            .filter_by(is_active=True)
+            .order_by(Supplier.name)
+            .all()
+        )
+
+        if request.method == "POST":
+            try:
+                supplier_id = request.form.get("supplier_id", type=int)
+                supplier = (
+                    db.session.get(Supplier, supplier_id)
+                    if supplier_id else None
+                )
+
+                if not supplier or not supplier.is_active:
+                    raise ValueError("Select a valid active supplier.")
+
+                purchase_date_raw = request.form.get(
+                    "purchase_date", ""
+                ).strip()
+
+                if not purchase_date_raw:
+                    raise ValueError("Enter the purchase date.")
+
+                purchase.supplier_id = supplier.id
+                purchase.purchase_date = datetime.strptime(
+                    purchase_date_raw, "%Y-%m-%d"
+                )
+
+                def parse_edit_date(field_name):
+                    raw = request.form.get(field_name, "").strip()
+                    return (
+                        datetime.strptime(raw, "%Y-%m-%d").date()
+                        if raw else None
+                    )
+
+                purchase.expected_delivery_date = parse_edit_date(
+                    "expected_delivery_date"
+                )
+                purchase.actual_delivery_date = parse_edit_date(
+                    "actual_delivery_date"
+                )
+                purchase.payment_due_date = parse_edit_date(
+                    "payment_due_date"
+                )
+
+                db.session.commit()
+                flash("Purchase updated successfully.", "success")
+
+                return redirect(
+                    url_for(
+                        "purchase_detail",
+                        purchase_id=purchase.id,
+                    )
+                )
+
+            except ValueError as error:
+                db.session.rollback()
+                flash(str(error), "danger")
+
+            except Exception:
+                db.session.rollback()
+                app.logger.exception("Failed to update purchase.")
+                flash("Could not update purchase.", "danger")
+
+        return render_template(
+            "purchases/edit.html",
+            purchase=purchase,
+            suppliers=suppliers,
+        )
+    
+        # PURCHASES: RECEIVE
+
+    @app.route(
+        "/purchases/<int:purchase_id>/receive",
+        methods=["POST"],
+    )
+    @login_required
+    def purchase_receive(purchase_id):
+        purchase = db.session.get(Purchase, purchase_id)
+
+        if not purchase:
+            flash("Purchase order not found.", "danger")
+            return redirect(url_for("purchase_list"))
+
+        if purchase.status == "received":
+            flash("This purchase has already been received.", "warning")
+            return redirect(
+                url_for("purchase_detail", purchase_id=purchase.id)
+            )
+
+        try:
+            items = PurchaseItem.query.filter_by(
+                purchase_id=purchase.id
+            ).all()
+
+            if not items:
+                raise ValueError("This purchase has no items.")
+
+            for item in items:
+                product = db.session.get(Product, item.product_id)
+
+                if not product:
+                    raise ValueError(
+                        f"Product for purchase item {item.id} was not found."
+                    )
+
+                product.stock_quantity += item.quantity
+                product.cost_price = item.unit_cost
+
+                movement = StockMovement(
+                    product_id=product.id,
+                    user_id=current_user.id,
+                    movement_type="purchase",
+                    quantity_change=item.quantity,
+                    reference=purchase.invoice_number,
+                    notes="Stock received from supplier",
+                )
+                db.session.add(movement)
+
+            purchase.status = "received"
+            purchase.actual_delivery_date = datetime.now()
+
+            db.session.commit()
+            flash("Purchase received and stock updated.", "success")
+
+        except ValueError as error:
+            db.session.rollback()
+            flash(str(error), "danger")
+
+        except Exception:
+            db.session.rollback()
+            app.logger.exception("Failed to receive purchase.")
+            flash("Could not receive this purchase.", "danger")
+
+        return redirect(
+            url_for("purchase_detail", purchase_id=purchase.id)
+        )
+    
+            # PURCHASES: ADD PAYMENT
+
+    @app.route(
+        "/purchases/<int:purchase_id>/payment",
+        methods=["POST"],
+    )
+    @login_required
+    def purchase_add_payment(purchase_id):
+        purchase = db.session.get(Purchase, purchase_id)
+
+        if not purchase:
+            flash("Purchase order not found.", "danger")
+            return redirect(url_for("purchase_list"))
+
+        try:
+            amount = float(request.form.get("amount", "0"))
+            method = request.form.get("method", "cash").strip()
+            reference = request.form.get("reference", "").strip()
+
+            if amount <= 0:
+                raise ValueError("Payment must be greater than zero.")
+
+            if amount > purchase.balance_due:
+                raise ValueError("Payment cannot exceed the balance due.")
+
+            if purchase.status != "received":
+                raise ValueError("Receive the purchase before recording payment.")
+
+            payment = Payment(
+                purchase_id=purchase.id,
+                amount=amount,
+                method=method,
+                reference=reference,
+                status="completed",
+            )
+
+            db.session.add(payment)
+            db.session.commit()
+
+            flash("Supplier payment recorded successfully.", "success")
+
+        except ValueError as error:
+            db.session.rollback()
+            flash(str(error), "danger")
+
+        except Exception:
+            db.session.rollback()
+            app.logger.exception("Failed to record supplier payment.")
+            flash("Could not record the payment.", "danger")
+
+        return redirect(
+            url_for("purchase_detail", purchase_id=purchase.id)
+        )
+    
     return app
 
 

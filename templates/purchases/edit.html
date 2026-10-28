@@ -1,0 +1,123 @@
+
+{% extends "base.html" %}
+
+{% block title %}Edit Purchase | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Edit Purchase</h2>
+            <p class="text-secondary mb-0">
+                Reference: {{ purchase.invoice_number }}
+            </p>
+        </div>
+
+        <a href="{{ url_for('purchase_detail', purchase_id=purchase.id) }}"
+           class="btn btn-outline-secondary rounded-3">
+            <i class="bi bi-arrow-left me-1"></i> Cancel
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+
+            <form method="POST">
+                <input type="hidden" name="csrf_token"
+                       value="{{ csrf_token() }}">
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            Purchase Reference
+                        </label>
+                        <input type="text" class="form-control"
+                               value="{{ purchase.invoice_number }}"
+                               readonly>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            Supplier *
+                        </label>
+                        <select name="supplier_id"
+                                class="form-select" required>
+                            <option value="">Select supplier</option>
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}"
+                                {% if supplier.id == purchase.supplier_id %}
+                                    selected
+                                {% endif %}>
+                                {{ supplier.name }}
+                                {% if supplier.company_name %}
+                                    — {{ supplier.company_name }}
+                                {% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            Purchase Date *
+                        </label>
+                        <input type="date" name="purchase_date"
+                               class="form-control" required
+                               value="{{ purchase.purchase_date.strftime('%Y-%m-%d') if purchase.purchase_date else '' }}">
+                        <div class="form-text">
+                            The date shown on the supplier's purchase bill.
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            Expected Delivery Date
+                        </label>
+                        <input type="date" name="expected_delivery_date"
+                               class="form-control"
+                               value="{{ purchase.expected_delivery_date.strftime('%Y-%m-%d') if purchase.expected_delivery_date else '' }}">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            Actual Delivery Date
+                        </label>
+                        <input type="date" name="actual_delivery_date"
+                               class="form-control"
+                               value="{{ purchase.actual_delivery_date.strftime('%Y-%m-%d') if purchase.actual_delivery_date else '' }}">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            Payment Due Date
+                        </label>
+                        <input type="date" name="payment_due_date"
+                               class="form-control"
+                               value="{{ purchase.payment_due_date.strftime('%Y-%m-%d') if purchase.payment_due_date else '' }}">
+                    </div>
+
+                </div>
+
+                <hr class="my-4">
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{{ url_for('purchase_detail', purchase_id=purchase.id) }}"
+                       class="btn btn-light rounded-3">
+                        Cancel
+                    </a>
+
+                    <button type="submit"
+                            class="btn btn-primary rounded-3">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Save Changes
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

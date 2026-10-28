@@ -261,8 +261,8 @@
                                     <div class="customer-name">
                                         {{ customer.name }}
                                     </div>
-                                    <div class="customer-secondary">
-                                        Customer #{{ customer.id }}
+                                    <div class="customer-secondary text-nowrap">
+                                        {{ customer.customer_code or ('CUST-' ~ '%06d'|format(customer.id)) }}
                                     </div>
                                 </div>
                             </div>

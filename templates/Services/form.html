@@ -1,0 +1,237 @@
+
+{% extends "base.html" %}
+
+{% block title %}New Service Job | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">New Service Job</h2>
+            <p class="text-secondary mb-0">Register a device for repair or service.</p>
+        </div>
+        <a href="{{ url_for('services_list') }}" class="btn btn-outline-secondary">Back to Services</a>
+    </div>
+
+    <form method="POST" action="{{ url_for('service_create') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3">Customer Information</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Existing Customer</label>
+                                <select name="customer_id" id="customer_id" class="form-select">
+                                    <option value="">Enter customer manually</option>
+                                    {% for customer in customers %}
+                                    <option value="{{ customer.id }}"
+                                            data-name="{{ customer.name }}"
+                                            data-phone="{{ customer.phone or '' }}">
+                                        {{ customer.name }} — {{ customer.phone or 'No phone' }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Customer Name *</label>
+                                <input name="customer_name" id="customer_name"
+                                       class="form-control" maxlength="120"
+                                       placeholder="Customer full name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number *</label>
+                                <input name="customer_phone" id="customer_phone"
+                                       class="form-control" maxlength="20"
+                                       placeholder="Customer contact number" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3">Device Information</h5>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Service Type *</label>
+                                <select name="service_type" class="form-select" required>
+                                    <option>Repair</option>
+                                    <option>Warranty</option>
+                                    <option>Software Support</option>
+                                    <option>Accessories Fitting</option>
+                                    <option>Maintenance</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Brand *</label>
+                                <input name="device_brand" class="form-control"
+                                       maxlength="100" placeholder="e.g. Samsung" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Model *</label>
+                                <input name="device_model" class="form-control"
+                                       maxlength="100" placeholder="e.g. Galaxy A55" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">IMEI Number</label>
+                                <input name="imei_number" class="form-control"
+                                       maxlength="16" inputmode="numeric"
+                                       placeholder="Device IMEI, if applicable">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Priority</label>
+                                <select name="priority" class="form-select">
+                                    <option>Normal</option>
+                                    <option>Low</option>
+                                    <option>High</option>
+                                    <option>Urgent</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Accessories Received</label>
+                                <input name="accessories_received" class="form-control"
+                                       maxlength="255" placeholder="Charger, SIM tray, case...">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Technician</label>
+                                <input name="technician_name" class="form-control"
+                                       maxlength="120" placeholder="Assigned technician">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Estimated Completion</label>
+                                <input type="datetime-local" name="estimated_completion"
+                                       class="form-control">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Customer's Problem *</label>
+                                <textarea name="problem_description" class="form-control"
+                                          rows="3" required
+                                          placeholder="Describe the fault reported by the customer"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Diagnosis</label>
+                                <textarea name="diagnosis" class="form-control"
+                                          rows="2" placeholder="Technician's diagnosis"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Proposed Solution</label>
+                                <textarea name="solution" class="form-control"
+                                          rows="2" placeholder="Repair or service to perform"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Notes for Customer</label>
+                                <textarea name="customer_notes" class="form-control"
+                                          rows="2" placeholder="Instructions or information to share with the customer"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Internal Notes</label>
+                                <textarea name="internal_notes" class="form-control"
+                                          rows="2" placeholder="Internal staff notes"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3">Service Charges</h5>
+
+                        <label class="form-label">Service Charge (₹)</label>
+                        <input type="number" name="service_charge" id="service_charge"
+                               class="form-control mb-3" min="0" step="0.01" value="0">
+
+                        <label class="form-label">Parts Charge (₹)</label>
+                        <input type="number" name="parts_charge" id="parts_charge"
+                               class="form-control mb-3" min="0" step="0.01" value="0">
+
+                        <label class="form-label">Tax Amount (₹)</label>
+                        <input type="number" name="tax_amount" id="tax_amount"
+                               class="form-control mb-3" min="0" step="0.01" value="0">
+
+                        <label class="form-label">Discount (₹)</label>
+                        <input type="number" name="discount_amount" id="discount_amount"
+                               class="form-control mb-3" min="0" step="0.01" value="0">
+
+                        <div class="rounded bg-light p-3 mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-semibold">Estimated Total</span>
+                                <strong id="estimated_total">₹0.00</strong>
+                            </div>
+                            <small class="text-secondary">Final amount is validated by the server.</small>
+                        </div>
+
+                        <label class="form-label">Initial Payment (₹)</label>
+                        <input type="number" name="amount_paid" id="amount_paid"
+                               class="form-control mb-3" min="0" step="0.01" value="0">
+
+                        <label class="form-label">Payment Method</label>
+                        <select name="payment_method" class="form-select mb-4">
+                            <option value="cash">Cash</option>
+                            <option value="upi">UPI</option>
+                            <option value="card">Card</option>
+                            <option value="bank">Bank Transfer</option>
+                            <option value="credit">Credit</option>
+                        </select>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            Save Service Job
+                        </button>
+                        <a href="{{ url_for('services_list') }}"
+                           class="btn btn-light w-100 mt-2">Cancel</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const customerSelect = document.getElementById("customer_id");
+    const nameInput = document.getElementById("customer_name");
+    const phoneInput = document.getElementById("customer_phone");
+
+    customerSelect.addEventListener("change", function () {
+        const selected = this.options[this.selectedIndex];
+
+        if (this.value) {
+            nameInput.value = selected.dataset.name || "";
+            phoneInput.value = selected.dataset.phone || "";
+        } else {
+            nameInput.value = "";
+            phoneInput.value = "";
+        }
+    });
+
+    const service = document.getElementById("service_charge");
+    const parts = document.getElementById("parts_charge");
+    const tax = document.getElementById("tax_amount");
+    const discount = document.getElementById("discount_amount");
+    const paid = document.getElementById("amount_paid");
+    const totalDisplay = document.getElementById("estimated_total");
+
+    function updateTotal() {
+        const sum = Number(service.value || 0)
+            + Number(parts.value || 0)
+            + Number(tax.value || 0)
+            - Number(discount.value || 0);
+
+        const total = Math.max(0, sum);
+        totalDisplay.textContent = "₹" + total.toFixed(2);
+        paid.max = total.toFixed(2);
+    }
+
+    [service, parts, tax, discount].forEach(function (field) {
+        field.addEventListener("input", updateTotal);
+    });
+
+    updateTotal();
+});
+</script>
+{% endblock %}

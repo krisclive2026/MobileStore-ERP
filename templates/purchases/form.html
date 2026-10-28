@@ -1,0 +1,349 @@
+
+{% extends "base.html" %}
+
+{% block title %}New Purchase | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <div class="text-primary small fw-semibold mb-2">
+                INVENTORY / PURCHASES
+            </div>
+            <h2 class="fw-bold mb-1">Create Purchase Order</h2>
+            <p class="text-secondary mb-0">
+                Record supplier invoices and products purchased for your store.
+            </p>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('purchase_list') }}"
+               class="btn btn-dark rounded-3">
+                <i class="bi bi-arrow-left me-1"></i> All Purchases
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3">
+                {{ message }}
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('purchase_create') }}" id="purchaseForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="row g-4">
+
+            <!-- Left: Invoice Information -->
+            <div class="col-xl-4">
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-white border-0 px-4 pt-4">
+                        <h5 class="fw-bold mb-1">
+                            <i class="bi bi-file-earmark-text text-primary me-2"></i>
+                            Invoice Information
+                        </h5>
+                        <p class="small text-secondary mb-0">
+                            Supplier and delivery details
+                        </p>
+                    </div>
+
+                    <div class="card-body p-4">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Supplier <span class="text-danger">*</span>
+                            </label>
+                            <select name="supplier_id"
+                                    class="form-select rounded-3"
+                                    required>
+                                <option value="">Select supplier</option>
+                                {% for supplier in suppliers %}
+                                    <option value="{{ supplier.id }}"
+                                        {% if request.form.get('supplier_id') == supplier.id|string %}selected{% endif %}>
+                                        {{ supplier.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Supplier Invoice Number</label>
+                            <input type="text"
+                                   name="invoice_number"
+                                   class="form-control"
+                                   value="Auto-generated on save"
+                                   readonly>
+                            <div class="form-text">
+                                The system generates the purchase reference automatically.
+                            </div>
+                        </div>
+                        
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Purchase Date <span class="text-danger">*</span>
+                            </label>
+                            <input type="date"
+                                   name="purchase_date"
+                                   class="form-control rounded-3"
+                                   value="{{ request.form.get('purchase_date', '') }}"
+                                   required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Expected Delivery
+                            </label>
+                            <input type="date"
+                                   name="expected_delivery_date"
+                                   class="form-control rounded-3"
+                                   value="{{ request.form.get('expected_delivery_date', '') }}">
+                        </div>
+
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold">
+                                Payment Due Date
+                            </label>
+                            <input type="date"
+                                   name="payment_due_date"
+                                   class="form-control rounded-3"
+                                   value="{{ request.form.get('payment_due_date', '') }}">
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Total Summary -->
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-secondary">Items</span>
+                            <span class="fw-semibold" id="itemCount">0</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                            <span class="fw-bold">Grand Total</span>
+                            <h3 class="fw-bold text-primary mb-0">
+                                ₹<span id="grandTotal">0.00</span>
+                            </h3>
+                        </div>
+
+                        <p class="small text-secondary mt-3 mb-0">
+                            The total is calculated from quantity × unit cost.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Product Items -->
+            <div class="col-xl-8">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-header bg-white border-0 p-4">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div>
+                                <h5 class="fw-bold mb-1">
+                                    <i class="bi bi-box-seam text-primary me-2"></i>
+                                    Purchase Items
+                                </h5>
+                                <p class="small text-secondary mb-0">
+                                    Add each product included in the supplier invoice.
+                                </p>
+                            </div>
+
+                            <button type="button"
+                                    class="btn btn-outline-primary rounded-3"
+                                    id="addItemBtn">
+                                <i class="bi bi-plus-lg me-1"></i>
+                                Add Product
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-4 pt-0">
+
+                        <div id="purchaseItems">
+                            <div class="purchase-item border rounded-4 p-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="fw-semibold">
+                                        Product <span class="item-number">1</span>
+                                    </span>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger remove-item"
+                                            title="Remove product"
+                                            disabled>
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-lg-5">
+                                        <label class="form-label small fw-semibold">
+                                            Product <span class="text-danger">*</span>
+                                        </label>
+                                        <select name="product_id[]"
+                                                class="form-select rounded-3 product-select"
+                                                required>
+                                            <option value="">Select product</option>
+                                            {% for product in products %}
+                                                <option value="{{ product.id }}">
+                                                    {{ product.name }}{% if product.product_code %} — {{ product.product_code }}{% endif %}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="col-6 col-lg-2">
+                                        <label class="form-label small fw-semibold">
+                                            Quantity
+                                        </label>
+                                        <input type="number"
+                                               name="quantity[]"
+                                               class="form-control rounded-3 quantity-input"
+                                               min="1"
+                                               step="1"
+                                               value="1"
+                                               required>
+                                    </div>
+
+                                    <div class="col-6 col-lg-2">
+                                        <label class="form-label small fw-semibold">
+                                            Unit Cost (₹)
+                                        </label>
+                                        <input type="number"
+                                               name="unit_cost[]"
+                                               class="form-control rounded-3 cost-input"
+                                               min="0"
+                                               step="0.01"
+                                               placeholder="0.00"
+                                               required>
+                                    </div>
+
+                                    <div class="col-lg-3">
+                                        <label class="form-label small fw-semibold">
+                                            Subtotal (₹)
+                                        </label>
+                                        <input type="text"
+                                               class="form-control rounded-3 subtotal-output bg-light"
+                                               value="0.00"
+                                               readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-3 bg-light p-3 mt-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-secondary">Total items</span>
+                                <span class="fw-bold" id="footerItemCount">0</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span class="fw-bold">Grand Total</span>
+                                <span class="fs-4 fw-bold text-primary">
+                                    ₹<span id="footerGrandTotal">0.00</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end flex-wrap gap-2 mt-4">
+                            <a href="{{ url_for('purchase_list') }}"
+                               class="btn btn-light border rounded-3 px-4">
+                                Cancel
+                            </a>
+
+                            <button type="submit"
+                                    class="btn btn-primary rounded-3 px-4">
+                                <i class="bi bi-check2-circle me-1"></i>
+                                Create Purchase Order
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const container = document.getElementById("purchaseItems");
+    const addButton = document.getElementById("addItemBtn");
+
+    function updateTotals() {
+        const rows = container.querySelectorAll(".purchase-item");
+        let total = 0;
+        let count = 0;
+
+        rows.forEach((row, index) => {
+            row.querySelector(".item-number").textContent = index + 1;
+
+            const quantity = Number(row.querySelector(".quantity-input").value) || 0;
+            const cost = Number(row.querySelector(".cost-input").value) || 0;
+            const subtotal = quantity * cost;
+
+            row.querySelector(".subtotal-output").value = subtotal.toFixed(2);
+
+            if (row.querySelector(".product-select").value) {
+                count += 1;
+            }
+
+            total += subtotal;
+
+            const removeButton = row.querySelector(".remove-item");
+            removeButton.disabled = rows.length === 1;
+        });
+
+        document.getElementById("itemCount").textContent = count;
+        document.getElementById("footerItemCount").textContent = count;
+        document.getElementById("grandTotal").textContent = total.toFixed(2);
+        document.getElementById("footerGrandTotal").textContent = total.toFixed(2);
+    }
+
+    function attachRowEvents(row) {
+        row.querySelectorAll("input, select").forEach((field) => {
+            field.addEventListener("input", updateTotals);
+            field.addEventListener("change", updateTotals);
+        });
+
+        row.querySelector(".remove-item").addEventListener("click", function () {
+            if (container.querySelectorAll(".purchase-item").length > 1) {
+                row.remove();
+                updateTotals();
+            }
+        });
+    }
+
+    addButton.addEventListener("click", function () {
+        const firstRow = container.querySelector(".purchase-item");
+        const newRow = firstRow.cloneNode(true);
+
+        newRow.querySelectorAll("input").forEach((input) => {
+            if (input.classList.contains("quantity-input")) {
+                input.value = "1";
+            } else if (input.classList.contains("subtotal-output")) {
+                input.value = "0.00";
+            } else {
+                input.value = "";
+            }
+        });
+
+        newRow.querySelector(".product-select").selectedIndex = 0;
+        container.appendChild(newRow);
+        attachRowEvents(newRow);
+        updateTotals();
+    });
+
+    container.querySelectorAll(".purchase-item").forEach(attachRowEvents);
+    updateTotals();
+});
+</script>
+{% endblock %}
