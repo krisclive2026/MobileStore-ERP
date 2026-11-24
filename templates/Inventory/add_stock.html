@@ -1,0 +1,600 @@
+
+{% extends "base.html" %}
+
+{% block title %}Add Supplier Stock | MobileStore ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Page Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Add Supplier Stock</h3>
+            <p class="text-muted mb-0">
+                Register new stock received from a supplier.
+            </p>
+        </div>
+
+        <a href="{{ url_for('products_list') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Back to Products
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" id="addStockForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- Product and Supplier -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-semibold">
+                    <i class="fas fa-boxes-stacked me-2 text-primary"></i>
+                    Stock Information
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label for="product_id" class="form-label fw-semibold">
+                            Product <span class="text-danger">*</span>
+                        </label>
+
+                        <select name="product_id"
+                                id="product_id"
+                                class="form-select"
+                                required
+                                onchange="loadSelectedProduct(this.value)">
+
+                            <option value="">Select Product</option>
+
+                            {% for product in products %}
+                                <option value="{{ product.id }}"
+                                    {% if selected_product_id == product.id %}selected{% endif %}>
+                                    {{ product.name }}
+                                    {% if product.model %} - {{ product.model }}{% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    
+<div class="col-md-6">
+    <label for="supplier_id" class="form-label fw-semibold">
+        Supplier <span class="text-danger">*</span>
+    </label>
+
+    {% if locked_supplier %}
+
+        <!-- Locked supplier from Products row -->
+        <input type="text"
+               class="form-control"
+               value="{{ locked_supplier.name }}"
+               readonly>
+
+        <!-- Submit the actual supplier ID -->
+        <input type="hidden"
+               name="supplier_id"
+               id="supplier_id"
+               value="{{ locked_supplier.id }}">
+
+    {% else %}
+
+        <!-- Normal editable supplier selection -->
+        <select name="supplier_id"
+                id="supplier_id"
+                class="form-select"
+                required>
+
+            <option value="">Select Supplier</option>
+
+            {% for supplier in suppliers %}
+                <option value="{{ supplier.id }}"
+                    {% if preferred_supplier_id == supplier.id %}selected{% endif %}>
+                    {{ supplier.name }}
+                </option>
+            {% endfor %}
+
+        </select>
+
+    {% endif %}
+</div>
+
+
+                </div>
+            </div>
+        </div>
+
+        {% if selected_product %}
+
+            <!-- Selected Product Details -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="fas fa-mobile-alt me-2 text-primary"></i>
+                        Selected Product Details
+                    </h5>
+                </div>
+
+                <div class="card-body">
+                    <div class="row g-3">
+
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Product Name</label>
+                            <input type="text" class="form-control"
+                                   value="{{ selected_product.name }}" readonly>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Brand</label>
+                            <input type="text" class="form-control"
+                                   value="{{ selected_product.brand or '' }}" readonly>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Model</label>
+                            <input type="text" class="form-control"
+                                   value="{{ selected_product.model or '' }}" readonly>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Category</label>
+                            <input type="text" class="form-control"
+                                   value="{{ selected_product.category or '' }}" readonly>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Default Variant</label>
+                            <input type="text" class="form-control"
+                                   value="{{ selected_product.variant or '' }}" readonly>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Default Colour</label>
+                            <input type="text" class="form-control"
+                                   value="{{ selected_product.color or '' }}" readonly>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Current Stock</label>
+                            <input type="text" class="form-control"
+                                   value="{{ selected_product.stock_quantity or 0 }}" readonly>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">IMEI Tracking</label>
+                            <input type="text" class="form-control"
+                                   value="{{ 'Enabled' if selected_product.track_imei else 'Disabled' }}"
+                                   readonly>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quantity -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="fas fa-plus-circle me-2 text-success"></i>
+                        Stock Quantity
+                    </h5>
+                </div>
+
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="quantity" class="form-label fw-semibold">
+                                Quantity to Add <span class="text-danger">*</span>
+                            </label>
+
+                            <input type="number"
+                                   name="quantity"
+                                   id="quantity"
+                                   class="form-control"
+                                   min="1"
+                                   max="100"
+                                   value="1"
+                                   required
+                                   oninput="generateHandsetFields()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if selected_product.track_imei %}
+
+                <!-- Individual Handset Details -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-1 fw-semibold">
+                            <i class="fas fa-mobile-screen-button me-2 text-primary"></i>
+                            Individual Handset Details
+                        </h5>
+                        <small class="text-muted">
+                            Enter separate IMEI, condition, variant and pricing for every handset.
+                        </small>
+                    </div>
+
+                    <div class="card-body">
+                        <div id="handsetFields"></div>
+                    </div>
+                </div>
+
+            {% else %}
+
+                <!-- Non IMEI Product Pricing -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fw-semibold">
+                            <i class="fas fa-tags me-2 text-primary"></i>
+                            Stock Pricing
+                        </h5>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+                                <label for="purchase_price" class="form-label fw-semibold">
+                                    Purchase Price
+                                </label>
+
+                                <input type="number"
+                                       name="purchase_price"
+                                       id="purchase_price"
+                                       class="form-control"
+                                       min="0"
+                                       step="0.01"
+                                       value="{{ selected_product.cost_price or 0 }}"
+                                       required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="selling_price" class="form-label fw-semibold">
+                                    Selling Price
+                                </label>
+
+                                <input type="number"
+                                       name="selling_price"
+                                       id="selling_price"
+                                       class="form-control"
+                                       min="0"
+                                       step="0.01"
+                                       value="{{ selected_product.selling_price or 0 }}"
+                                       required>
+                            </div>
+
+                            <div class="col-md-6">
+    <label for="gst_percent" class="form-label fw-semibold">
+        GST (%)
+    </label>
+
+    <input type="number"
+           name="gst_percent"
+           id="gst_percent"
+           class="form-control"
+           min="0"
+           max="100"
+           step="0.01"
+           value="{{ selected_product.gst_percent or 0 }}">
+</div>
+
+<div class="col-md-6">
+    <label for="warranty_months" class="form-label fw-semibold">
+        Warranty (Months)
+    </label>
+
+    <input type="number"
+           name="warranty_months"
+           id="warranty_months"
+           class="form-control"
+           min="0"
+           step="1"
+           value="{{ selected_product.warranty_months or 0 }}">
+</div>
+
+                        </div>
+                    </div>
+                </div>
+
+            {% endif %}
+
+            <!-- Submit -->
+            <div class="d-flex flex-wrap justify-content-end gap-2 mb-4">
+                <a href="{{ url_for('products_list') }}" class="btn btn-light border">
+                    Cancel
+                </a>
+
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="fas fa-save me-2"></i>
+                    Add Supplier Stock
+                </button>
+            </div>
+
+        {% else %}
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                    <h5>Select a Product</h5>
+                    <p class="text-muted mb-0">
+                        Choose a product above to enter supplier stock details.
+                    </p>
+                </div>
+            </div>
+
+        {% endif %}
+
+    </form>
+</div>
+
+{% if selected_product and selected_product.track_imei %}
+
+<div id="stockDefaults"
+     data-variant="{{ selected_product.variant or '' }}"
+     data-color="{{ selected_product.color or '' }}"
+     data-condition="{{ selected_product.condition or 'Sealed' }}"
+     data-grade="{{ selected_product.used_grade or '' }}"
+     data-purchase-price="{{ selected_product.cost_price or 0 }}"
+     data-selling-price="{{ selected_product.selling_price or 0 }}"
+     hidden>
+</div>
+
+<script data-default-variant="{{ (selected_product.variant or '')|e }}">
+
+const stockDefaults = document.getElementById("stockDefaults");
+
+const defaultVariant = stockDefaults.dataset.variant;
+const defaultColor = stockDefaults.dataset.color;
+const defaultCondition = stockDefaults.dataset.condition;
+const defaultGrade = stockDefaults.dataset.grade;
+const defaultPurchasePrice = Number(stockDefaults.dataset.purchasePrice);
+const defaultSellingPrice = Number(stockDefaults.dataset.sellingPrice);
+
+    function generateHandsetFields() {
+        const quantityInput = document.getElementById("quantity");
+        const container = document.getElementById("handsetFields");
+
+        let quantity = parseInt(quantityInput.value, 10);
+
+        if (!Number.isFinite(quantity) || quantity < 1) {
+            container.innerHTML = "";
+            return;
+        }
+
+        if (quantity > 100) {
+            quantity = 100;
+            quantityInput.value = 100;
+        }
+
+        const existingCards = Array.from(
+            container.querySelectorAll(".handset-card")
+        );
+
+        const existingValues = existingCards.map(card => ({
+            imei1: card.querySelector('[name="imei1[]"]').value,
+            imei2: card.querySelector('[name="imei2[]"]').value,
+            variant: card.querySelector('[name="variant[]"]').value,
+            color: card.querySelector('[name="color[]"]').value,
+            condition: card.querySelector('[name="condition[]"]').value,
+            grade: card.querySelector('[name="used_grade[]"]').value,
+            purchase: card.querySelector('[name="purchase_price[]"]').value,
+            selling: card.querySelector('[name="selling_price[]"]').value,
+            gst: card.querySelector('[name="gst_percent[]"]').value,
+            warranty: card.querySelector('[name="warranty_months[]"]').value
+        }));
+
+        container.innerHTML = "";
+
+        for (let i = 0; i < quantity; i++) {
+            const old = existingValues[i] || {};
+
+            const variant = old.variant ?? defaultVariant;
+            const color = old.color ?? defaultColor;
+            const condition = old.condition ?? defaultCondition;
+            const grade = old.grade ?? defaultGrade;
+            const purchase = old.purchase ?? defaultPurchasePrice;
+            const selling = old.selling ?? defaultSellingPrice;
+            const gst = old.gst ?? 0;
+            const warranty = old.warranty ?? 0;
+
+            const card = document.createElement("div");
+            card.className = "handset-card border rounded-3 p-3 mb-3";
+
+            card.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0">Handset ${i + 1}</h6>
+                    <span class="badge bg-primary">Unit ${i + 1}</span>
+                </div>
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            IMEI 1 <span class="text-danger">*</span>
+                        </label>
+                        <input type="text"
+                               name="imei1[]"
+                               class="form-control"
+                               maxlength="15"
+                               minlength="15"
+                               pattern="[0-9]{15}"
+                               inputmode="numeric"
+                               placeholder="Enter 15-digit IMEI 1"
+                               required
+                               value="${escapeHtml(old.imei1 ?? '')}">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">IMEI 2</label>
+                        <input type="text"
+                               name="imei2[]"
+                               class="form-control"
+                               maxlength="15"
+                               minlength="15"
+                               pattern="[0-9]{15}"
+                               inputmode="numeric"
+                               placeholder="Optional"
+                               value="${escapeHtml(old.imei2 ?? '')}">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Variant / Storage</label>
+                        <input type="text"
+                               name="variant[]"
+                               class="form-control"
+                               placeholder="Example: 8GB / 128GB"
+                               value="${escapeHtml(variant)}">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Colour</label>
+                        <input type="text"
+                               name="color[]"
+                               class="form-control"
+                               placeholder="Enter colour"
+                               value="${escapeHtml(color)}">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Condition</label>
+                        <select name="condition[]"
+                                class="form-select condition-select"
+                                onchange="toggleUsedGrade(this)">
+                            <option value="Sealed" ${condition === "Sealed" ? "selected" : ""}>Sealed</option>
+                            <option value="Used" ${condition === "Used" ? "selected" : ""}>Used</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 grade-wrapper">
+                        <label class="form-label fw-semibold">Used Grade</label>
+                        <select name="used_grade[]" class="form-select">
+                            <option value="">Select Grade</option>
+                            <option value="Excellent" ${grade === "Excellent" ? "selected" : ""}>Excellent</option>
+                            <option value="Good" ${grade === "Good" ? "selected" : ""}>Good</option>
+                            <option value="Fair" ${grade === "Fair" ? "selected" : ""}>Fair</option>
+                            <option value="For Parts" ${grade === "For Parts" ? "selected" : ""}>For Parts</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4"></div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            Purchase Price <span class="text-danger">*</span>
+                        </label>
+                        <input type="number"
+                               name="purchase_price[]"
+                               class="form-control"
+                               min="0"
+                               step="0.01"
+                               required
+                               value="${escapeHtml(purchase)}">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            Selling Price <span class="text-danger">*</span>
+                        </label>
+                        <input type="number"
+                               name="selling_price[]"
+                               class="form-control"
+                               min="0"
+                               step="0.01"
+                               required
+                               value="${escapeHtml(selling)}">
+                    </div>
+
+                    <div class="col-md-6">
+    <label class="form-label fw-semibold">GST (%)</label>
+    <input type="number"
+           name="gst_percent[]"
+           class="form-control"
+           min="0"
+           max="100"
+           step="0.01"
+           value="${escapeHtml(gst)}">
+</div>
+
+<div class="col-md-6">
+    <label class="form-label fw-semibold">Warranty (Months)</label>
+    <input type="number"
+           name="warranty_months[]"
+           class="form-control"
+           min="0"
+           step="1"
+           value="${escapeHtml(warranty)}">
+</div>
+
+                </div>
+            `;
+
+            container.appendChild(card);
+
+            toggleUsedGrade(card.querySelector(".condition-select"));
+        }
+    }
+
+    function toggleUsedGrade(select) {
+        const card = select.closest(".handset-card");
+        const wrapper = card.querySelector(".grade-wrapper");
+        const gradeSelect = wrapper.querySelector("select");
+
+        const isUsed = select.value === "Used";
+
+        wrapper.style.display = isUsed ? "" : "none";
+
+        if (!isUsed) {
+            gradeSelect.value = "";
+        }
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, char => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        })[char]);
+    }
+
+    document.addEventListener("DOMContentLoaded", generateHandsetFields);
+
+    
+</script>
+{% endif %}
+
+
+<script>
+function loadSelectedProduct(productId) {
+
+    const params = new URLSearchParams(window.location.search);
+
+    if (productId) {
+        params.set("product_id", productId);
+    } else {
+        params.delete("product_id");
+    }
+
+    window.location.href =
+        "{{ url_for('add_stock') }}" + "?" + params.toString();
+}
+</script>
+
+{% endblock %}
+
+
+

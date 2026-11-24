@@ -1,0 +1,753 @@
+
+
+{% extends "base.html" %}
+
+{% block title %}IMEI Register | Inventory{% endblock %}
+
+{% block extra_css %}
+<style>
+    .handset-page {
+        padding: 22px;
+        color: #243247;
+    }
+
+    /* Header */
+    .handset-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .handset-title {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .handset-title-icon {
+        width: 52px;
+        height: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 15px;
+        background: linear-gradient(135deg, #173b70, #3478c9);
+        color: #fff;
+        font-size: 25px;
+        box-shadow: 0 5px 14px rgba(36, 91, 157, .2);
+    }
+
+    .handset-title h2 {
+        font-size: 24px;
+        font-weight: 750;
+        margin: 0 0 5px;
+    }
+
+    .handset-title p {
+        color: #788397;
+        margin: 0;
+        font-size: 13px;
+    }
+
+    .handset-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+    }
+
+    .handset-actions .btn {
+        border-radius: 9px;
+        padding: 9px 15px;
+        font-weight: 600;
+    }
+
+    /* Summary cards */
+    .handset-stat {
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+        background: #fff;
+        border: 1px solid #e8edf4;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 3px 12px rgba(24, 45, 75, .035);
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .handset-stat:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 7px 20px rgba(24, 45, 75, .08);
+    }
+
+    .stat-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .stat-label {
+        color: #778397;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .stat-icon {
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        font-size: 20px;
+    }
+
+    .stat-total .stat-icon {
+        background: #eaf1ff;
+        color: #3267bb;
+    }
+
+    .stat-available .stat-icon {
+        background: #e5f7ed;
+        color: #14834d;
+    }
+
+    .stat-sold .stat-icon {
+        background: #eeeaff;
+        color: #7253bd;
+    }
+
+    .stat-number {
+        font-size: 29px;
+        font-weight: 750;
+        margin-top: 12px;
+        line-height: 1.2;
+        color: #26364d;
+    }
+
+    .stat-total {
+        border-bottom: 3px solid #3974c7;
+    }
+
+    .stat-available {
+        border-bottom: 3px solid #1caa69;
+    }
+
+    .stat-sold {
+        border-bottom: 3px solid #8064d5;
+    }
+
+    /* Panels */
+    .handset-panel {
+        background: #fff;
+        border: 1px solid #e8edf4;
+        border-radius: 15px;
+        padding: 21px;
+        margin-top: 22px;
+        box-shadow: 0 3px 12px rgba(24, 45, 75, .035);
+    }
+
+    .panel-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .panel-heading h5 {
+        font-weight: 750;
+        font-size: 16px;
+        margin: 0;
+        color: #26364d;
+    }
+
+    .panel-heading p {
+        color: #8993a3;
+        font-size: 12px;
+        margin: 5px 0 0;
+    }
+
+    /* Filters */
+    .filter-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: #59677c;
+        margin-bottom: 7px;
+    }
+
+    .handset-page .form-control,
+    .handset-page .form-select {
+        min-height: 42px;
+        border: 1px solid #dfe5ee;
+        border-radius: 9px;
+        font-size: 13px;
+        box-shadow: none;
+    }
+
+    .handset-page .form-control:focus,
+    .handset-page .form-select:focus {
+        border-color: #4b82cc;
+        box-shadow: 0 0 0 3px rgba(75, 130, 204, .11);
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .filter-actions .btn {
+        min-height: 42px;
+        border-radius: 9px;
+        font-weight: 600;
+    }
+
+    /* Table */
+    .handset-table {
+        width: 100%;
+        margin-bottom: 0;
+        white-space: nowrap;
+    }
+
+    .handset-table thead th {
+        background: #f4f7fb;
+        color: #65748a;
+        font-size: 11px;
+        font-weight: 750;
+        text-transform: uppercase;
+        letter-spacing: .35px;
+        padding: 14px 12px;
+        border-bottom: 1px solid #e5eaf1;
+        vertical-align: middle;
+    }
+
+    .handset-table tbody td {
+        padding: 14px 12px;
+        font-size: 12.5px;
+        color: #45536a;
+        border-bottom: 1px solid #edf0f5;
+        vertical-align: middle;
+    }
+
+    .handset-table tbody tr {
+        transition: background .15s ease;
+    }
+
+    .handset-table tbody tr:hover {
+        background: #f8faff;
+    }
+
+    .handset-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .row-number {
+        color: #98a2b2;
+        font-weight: 700;
+    }
+
+    .imei-value {
+        font-family: Consolas, monospace;
+        font-size: 12px;
+        font-weight: 700;
+        color: #344e70;
+        letter-spacing: .2px;
+    }
+
+    .product-name {
+        font-weight: 700;
+        color: #293c56;
+        font-size: 13px;
+    }
+
+    .product-subtext {
+        display: block;
+        color: #8a95a5;
+        font-size: 11px;
+        margin-top: 4px;
+    }
+
+    .price-value {
+        font-weight: 700;
+        color: #34445c;
+    }
+
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 11px;
+        border-radius: 30px;
+        font-size: 10px;
+        font-weight: 750;
+    }
+
+    .status-pill::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    .status-stock {
+        color: #087443;
+        background: #e5f7ed;
+    }
+
+    .status-sold {
+        color: #2456b5;
+        background: #e8efff;
+    }
+
+    .status-other {
+        color: #68758a;
+        background: #eef1f5;
+    }
+
+    .invoice-number {
+        color: #3267bb;
+        font-weight: 700;
+    }
+
+    .record-count {
+        background: #edf3fc;
+        color: #3869aa;
+        border-radius: 30px;
+        padding: 6px 12px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .empty-state {
+        padding: 45px 15px !important;
+        text-align: center;
+        color: #8b96a7 !important;
+    }
+
+    .empty-state i {
+        display: block;
+        font-size: 35px;
+        margin-bottom: 12px;
+        color: #b5c1d1;
+    }
+
+    /* Print */
+    .store-print-header {
+        display: none;
+    }
+
+    @media (max-width: 768px) {
+        .handset-page {
+            padding: 12px;
+        }
+
+        .handset-title h2 {
+            font-size: 20px;
+        }
+
+        .handset-panel {
+            padding: 15px;
+        }
+
+        .handset-actions {
+            width: 100%;
+        }
+
+        .handset-actions .btn {
+            flex: 1;
+        }
+    }
+
+    @media print {
+        @page {
+            size: landscape;
+            margin: 10mm;
+        }
+
+        body {
+            background: #fff !important;
+        }
+
+        .handset-page {
+            padding: 0 !important;
+        }
+
+        .no-print,
+        .sidebar,
+        nav,
+        header {
+            display: none !important;
+        }
+
+        .store-print-header {
+            display: block !important;
+            text-align: center;
+            margin-bottom: 18px;
+            color: #111;
+        }
+
+        .store-print-header img {
+            max-height: 65px;
+            max-width: 150px;
+            object-fit: contain;
+            margin-bottom: 8px;
+        }
+
+        .handset-panel,
+        .handset-stat {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 5px !important;
+            margin-top: 8px !important;
+        }
+
+        .handset-table {
+            width: 100% !important;
+            font-size: 9px !important;
+        }
+
+        .handset-table th,
+        .handset-table td {
+            padding: 5px !important;
+            border: 1px solid #ddd !important;
+            color: #111 !important;
+        }
+
+        .handset-table th {
+            background: #eee !important;
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .status-pill {
+            border: 1px solid #aaa;
+            background: transparent !important;
+            color: #111 !important;
+        }
+
+        .handset-table tr {
+            page-break-inside: avoid;
+        }
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="handset-page">
+
+    <!-- Store details for print -->
+    <div class="store-print-header">
+        {% if settings and settings.logo_filename %}
+            <img src="{{ url_for('static', filename='uploads/store_logos/' ~ settings.logo_filename) }}">
+        {% endif %}
+
+        <h3>{{ settings.store_name if settings else 'My Store' }}</h3>
+
+        {% if settings and settings.address %}
+            <div>{{ settings.address }}</div>
+        {% endif %}
+
+        {% if settings and settings.phone %}
+            <div>Phone: {{ settings.phone }}</div>
+        {% endif %}
+
+        {% if settings and settings.gstin %}
+            <div>GSTIN: {{ settings.gstin }}</div>
+        {% endif %}
+
+        <h4 class="mt-3">IMEI Handset Register</h4>
+    </div>
+
+
+    <!-- Page header -->
+    <div class="handset-header no-print">
+        <div class="handset-title">
+            <div class="handset-title-icon">
+                <i class="bi bi-phone"></i>
+            </div>
+
+            <div>
+                <h2>IMEI Register</h2>
+                <p>Monitor individual handset records, stock availability and sales.</p>
+            </div>
+        </div>
+
+        <div class="handset-actions">
+            <button type="button" onclick="window.print()" class="btn btn-primary">
+                <i class="bi bi-printer me-1"></i> Print Report
+            </button>
+
+            <a href="{{ url_for('inventory_list') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Inventory
+            </a>
+        </div>
+    </div>
+
+
+    <!-- Summary cards -->
+    <div class="row g-3">
+
+        <div class="col-md-4">
+            <div class="handset-stat stat-total">
+                <div class="stat-top">
+                    <span class="stat-label">Total Handsets</span>
+                    <div class="stat-icon">
+                        <i class="bi bi-phone"></i>
+                    </div>
+                </div>
+                <div class="stat-number">{{ total_handsets }}</div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="handset-stat stat-available">
+                <div class="stat-top">
+                    <span class="stat-label">Available in Stock</span>
+                    <div class="stat-icon">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                </div>
+                <div class="stat-number">{{ available_count }}</div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="handset-stat stat-sold">
+                <div class="stat-top">
+                    <span class="stat-label">Sold Handsets</span>
+                    <div class="stat-icon">
+                        <i class="bi bi-cart-check"></i>
+                    </div>
+                </div>
+                <div class="stat-number">{{ sold_count }}</div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- Filters -->
+    <div class="handset-panel no-print">
+
+        <div class="panel-heading">
+            <div>
+                <h5><i class="bi bi-funnel me-2"></i>Search & Filter Handsets</h5>
+                <p>Find individual handsets using IMEI, product, brand or purchase date.</p>
+            </div>
+        </div>
+
+        <form method="GET" action="{{ url_for('inventory_handsets') }}">
+            <div class="row g-3 align-items-end">
+
+                <div class="col-lg-3 col-md-6">
+                    <label class="filter-label">Search</label>
+                    <input
+                        type="text"
+                        name="q"
+                        class="form-control"
+                        value="{{ search }}"
+                        placeholder="IMEI, product, model..."
+                    >
+                </div>
+
+                <div class="col-lg-2 col-md-6">
+                    <label class="filter-label">Stock Status</label>
+                    <select name="status" class="form-select">
+                        <option value="all" {% if status == 'all' %}selected{% endif %}>
+                            All Status
+                        </option>
+                        <option value="in_stock" {% if status == 'in_stock' %}selected{% endif %}>
+                            Available
+                        </option>
+                        <option value="sold" {% if status == 'sold' %}selected{% endif %}>
+                            Sold
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-lg-2 col-md-6">
+                    <label class="filter-label">Brand</label>
+                    <select name="brand" class="form-select">
+                        <option value="">All Brands</option>
+                        {% for item in brands %}
+                            <option value="{{ item }}"
+                                {% if brand == item %}selected{% endif %}>
+                                {{ item }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-lg-2 col-md-6">
+                    <label class="filter-label">Purchase From</label>
+                    <input
+                        type="date"
+                        name="date_from"
+                        class="form-control"
+                        value="{{ date_from }}"
+                    >
+                </div>
+
+                <div class="col-lg-2 col-md-6">
+                    <label class="filter-label">Purchase To</label>
+                    <input
+                        type="date"
+                        name="date_to"
+                        class="form-control"
+                        value="{{ date_to }}"
+                    >
+                </div>
+
+                <div class="col-lg-1 col-md-6">
+                    <label class="filter-label d-none d-lg-block">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100" title="Apply filters">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+
+            </div>
+
+            <div class="mt-3">
+                <a href="{{ url_for('inventory_handsets') }}"
+                   class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>
+                    Clear Filters
+                </a>
+            </div>
+        </form>
+    </div>
+
+
+    <!-- Handset table -->
+    <div class="handset-panel">
+
+        <div class="panel-heading">
+            <div>
+                <h5><i class="bi bi-list-ul me-2"></i>Handset Details</h5>
+                <p>Individual handset and IMEI information.</p>
+            </div>
+
+            <span class="record-count">
+                {{ handsets|length }} Record(s)
+            </span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover handset-table">
+
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>IMEI 1</th>
+                        <th>IMEI 2</th>
+                        <th>Product</th>
+                        <th>Brand / Model</th>
+                        <th>Purchase Date</th>
+                        <th>Purchase Price</th>
+                        <th>Selling Price</th>
+                        <th>Status</th>
+                        <th>Sold Date</th>
+                        <th>Invoice</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for handset in handsets %}
+                    <tr>
+
+                        <td class="row-number">{{ loop.index }}</td>
+
+                        <td class="imei-value">{{ handset.imei1 }}</td>
+
+                        <td class="imei-value">
+                            {{ handset.imei2 or '-' }}
+                        </td>
+
+                        <td>
+                            <span class="product-name">
+                                {{ handset.product.name }}
+                            </span>
+                            <span class="product-subtext">
+                                {{ handset.product.variant or '' }}
+                                {{ handset.product.color or '' }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <strong>{{ handset.product.brand or '-' }}</strong>
+                            <span class="product-subtext">
+                                {{ handset.product.model or '' }}
+                            </span>
+                        </td>
+
+                        <td>
+                            {{ handset.purchase_date.strftime('%d-%m-%Y')
+                               if handset.purchase_date else '-' }}
+                        </td>
+
+                        <td class="price-value">
+                            ₹{{ "%.2f"|format(handset.purchase_price or 0) }}
+                        </td>
+
+                        <td class="price-value">
+                            ₹{{ "%.2f"|format(handset.selling_price or 0) }}
+                        </td>
+
+                        <td>
+                            {% if handset.status == 'sold' %}
+                                <span class="status-pill status-sold">Sold</span>
+                            {% elif handset.status == 'in_stock' %}
+                                <span class="status-pill status-stock">Available</span>
+                            {% else %}
+                                <span class="status-pill status-other">
+                                    {{ handset.status|replace('_', ' ')|title }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ handset.sold_date.strftime('%d-%m-%Y')
+                               if handset.sold_date else '-' }}
+                        </td>
+
+                        <td>
+                            {% if handset.sale %}
+                                <span class="invoice-number">
+                                    {{ handset.sale.invoice_number }}
+                                </span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                    </tr>
+
+                    {% else %}
+                    <tr>
+                        <td colspan="11" class="empty-state">
+                            <i class="bi bi-phone"></i>
+                            <strong>No handset records found</strong>
+                            <div class="small mt-2">
+                                Try changing your search or filter criteria.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+

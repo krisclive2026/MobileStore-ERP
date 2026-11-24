@@ -1,0 +1,91 @@
+
+{% extends "base.html" %}
+
+{% block title %}Handset Details | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Individual Handset Details</h2>
+            <p class="text-secondary mb-0">IMEI: {{ record.imei1 }}</p>
+        </div>
+
+        <a href="{{ url_for('imei_records_list') }}"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h5 class="fw-bold mb-3">Handset Information</h5>
+
+            <p><strong>Product:</strong> {{ record.product.name }}</p>
+            <p><strong>Brand:</strong> {{ record.product.brand or '—' }}</p>
+            <p><strong>Model:</strong> {{ record.product.model or '—' }}</p>
+            <p><strong>IMEI 1:</strong> {{ record.imei1 }}</p>
+            <p><strong>IMEI 2:</strong> {{ record.imei2 or '—' }}</p>
+            <p><strong>Variant:</strong> {{ record.variant or '—' }}</p>
+            <p><strong>Colour:</strong> {{ record.color or '—' }}</p>
+            <p><strong>Condition:</strong> {{ record.condition }}</p>
+            <p><strong>Used Grade:</strong> {{ record.used_grade or '—' }}</p>
+            <p><strong>Purchase Price:</strong> ₹{{ "%.2f"|format(record.purchase_price or 0) }}</p>
+            <p><strong>Selling Price:</strong> ₹{{ "%.2f"|format(record.selling_price or 0) }}</p>
+            <p><strong>Purchase Date:</strong> {{ record.purchase_date or '—' }}</p>
+            <p><strong>Status:</strong> {{ record.status }}</p>
+
+            <hr>
+
+            <h5 class="fw-bold mb-3">Supplier Information</h5>
+
+            {% if record.supplier %}
+                <p><strong>Supplier:</strong> {{ record.supplier.name }}</p>
+                <p><strong>Phone:</strong> {{ record.supplier.phone or '—' }}</p>
+                <p><strong>Company:</strong> {{ record.supplier.company_name or '—' }}</p>
+            {% else %}
+                <p class="text-secondary">No supplier information available.</p>
+            {% endif %}
+
+            {% if record.condition == 'Used' and record.used_handset_seller %}
+                <hr>
+
+                <h5 class="fw-bold mb-3">Individual Seller Information</h5>
+
+                <p><strong>Seller Name:</strong> {{ record.used_handset_seller.seller_name }}</p>
+                <p><strong>Seller Phone:</strong> {{ record.used_handset_seller.seller_phone }}</p>
+                <p><strong>Seller Address:</strong> {{ record.used_handset_seller.seller_address or '—' }}</p>
+
+                <div class="row g-3 mt-2">
+
+                    {% if record.used_handset_seller.id_proof_path %}
+                    <div class="col-md-6">
+                        <h6>Seller ID Proof</h6>
+                        <a href="{{ url_for('view_used_handset_document', seller_id=record.used_handset_seller.id, document_type='id_proof') }}"
+                           target="_blank"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-eye me-1"></i> View ID Proof
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    {% if record.used_handset_seller.handset_proof_path %}
+                    <div class="col-md-6">
+                        <h6>Handset Proof</h6>
+                        <a href="{{ url_for('view_used_handset_document', seller_id=record.used_handset_seller.id, document_type='handset_proof') }}"
+                           target="_blank"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-eye me-1"></i> View Handset Proof
+                        </a>
+                    </div>
+                    {% endif %}
+
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

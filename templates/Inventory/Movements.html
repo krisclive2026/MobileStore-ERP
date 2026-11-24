@@ -1,0 +1,433 @@
+
+{% extends "base.html" %}
+
+{% block title %}Stock History | MobileStore ERP{% endblock %}
+
+{% block content %}
+
+<style>
+.movement-page {
+    padding: 20px;
+}
+
+.movement-header {
+    background: linear-gradient(120deg, #102a56, #2563eb);
+    color: white;
+    padding: 24px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+}
+
+.movement-header h3 {
+    font-weight: 800;
+}
+
+.movement-panel {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.movement-filters {
+    padding: 16px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #fff;
+}
+
+.movement-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 12px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    padding: 14px 12px;
+}
+
+.movement-table td {
+    vertical-align: middle;
+    font-size: 13px;
+    padding: 13px 12px;
+}
+
+.movement-badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.badge-supplier {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.badge-direct {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.badge-purchase {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.badge-sale {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.badge-default {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.quantity-in {
+    color: #15803d;
+    background: #dcfce7;
+    padding: 5px 9px;
+    border-radius: 6px;
+    font-weight: 700;
+}
+
+.quantity-out {
+    color: #b91c1c;
+    background: #fee2e2;
+    padding: 5px 9px;
+    border-radius: 6px;
+    font-weight: 700;
+}
+
+.quantity-zero {
+    color: #64748b;
+    font-weight: 700;
+}
+
+.movement-count {
+    font-size: 13px;
+    color: #64748b;
+}
+
+@media (max-width: 768px) {
+    .movement-page {
+        padding: 10px;
+    }
+
+    .movement-header {
+        padding: 18px;
+    }
+
+    .movement-filters .col-md-4 {
+        width: 100%;
+    }
+}
+</style>
+
+<div class="movement-page">
+
+    <!-- Header -->
+    <div class="movement-header d-flex flex-wrap
+                justify-content-between align-items-center gap-3">
+
+        <div>
+            <h3 class="mb-1">
+                <i class="bi bi-clock-history me-2"></i>
+                Stock Movement History
+            </h3>
+
+            <p class="mb-0 text-white-50">
+                Recent stock changes and adjustment records.
+            </p>
+        </div>
+
+        <a href="{{ url_for('inventory_list') }}"
+           class="btn btn-light">
+
+            <i class="bi bi-arrow-left me-1"></i>
+            Inventory
+
+        </a>
+
+    </div>
+
+    <!-- Movement Table -->
+    <div class="movement-panel">
+
+        <!-- Search and Filters -->
+        <div class="movement-filters">
+            <div class="row g-3 align-items-end">
+
+                <div class="col-md-5">
+                    <label for="movementSearch"
+                           class="form-label fw-semibold">
+                        Search Movements
+                    </label>
+
+                    <input type="text"
+                           id="movementSearch"
+                           class="form-control"
+                           placeholder="Search product, reference, notes...">
+                </div>
+
+                <div class="col-md-4">
+                    <label for="movementFilter"
+                           class="form-label fw-semibold">
+                        Movement Type
+                    </label>
+
+                    <select id="movementFilter" class="form-select">
+                        <option value="">All Movement Types</option>
+
+                        {% set ns = namespace(types=[]) %}
+
+                        {% for movement in movements %}
+                            {% set movement_type =
+                                (movement.movement_type or 'unknown')|lower %}
+
+                            {% if movement_type not in ns.types %}
+                                {% set ns.types = ns.types + [movement_type] %}
+                                <option value="{{ movement_type }}">
+                                    {{ movement_type
+                                        |replace('_', ' ')
+                                        |title }}
+                                </option>
+                            {% endif %}
+                        {% endfor %}
+
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <button type="button"
+                            id="resetMovementFilters"
+                            class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>
+                        Reset Filters
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between
+                    align-items-center px-3 py-2">
+
+            <span class="movement-count">
+                Showing <strong id="visibleMovementCount">0</strong>
+                movements
+            </span>
+
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0 movement-table">
+
+                <thead>
+                    <tr>
+                        <th>Movement ID</th>
+                        <th>Date</th>
+                        <th>Product</th>
+                        <th>Movement</th>
+                        <th>Quantity Change</th>
+                        <th>Reference</th>
+                        <th>Notes</th>
+                        <th>User ID</th>
+                    </tr>
+                </thead>
+
+                <tbody id="movementTableBody">
+
+                {% for movement in movements %}
+
+                    {% set movement_type =
+                        (movement.movement_type or 'unknown')|lower %}
+
+                    <tr class="movement-row"
+                        data-movement="{{ movement_type }}">
+
+                        <td>
+                            <strong>#{{ movement.id }}</strong>
+                        </td>
+
+                        <td>
+                            {% if movement.created_at %}
+                                {{ movement.created_at.strftime('%d-%m-%Y %H:%M') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if movement.product %}
+                                <strong>{{ movement.product.name }}</strong>
+                            {% else %}
+                                Product #{{ movement.product_id }}
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if 'supplier' in movement_type %}
+                                <span class="movement-badge badge-supplier">
+                                    {{ movement_type|replace('_', ' ')|title }}
+                                </span>
+
+                            {% elif 'direct' in movement_type %}
+                                <span class="movement-badge badge-direct">
+                                    {{ movement_type|replace('_', ' ')|title }}
+                                </span>
+
+                            {% elif 'purchase' in movement_type %}
+                                <span class="movement-badge badge-purchase">
+                                    {{ movement_type|replace('_', ' ')|title }}
+                                </span>
+
+                            {% elif 'sale' in movement_type %}
+                                <span class="movement-badge badge-sale">
+                                    {{ movement_type|replace('_', ' ')|title }}
+                                </span>
+
+                            {% else %}
+                                <span class="movement-badge badge-default">
+                                    {{ movement_type|replace('_', ' ')|title }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if movement.quantity_change > 0 %}
+
+                                <span class="quantity-in">
+                                    +{{ movement.quantity_change }}
+                                </span>
+
+                            {% elif movement.quantity_change < 0 %}
+
+                                <span class="quantity-out">
+                                    {{ movement.quantity_change }}
+                                </span>
+
+                            {% else %}
+
+                                <span class="quantity-zero">0</span>
+
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ movement.reference or '-' }}
+                        </td>
+
+                        <td>
+                            {{ movement.notes or '-' }}
+                        </td>
+
+                        <td>
+                            {{ movement.user_id }}
+                        </td>
+
+                    </tr>
+
+                {% else %}
+
+                    <tr>
+                        <td colspan="8"
+                            class="text-center text-muted py-5">
+
+                            <i class="bi bi-clock-history display-6 d-block mb-2"></i>
+
+                            No stock movements recorded yet.
+
+                        </td>
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div id="noMovementResults"
+             class="text-center text-muted py-5"
+             style="display:none;">
+
+            <i class="bi bi-search display-6 d-block mb-2"></i>
+
+            No matching stock movements found.
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const searchInput = document.getElementById("movementSearch");
+    const movementFilter = document.getElementById("movementFilter");
+    const resetButton = document.getElementById("resetMovementFilters");
+
+    const rows = document.querySelectorAll(".movement-row");
+    const countDisplay = document.getElementById("visibleMovementCount");
+    const noResults = document.getElementById("noMovementResults");
+
+    function filterMovements() {
+
+        const searchValue = searchInput.value.toLowerCase().trim();
+        const selectedType = movementFilter.value.toLowerCase();
+
+        let visibleCount = 0;
+
+        rows.forEach(function (row) {
+
+            const rowText = row.textContent.toLowerCase();
+            const rowType = row.dataset.movement;
+
+            const matchesSearch = rowText.includes(searchValue);
+
+            const matchesType =
+                !selectedType || rowType === selectedType;
+
+            if (matchesSearch && matchesType) {
+
+                row.style.display = "";
+                visibleCount++;
+
+            } else {
+
+                row.style.display = "none";
+
+            }
+
+        });
+
+        countDisplay.textContent = visibleCount;
+
+        noResults.style.display =
+            rows.length > 0 && visibleCount === 0 ? "block" : "none";
+    }
+
+    searchInput.addEventListener("input", filterMovements);
+
+    movementFilter.addEventListener("change", filterMovements);
+
+    resetButton.addEventListener("click", function () {
+
+        searchInput.value = "";
+        movementFilter.value = "";
+
+        filterMovements();
+
+    });
+
+    filterMovements();
+
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,169 @@
+
+{% extends "base.html" %}
+
+{% block title %}Payment Transactions | Mobile Store ERP{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- Page Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-clock-history me-2"></i>Payment Transactions
+            </h2>
+            <p class="text-secondary mb-0">
+                Complete history of customer payments and collections.
+            </p>
+        </div>
+
+        <a href="{{ url_for('billing_collections') }}"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>
+            Back to Due Collections
+        </a>
+    </div>
+
+    <!-- Total Collected -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="text-secondary small">Total Collected</div>
+            <h2 class="fw-bold text-success mb-0">
+                ₹{{ "%.2f"|format(total_collected or 0) }}
+            </h2>
+            <small class="text-secondary">
+                {{ payments|length }} completed transaction(s)
+            </small>
+        </div>
+    </div>
+
+    <!-- Transaction Table -->
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-white py-3">
+            <h5 class="fw-bold mb-0">
+                <i class="bi bi-receipt me-2"></i>Transaction History
+            </h5>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Payment ID</th>
+                            <th>Invoice</th>
+                            <th>Customer</th>
+                            <th>Date & Time</th>
+                            <th>Method</th>
+                            <th>Reference</th>
+                            <th class="text-end">Amount</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for payment in payments %}
+
+                        <tr>
+
+                            <td class="ps-3 fw-semibold">
+                                PAY-{{ payment.id }}
+                            </td>
+
+                            <td>
+                                {% if payment.sale %}
+                                    {{ payment.sale.invoice_number or ('INV-' ~ payment.sale.id) }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if payment.sale and payment.sale.customer %}
+                                    {{ payment.sale.customer.name }}
+                                {% else %}
+                                    Walk-in Customer
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if payment.created_at %}
+                                    {{ payment.created_at.strftime('%d-%m-%Y') }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <span class="badge bg-light text-dark border">
+                                    {{ (payment.method or 'cash')|replace('_', ' ')|title }}
+                                </span>
+                            </td>
+
+                            <td>
+                                {{ payment.reference or '—' }}
+                            </td>
+
+                            <td class="text-end text-success fw-bold">
+                                ₹{{ "%.2f"|format(payment.amount or 0) }}
+                            </td>
+
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center flex-wrap gap-2">
+
+                                    {% if payment.sale_id %}
+                                    <a href="{{ url_for('billing_detail', sale_id=payment.sale_id) }}"
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="View Invoice">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+
+                                    <a href="{{ url_for('payment_receipt', payment_id=payment.id) }}"
+                                       class="btn btn-sm btn-outline-success"
+                                       title="View Receipt">
+                                        <i class="bi bi-receipt"></i>
+                                    </a>
+                                    {% endif %}
+
+                                </div>
+                            </td>
+
+                        </tr>
+
+                        {% else %}
+
+                        <tr>
+                            <td colspan="8"
+                                class="text-center py-5 text-secondary">
+
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+
+                                <h6 class="fw-bold">
+                                    No Payment Transactions Found
+                                </h6>
+
+                                <p class="mb-0">
+                                    Completed customer payments will appear here.
+                                </p>
+
+                            </td>
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

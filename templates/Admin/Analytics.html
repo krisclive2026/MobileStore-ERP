@@ -1,0 +1,463 @@
+
+{% extends "base.html" %}
+
+{% block title %}Business Analytics | Mobile Store ERP{% endblock %}
+
+{% block content %}
+
+<style>
+.analytics-page {
+    --analytics-primary: #5146e5;
+    --analytics-muted: #718096;
+}
+
+.analytics-page .analytics-hero {
+    background: linear-gradient(120deg, #34318f, #6257e8);
+    border-radius: 18px;
+    color: #fff;
+    padding: 28px;
+    box-shadow: 0 8px 24px rgba(65, 57, 170, .16);
+}
+
+.analytics-page .analytics-hero p {
+    color: rgba(255,255,255,.76);
+}
+
+.analytics-page .analytics-card {
+    border: 1px solid #edf0f5;
+    border-radius: 16px;
+    transition: transform .2s ease, box-shadow .2s ease;
+    overflow: hidden;
+}
+
+.analytics-page .analytics-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 9px 24px rgba(30, 41, 59, .08);
+}
+
+.analytics-page .metric-icon {
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+    font-size: 21px;
+}
+
+.analytics-page .metric-label {
+    color: #718096;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.analytics-page .metric-value {
+    font-size: clamp(21px, 2vw, 27px);
+    font-weight: 750;
+    letter-spacing: -.6px;
+    overflow-wrap: anywhere;
+}
+
+.analytics-page .section-card {
+    border: 1px solid #edf0f5;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.analytics-page .section-heading {
+    padding: 19px 22px;
+    background: #fff;
+    border-bottom: 1px solid #edf0f5;
+}
+
+.analytics-page .table thead th {
+    background: #f7f8fc;
+    color: #667085;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .55px;
+    white-space: nowrap;
+    padding: 15px 16px;
+}
+
+.analytics-page .table tbody td {
+    padding: 14px 16px;
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+.analytics-page .table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.analytics-page .filter-card {
+    border: 1px solid #edf0f5;
+    border-radius: 16px;
+}
+
+.analytics-page .form-control {
+    min-height: 43px;
+    border-radius: 9px;
+    border-color: #e2e7ef;
+}
+
+.analytics-page .btn {
+    border-radius: 9px;
+}
+
+.analytics-page .report-icon {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    margin-right: 9px;
+}
+
+@media (max-width: 576px) {
+    .analytics-page .analytics-hero {
+        padding: 21px;
+    }
+
+    .analytics-page .section-heading {
+        padding: 16px;
+    }
+
+    .analytics-page .metric-value {
+        font-size: 22px;
+    }
+}
+</style>
+
+<div class="container-fluid py-4 analytics-page">
+
+    <!-- Header -->
+    <div class="analytics-hero mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <div class="small fw-semibold mb-2 text-uppercase"
+                     style="letter-spacing:1.5px; color:#d9d6ff;">
+                    Business Intelligence
+                </div>
+
+                <h2 class="fw-bold mb-2">
+                    <i class="bi bi-bar-chart-line me-2"></i>
+                    Business Analytics
+                </h2>
+
+                <p class="mb-0">
+                    Monitor sales performance, revenue and profitability.
+                </p>
+            </div>
+
+            <a href="{{ url_for('dashboard_page') }}"
+               class="btn btn-light px-3 py-2 fw-semibold">
+                <i class="bi bi-arrow-left me-2"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Date Filters -->
+    <div class="card filter-card shadow-sm mb-4">
+        <div class="card-body p-3 p-md-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-calendar-range text-primary fs-5"></i>
+                <h6 class="fw-bold mb-0">Report Period</h6>
+            </div>
+
+            <form method="GET"
+                  action="{{ url_for('analytics_page') }}"
+                  class="row g-3 align-items-end">
+
+                <div class="col-12 col-md-4">
+                    <label for="start_date" class="form-label small fw-semibold">
+                        From Date
+                    </label>
+                    <input type="date"
+                           id="start_date"
+                           name="start_date"
+                           class="form-control"
+                           value="{{ start_date|default('') }}">
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <label for="end_date" class="form-label small fw-semibold">
+                        To Date
+                    </label>
+                    <input type="date"
+                           id="end_date"
+                           name="end_date"
+                           class="form-control"
+                           value="{{ end_date|default('') }}">
+                </div>
+
+                <div class="col-12 col-md-4 d-flex gap-2">
+                    <button type="submit"
+                            class="btn btn-primary flex-grow-1 py-2 fw-semibold">
+                        <i class="bi bi-funnel me-1"></i>
+                        Apply Filters
+                    </button>
+
+                    <a href="{{ url_for('analytics_page') }}"
+                       class="btn btn-outline-secondary py-2 px-3">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card analytics-card shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="metric-label">TOTAL SALES</span>
+                        <div class="metric-icon bg-primary-subtle text-primary">
+                            <i class="bi bi-currency-rupee"></i>
+                        </div>
+                    </div>
+
+                    <div class="metric-value">
+                        ₹{{ '%.2f'|format(total_sales|default(0)|float) }}
+                    </div>
+                    <div class="small text-secondary mt-2">
+                        <i class="bi bi-calendar3 me-1"></i>
+                        Selected period
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card analytics-card shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="metric-label">GROSS PROFIT</span>
+                        <div class="metric-icon bg-success-subtle text-success">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+                    </div>
+
+                    <div class="metric-value text-success">
+                        ₹{{ '%.2f'|format(total_profit|default(0)|float) }}
+                    </div>
+                    <div class="small text-secondary mt-2">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Before operating expenses
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card analytics-card shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="metric-label">TRANSACTIONS</span>
+                        <div class="metric-icon bg-info-subtle text-info">
+                            <i class="bi bi-receipt"></i>
+                        </div>
+                    </div>
+
+                    <div class="metric-value">
+                        {{ transaction_count|default(0) }}
+                    </div>
+                    <div class="small text-secondary mt-2">
+                        <i class="bi bi-cart-check me-1"></i>
+                        Sales in selected period
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card analytics-card shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="metric-label">AVERAGE SALE</span>
+                        <div class="metric-icon bg-warning-subtle text-warning">
+                            <i class="bi bi-calculator"></i>
+                        </div>
+                    </div>
+
+                    <div class="metric-value">
+                        ₹{{ '%.2f'|format(average_sale|default(0)|float) }}
+                    </div>
+                    <div class="small text-secondary mt-2">
+                        <i class="bi bi-graph-up me-1"></i>
+                        Revenue per transaction
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Sales Report -->
+    <div class="card section-card shadow-sm mb-4">
+
+        <div class="section-heading d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold mb-1">
+                    <span class="report-icon bg-primary-subtle text-primary">
+                        <i class="bi bi-receipt"></i>
+                    </span>
+                    Sales Report
+                </h5>
+                <small class="text-secondary">
+                    Transaction details for the selected period
+                </small>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Invoice</th>
+                        <th>Customer</th>
+                        <th class="text-end">Sales Amount</th>
+                        <th>Payment Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for sale in sales_rows %}
+                    <tr>
+                        <td class="text-nowrap">
+                            {{ sale.date.strftime('%d-%m-%Y') if sale.date else '—' }}
+                        </td>
+
+                        <td class="fw-semibold text-primary">
+                            {{ sale.invoice_no|default(sale.id, true) }}
+                        </td>
+
+                        <td>
+                            {{ sale.customer.name if sale.customer else 'Walk-in customer' }}
+                        </td>
+
+                        <td class="text-end fw-semibold text-nowrap">
+                            ₹{{ '%.2f'|format(sale.total_amount|default(0)|float) }}
+                        </td>
+
+                        <td>
+                            {% set payment = sale.payment_status|default('Unknown')|lower %}
+
+                            <span class="badge rounded-pill px-3 py-2
+                                {% if payment == 'paid' %}
+                                    bg-success-subtle text-success
+                                {% elif payment in ['partially paid', 'partial'] %}
+                                    bg-warning-subtle text-warning-emphasis
+                                {% elif payment == 'unpaid' %}
+                                    bg-danger-subtle text-danger
+                                {% else %}
+                                    bg-secondary-subtle text-secondary
+                                {% endif %}">
+                                {{ payment|title }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-secondary py-5">
+                            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                            No sales found for this period.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Profit Report -->
+    <div class="card section-card shadow-sm">
+
+        <div class="section-heading">
+            <h5 class="fw-bold mb-1">
+                <span class="report-icon bg-success-subtle text-success">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </span>
+                Profit Report
+            </h5>
+            <small class="text-secondary">
+                Revenue, cost and gross profit breakdown
+            </small>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Invoice</th>
+                        <th class="text-end">Revenue</th>
+                        <th class="text-end">Cost</th>
+                        <th class="text-end">Gross Profit</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for row in profit_rows %}
+                    <tr>
+                        <td class="text-nowrap">
+                            {{ row.date.strftime('%d-%m-%Y') if row.date else '—' }}
+                        </td>
+
+                        <td class="fw-semibold text-primary">
+                            {{ row.invoice_no|default(row.id, true) }}
+                        </td>
+
+                        <td class="text-end text-nowrap">
+                            ₹{{ '%.2f'|format(row.revenue|default(0)|float) }}
+                        </td>
+
+                        <td class="text-end text-nowrap">
+                            ₹{{ '%.2f'|format(row.cost|default(0)|float) }}
+                        </td>
+
+                        <td class="text-end fw-bold text-nowrap
+                            {% if row.profit|default(0)|float < 0 %}
+                                text-danger
+                            {% else %}
+                                text-success
+                            {% endif %}">
+                            ₹{{ '%.2f'|format(row.profit|default(0)|float) }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-secondary py-5">
+                            <i class="bi bi-graph-down fs-2 d-block mb-2"></i>
+                            No profit data available for this period.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card-footer bg-light border-0 px-3 px-md-4 py-3">
+            <div class="d-flex gap-2 align-items-start text-secondary small">
+                <i class="bi bi-info-circle text-primary mt-1"></i>
+                <span>
+                    Gross profit is revenue minus cost of goods sold.
+                    It does not deduct operating expenses unless your calculations
+                    explicitly include them.
+                </span>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

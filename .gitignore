@@ -1,0 +1,47 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Secrets
+.env
+.env.*
+secret_key.txt
+
+# License files
+license.dat
+license.clk
+license.ses
+*.lic
+
+# Databases
+databases/
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+
+# Private and runtime data
+instance/
+backups/
+private_documents/
+logs/
+*.log
+
+# Generated builds
+build/
+build_test/
+dist/
+dist_test/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,196 @@
+
+{% extends "base.html" %}
+
+{% block title %}Due Collections | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+    <div>
+        <h2 class="fw-bold mb-1">Due Payments &amp; Collections</h2>
+        <p class="text-secondary mb-0">
+            Track outstanding customer invoice balances.
+        </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+
+        <a href="{{ url_for('billing_transactions') }}"
+           class="btn btn-success">
+            <i class="bi bi-clock-history me-1"></i>
+            Payment Transactions
+        </a>
+
+        <a href="{{ url_for('dashboard_page') }}"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>
+            Back to Dashboard
+        </a>
+
+    </div>
+
+</div>
+
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="text-secondary small">Total Outstanding</div>
+            <h2 class="fw-bold text-danger mb-0">
+                ₹{{ "%.2f"|format(total_due) }}
+            </h2>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Invoice</th>
+                            <th>Customer</th>
+                            <th>Total</th>
+                            <th>Paid</th>
+                            <th>Balance Due</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for item in collections %}
+
+                        <tr>
+                            <td class="ps-3 fw-semibold">
+                                {{ item.sale.invoice_number }}
+                            </td>
+
+                            <td>
+                                {% if item.sale.customer %}
+                                    {{ item.sale.customer.name }}
+                                {% else %}
+                                    Walk-in Customer
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                ₹{{ "%.2f"|format(item.sale.total_amount or 0) }}
+                            </td>
+
+                            <td class="text-success">
+                                ₹{{ "%.2f"|format(item.paid) }}
+                            </td>
+
+                            <td class="fw-bold text-danger">
+                                ₹{{ "%.2f"|format(item.balance) }}
+                            </td>
+
+                            <td>
+                                <div class="d-flex flex-wrap gap-2">
+
+                                    <a href="{{ url_for('billing_detail', sale_id=item.sale.id) }}"
+                                       class="btn btn-sm btn-primary">
+                                        <i class="bi bi-eye"></i> View Invoice
+                                    </a>
+
+                                    {% if item.payments %}
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-success"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#paymentHistory{{ item.sale.id }}"
+                                            aria-expanded="false"
+                                            aria-controls="paymentHistory{{ item.sale.id }}">
+                                        <i class="bi bi-clock-history"></i> Payment History
+                                    </button>
+                                    {% endif %}
+
+                                </div>
+                            </td>
+                        </tr>
+
+                        {% if item.payments %}
+                        <tr class="collapse bg-light"
+                            id="paymentHistory{{ item.sale.id }}">
+
+                            <td colspan="6" class="p-3">
+
+                                <h6 class="fw-bold mb-3">
+                                    <i class="bi bi-receipt"></i>
+                                    Payment History — {{ item.sale.invoice_number }}
+                                </h6>
+
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered bg-white mb-0">
+
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Method</th>
+                                                <th>Reference</th>
+                                                <th class="text-end">Amount</th>
+                                                <th>Receipt</th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody>
+                                            {% for payment in item.payments %}
+                                            <tr>
+
+                                                <td>
+                                                    {% if payment.created_at %}
+                                                        {{ payment.created_at.strftime('%d-%m-%Y') }}
+                                                    {% else %}
+                                                        —
+                                                    {% endif %}
+                                                </td>
+
+                                                <td>
+                                                    {{ (payment.method or 'cash')|replace('_', ' ')|title }}
+                                                </td>
+
+                                                <td>
+                                                    {{ payment.reference or '—' }}
+                                                </td>
+
+                                                <td class="text-end text-success fw-semibold">
+                                                    ₹{{ "%.2f"|format(payment.amount or 0) }}
+                                                </td>
+
+                                                <td>
+                                                    <a href="{{ url_for('payment_receipt', payment_id=payment.id) }}"
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-receipt"></i> View Receipt
+                                                    </a>
+                                                </td>
+
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+
+                                    </table>
+                                </div>
+
+                            </td>
+                        </tr>
+                        {% endif %}
+
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-secondary">
+                                <i class="bi bi-check-circle fs-2 d-block mb-2"></i>
+                                No outstanding payments found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

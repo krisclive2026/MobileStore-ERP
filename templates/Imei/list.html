@@ -1,0 +1,624 @@
+
+{% extends "base.html" %}
+
+{% block title %}Complete Handsets | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Complete Handsets</h2>
+            <p class="text-secondary mb-0">
+                Manage individual handset details, IMEI numbers and stock.
+            </p>
+        </div>
+
+        <a href="{{ url_for('products_list') }}"
+           class="btn btn-outline-primary">
+            <i class="bi bi-box-seam me-1"></i>
+            Products
+        </a>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+
+        {% for key, label, color in [
+            ('total', 'Total Handsets', 'primary'),
+            ('active', 'Active', 'success'),
+            ('inactive', 'Inactive', 'secondary'),
+            ('in_stock', 'In Stock', 'success'),
+            ('sold', 'Sold', 'primary'),
+        ] %}
+
+        <div class="col-6 col-md-4 col-xl">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-secondary mb-2">
+                        {{ label }}
+                    </div>
+                    <div class="fs-3 fw-bold text-{{ color }}">
+                        {{ counts[key] }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    <!-- Product-wise Summary -->
+    {% if product_summaries %}
+    <div class="mb-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Product-wise Handset Summary</h5>
+            <span class="small text-secondary">
+                {{ product_summaries|length }} product(s)
+            </span>
+        </div>
+
+        <div class="row g-3">
+
+            {% for item in product_summaries %}
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+
+                        <div class="d-flex justify-content-between gap-2">
+
+                            <div>
+                                <div class="fw-bold">
+                                    {{ item.product.name }}
+                                </div>
+
+                                <div class="small text-secondary">
+                                    {{ item.product.brand or '' }}
+                                    {{ item.product.model or '' }}
+                                </div>
+
+                                <div class="small text-secondary mt-1">
+                                    {{ item.product.product_code }}
+                                </div>
+                                
+                            </div>
+
+                            <div class="text-end">
+                                <div class="fs-4 fw-bold text-primary">
+                                    {{ item.count }}
+                                </div>
+                                <div class="small text-secondary">
+                                    Handsets
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <hr class="my-2">
+
+                        <div class="d-flex justify-content-between small mb-2">
+                            <span class="text-secondary">In Stock</span>
+                            <span class="fw-semibold text-success">
+                                {{ item.in_stock }}
+                            </span>
+                        </div>
+
+                        <div class="small text-secondary mb-1">
+                            Available Variants
+                        </div>
+
+                        {% if item.variants %}
+                            {% for variant in item.variants|sort %}
+                                <span class="badge text-bg-light border me-1 mb-1">
+                                    {{ variant }}
+                                </span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="small text-secondary">No variants recorded</span>
+                        {% endif %}
+
+                    </div>
+                </div>
+
+            </div>
+            {% endfor %}
+
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+
+            <h5 class="fw-bold mb-3">Search & Filters</h5>
+
+            <form method="GET"
+                  action="{{ url_for('imei_records_list') }}"
+                  class="row g-3">
+
+                <!-- Search -->
+                <div class="col-12 col-lg-4">
+                    <label class="form-label">Search</label>
+                    <input type="search"
+                           name="search"
+                           class="form-control"
+                           value="{{ search or '' }}"
+                           placeholder="IMEI, mobile, supplier or seller">
+                </div>
+
+                <!-- Activation Status -->
+                <div class="col-6 col-lg-2">
+                    <label class="form-label">Handset Status</label>
+                    <select name="status" class="form-select">
+                        <option value="active"
+                            {% if status == 'active' %}selected{% endif %}>
+                            Active
+                        </option>
+                        <option value="inactive"
+                            {% if status == 'inactive' %}selected{% endif %}>
+                            Inactive
+                        </option>
+                        <option value="all"
+                            {% if status == 'all' %}selected{% endif %}>
+                            All
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Condition -->
+                <div class="col-6 col-lg-2">
+                    <label class="form-label">Condition</label>
+                    <select name="product_type" class="form-select">
+                        <option value="">All Conditions</option>
+                        <option value="Sealed"
+                            {% if product_type == 'Sealed' %}selected{% endif %}>
+                            Sealed
+                        </option>
+                        <option value="Used"
+                            {% if product_type == 'Used' %}selected{% endif %}>
+                            Used
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Category -->
+                <div class="col-6 col-lg-2">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}"
+                            {% if category == cat %}selected{% endif %}>
+                            {{ cat }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Supplier -->
+                <div class="col-6 col-lg-2">
+                    <label class="form-label">Supplier</label>
+                    <select name="supplier_id" class="form-select">
+                        <option value="">All Suppliers</option>
+                        {% for supplier in suppliers %}
+                        <option value="{{ supplier.id }}"
+                            {% if supplier_id == supplier.id %}selected{% endif %}>
+                            {{ supplier.company_name or supplier.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Contact Type -->
+                <div class="col-6 col-lg-2">
+                    <label class="form-label">Contact Type</label>
+                    <select name="contact_type" class="form-select">
+                        <option value="all"
+                            {% if contact_type == 'all' %}selected{% endif %}>
+                            All Contacts
+                        </option>
+                        <option value="supplier"
+                            {% if contact_type == 'supplier' %}selected{% endif %}>
+                            Supplier
+                        </option>
+                        <option value="seller"
+                            {% if contact_type == 'seller' %}selected{% endif %}>
+                            Used Seller
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Stock Status -->
+                <div class="col-6 col-lg-2">
+                    <label class="form-label">Stock Status</label>
+                    <select name="stock" class="form-select">
+                        <option value="">All Stock</option>
+                        <option value="in_stock"
+                            {% if stock == 'in_stock' %}selected{% endif %}>
+                            In Stock
+                        </option>
+                        <option value="sold"
+                            {% if stock == 'sold' %}selected{% endif %}>
+                            Sold
+                        </option>
+                        <!-- <option value="returned"
+                            {% if stock == 'returned' %}selected{% endif %}>
+                            Returned
+                        </option>
+                        <option value="damaged"
+                            {% if stock == 'damaged' %}selected{% endif %}>
+                            Damaged
+                        </option> -->
+                    </select>
+                </div>
+
+        
+                <!-- Purchase Date From -->
+                <div class="col-6 col-lg-2">
+                    <label class="form-label">Purchase Date From</label>
+                    <input type="date"
+                           name="date_from"
+                           class="form-control"
+                           value="{{ date_from }}">
+                </div>
+
+                <!-- Purchase Date To -->
+                <div class="col-6 col-lg-2">
+                    <label class="form-label">Purchase Date To</label>
+                    <input type="date"
+                           name="date_to"
+                           class="form-control"
+                           value="{{ date_to }}">
+                </div>
+
+                <!-- Buttons -->
+                <div class="col-12 d-flex flex-wrap gap-2 align-items-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search me-1"></i>
+                        Apply Filters
+                    </button>
+
+                    <a href="{{ url_for('imei_records_list') }}"
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>
+                        Reset
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Individual Handset Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <h5 class="fw-bold mb-0">Individual Handset Records</h5>
+
+                <span class="small text-secondary">
+                    {{ records|length }} matching handset(s)
+                </span>
+            </div>
+
+            <div class="w-100">
+
+                <table class="table table-hover align-middle imei-table">
+                
+
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Mobile Details</th>
+                            <th>Variant / Colour</th>
+                            <th>GST</th>
+                            <th>IMEI 1</th>
+                            <th>IMEI 2</th>
+                            <th>Supplier Details</th>
+                            <th>Used Seller Details</th>
+                            <th>Condition</th>
+                            <th>Purchase Cost</th>
+                            <th>Selling Price</th>
+                            <th>Warranty</th>
+                            <th>Purchase Date</th>
+                            <th>Stock</th>
+                            <th>Invoice</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for record in records %}
+                        <tr>
+
+                            <td>{{ loop.index }}</td>
+
+                            <!-- Product -->
+                            <td>
+                                <div class="fw-semibold">
+                                    {{ record.product.name }}
+                                </div>
+
+                                <div class="small text-secondary">
+                                    {{ record.product.brand or '' }}
+                                    {{ record.product.model or '' }}
+                                </div>
+
+                                <div class="small text-secondary">
+                                    {{ record.product.product_code }}
+                                </div>
+
+                                {% if not record.product.is_active %}
+                                    <span class="badge text-bg-warning mt-1">
+                                        Product Inactive
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Variant and Colour -->
+                            <td>
+                                <div>
+                                    {{ record.variant or '—' }}
+                                </div>
+                                <div class="small text-secondary">
+                                    {{ record.color or '—' }}
+                                </div>
+                            </td>
+
+                            <td>
+    {{ "%.2f"|format(record.gst_percent or 0) }}%
+</td>
+
+                            <!-- IMEI 1 -->
+                            <td>
+                                <code>{{ record.imei1 }}</code>
+                            </td>
+
+                            <!-- IMEI 2 -->
+                            <td>
+                                {% if record.imei2 %}
+                                    <code>{{ record.imei2 }}</code>
+                                {% else %}
+                                    <span class="text-secondary">—</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Supplier -->
+                            <td>
+                                {% if record.supplier %}
+                                    <div class="fw-semibold">
+                                        {{ record.supplier.company_name or record.supplier.name }}
+                                    </div>
+                                    <div class="small text-secondary">
+                                        {{ record.supplier.contact_person or '' }}
+                                    </div>
+                                    <div class="small text-secondary">
+                                        {{ record.supplier.phone or '' }}
+                                    </div>
+                                {% else %}
+                                    <span class="text-secondary">—</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Used Seller -->
+                            <td>
+                                {% if record.used_handset_seller %}
+                                    <div class="fw-semibold">
+                                        {{ record.used_handset_seller.seller_name }}
+                                    </div>
+                                    <div class="small text-secondary">
+                                        {{ record.used_handset_seller.seller_phone }}
+                                    </div>
+                                    <div class="small text-secondary">
+                                        {{ record.used_handset_seller.seller_address or '' }}
+                                    </div>
+                                {% else %}
+                                    <span class="text-secondary">—</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Condition -->
+                            <td>
+                                {% if record.condition == 'Sealed' %}
+                                    <span class="badge text-bg-primary">Sealed</span>
+                                {% else %}
+                                    <span class="badge text-bg-warning">
+                                        {{ record.condition or '—' }}
+                                    </span>
+                                {% endif %}
+
+                                {% if record.used_grade %}
+                                    <div class="small text-secondary mt-1">
+                                        {{ record.used_grade }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <!-- Purchase Cost -->
+                            <td>
+                                ₹{{ "%.2f"|format(record.purchase_price or 0) }}
+                            </td>
+
+                            <!-- Selling Price -->
+                            <td>
+                                ₹{{ "%.2f"|format(record.selling_price or 0) }}
+                            </td>
+
+                            <!-- Warranty -->
+                            <td>
+                                {{ record.warranty_months or 0 }} Months
+                            </td>
+
+                            <!-- Purchase Date -->
+                            <td>
+                                {% if record.purchase_date %}
+                                    {{ record.purchase_date.strftime('%d-%m-%Y') }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+
+                            <!-- Stock -->
+                            <td>
+                                {% if record.status == 'in_stock' %}
+                                    <span class="badge text-bg-success">In Stock</span>
+                                {% elif record.status == 'sold' %}
+                                    <span class="badge text-bg-primary">Sold</span>
+                                {% else %}
+                                    <span class="badge text-bg-secondary">
+                                        {{ record.status }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Invoice -->
+                            <td>
+                                {% if record.sale and record.sale.invoice_number %}
+                                    {{ record.sale.invoice_number }}
+                                {% else %}
+                                    <span class="text-secondary">—</span>
+                                {% endif %}
+                            </td>
+                          
+<!-- Action -->
+<td>
+    <div class="d-flex gap-1 flex-wrap">
+
+        <!-- View -->
+        <a href="{{ url_for('view_imei_record', record_id=record.id) }}"
+           class="btn btn-sm btn-outline-primary"
+           title="View"
+           aria-label="View">
+            <i class="bi bi-eye"></i>
+        </a>
+
+        <!-- Edit -->
+        {% if record.status == 'in_stock' %}
+        <a href="{{ url_for('edit_imei_record', record_id=record.id) }}"
+           class="btn btn-sm btn-outline-warning"
+           title="Edit"
+           aria-label="Edit">
+            <i class="bi bi-pencil-square"></i>
+        </a>
+        {% endif %}
+
+        <!-- Deactivate -->
+        {% if record.is_active %}
+        <form method="POST"
+              action="{{ url_for('handset_toggle_status', imei_id=record.id) }}"
+              onsubmit="return confirm('Deactivate this handset?');"
+              class="m-0">
+
+            <input type="hidden" name="csrf_token"
+                   value="{{ csrf_token() }}">
+
+            <button type="submit"
+                    class="btn btn-sm btn-outline-danger"
+                    title="Deactivate"
+                    aria-label="Deactivate">
+                <i class="bi bi-toggle-off"></i>
+            </button>
+        </form>
+
+        <!-- Activate only if still in stock -->
+        {% elif record.status == 'in_stock' %}
+        <form method="POST"
+              action="{{ url_for('handset_toggle_status', imei_id=record.id) }}"
+              onsubmit="return confirm('Activate this handset?');"
+              class="m-0">
+
+            <input type="hidden" name="csrf_token"
+                   value="{{ csrf_token() }}">
+
+            <button type="submit"
+                    class="btn btn-sm btn-outline-success"
+                    title="Activate"
+                    aria-label="Activate">
+                <i class="bi bi-toggle-on"></i>
+            </button>
+        </form>
+        {% endif %}
+
+    </div>
+</td>
+
+
+                        </tr>
+
+                        {% else %}
+                        <tr>
+                            <td colspan="16" class="text-center py-5">
+                                <div class="fs-5 fw-semibold mb-1">
+                                    No handset records found
+                                </div>
+                                <div class="text-secondary">
+                                    Try changing your search or filters.
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="small text-secondary">
+                Showing {{ records|length }} matching handset record(s).
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+
+
+<style>
+    .imei-table {
+        width: 100%;
+        table-layout: fixed;
+        margin-bottom: 0;
+        font-size: 14px;
+    }
+
+    .imei-table th,
+    .imei-table td {
+        padding: 8px 5px;
+        vertical-align: middle;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .imei-table th {
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .imei-table code {
+        font-size: 13px;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .imei-table .btn {
+        font-size: 12px;
+        padding: 4px 6px;
+    }
+
+    .imei-table .badge {
+        font-size: 12px;
+    }
+
+    .imei-table .small {
+        font-size: 12px !important;
+    }
+</style>
+
+
+{% endblock %}

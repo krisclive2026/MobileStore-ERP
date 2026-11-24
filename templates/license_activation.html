@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Activate MobileStore ERP{% endblock %}
+{% block content %}
+<div class="container py-5" style="max-width: 760px;">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-4 p-md-5">
+      <div class="text-center mb-4">
+        <h2 class="fw-bold">MobileStore ERP Activation</h2>
+        <p class="text-muted mb-0">Activate this computer to continue using the ERP.</p>
+      </div>
+      <div class="alert {{ 'alert-warning' if license_status.get('expired') else 'alert-info' }}" role="alert">
+        <strong>{% if license_status.get('expired') %}No license found. Please renew your license.{% else %}{{ license_status.get('message', 'No license found. Please activate.') }}{% endif %}</strong>
+        {% if license_status.get('expiry') %}
+          <div class="mt-1">License expiry date: {{ license_status.get('expiry') }}</div>
+        {% endif %}
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">System Code</label>
+        <div class="input-group">
+          <input id="systemCode" class="form-control" readonly value="" placeholder="Loading system code...">
+          <button class="btn btn-outline-secondary" type="button" id="copySystemCode">Copy</button>
+        </div>
+        <div class="form-text">Share this system code with your software provider to receive an activation key.</div>
+      </div>
+      <div class="mb-3">
+        <label for="licenseKey" class="form-label fw-semibold">Activation Key</label>
+        <textarea id="licenseKey" class="form-control" rows="4" placeholder="Paste your activation key here"></textarea>
+      </div>
+      <div id="activationMessage" class="small mb-3" role="status"></div>
+      <button id="activateButton" class="btn btn-primary w-100" type="button">Activate MobileStore ERP</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", async function () {
+  const systemCode = document.getElementById("systemCode");
+  const message = document.getElementById("activationMessage");
+  try {
+    const response = await fetch("{{ url_for('license_status') }}");
+    const data = await response.json();
+    systemCode.value = data.system_code || "";
+  } catch (error) {
+    message.className = "text-danger small mb-3";
+    message.textContent = "Could not load the system code. Please restart the application.";
+  }
+  document.getElementById("copySystemCode").addEventListener("click", async function () {
+    try {
+      await navigator.clipboard.writeText(systemCode.value);
+      message.className = "text-success small mb-3";
+      message.textContent = "System code copied.";
+    } catch (error) {
+      systemCode.select();
+      document.execCommand("copy");
+      message.className = "text-success small mb-3";
+      message.textContent = "System code copied.";
+    }
+  });
+  document.getElementById("activateButton").addEventListener("click", async function () {
+    const key = document.getElementById("licenseKey").value.trim();
+    if (!key) {
+      message.className = "text-danger small mb-3";
+      message.textContent = "Please enter the activation key.";
+      return;
+    }
+    const button = this;
+    button.disabled = true;
+    message.className = "text-muted small mb-3";
+    message.textContent = "Verifying activation key...";
+    try {
+      const response = await fetch("{{ url_for('license_activate') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ license_key: key })
+      });
+      const data = await response.json();
+      if (data.success) {
+        message.className = "text-success small mb-3";
+        message.textContent = data.message || "License activated successfully.";
+        window.location.href = "/";
+      } else {
+        message.className = "text-danger small mb-3";
+        message.textContent = data.message || "Activation failed.";
+      }
+    } catch (error) {
+      message.className = "text-danger small mb-3";
+      message.textContent = "Activation request failed. Please try again.";
+    } finally {
+      button.disabled = false;
+    }
+  });
+});
+</script>
+{% endblock %}

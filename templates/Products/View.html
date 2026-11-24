@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Product Details | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Product Details</h2>
+            <p class="text-secondary mb-0">
+                Complete product information and handset records.
+            </p>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('products_list') }}"
+               class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                Back
+            </a>
+
+            <a href="{{ url_for('product_edit', product_id=product.id) }}"
+               class="btn btn-primary">
+                <i class="bi bi-pencil-square me-1"></i>
+                Edit Product
+            </a>
+        </div>
+    </div>
+
+    <!-- Product Information -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="fw-bold mb-0">
+                <i class="bi bi-box-seam me-2"></i>
+                Product Information
+            </h5>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+
+                {% set fields = [
+                    ('Product Name', product.name),
+                    ('Product Code', product.product_code),
+                    ('Barcode', product.barcode),
+                    ('Brand', product.brand),
+                    ('Model', product.model),
+                    ('Category', product.category),
+                    ('Default Variant', product.variant),
+                    ('Default Colour', product.color),
+                    ('Condition', product.condition),
+                    ('Used Grade', product.used_grade),
+                    ('Warranty', (product.warranty_months|string) ~ ' months'),
+                    ('HSN Code', product.hsn_code),
+                    ('GST', (product.gst_percent|string) ~ '%'),
+                    ('Cost Price', '₹%.2f'|format(product.cost_price or 0)),
+                    ('Selling Price', '₹%.2f'|format(product.selling_price or 0)),
+                    ('Stock Quantity', product.stock_quantity),
+                    ('Reorder Level', product.reorder_level),
+                    ('IMEI Tracking', 'Enabled' if product.track_imei else 'Disabled'),
+                    ('Status', 'Active' if product.is_active else 'Inactive')
+                ] %}
+
+                {% for label, value in fields %}
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="small text-secondary mb-1">
+                            {{ label }}
+                        </div>
+                        <div class="fw-semibold">
+                            {{ value if value not in (none, '') else '—' }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+            </div>
+        </div>
+    </div>
+
+    <!-- IMEI Records -->
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-upc-scan me-2"></i>
+                    Individual Handset Records
+                </h5>
+
+                <span class="badge text-bg-light border">
+                    {{ imei_records|length }} handset(s)
+                </span>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">#</th>
+                            <th>IMEI 1</th>
+                            <th>IMEI 2</th>
+                            <th>Variant</th>
+                            <th>Colour</th>
+                            <th>Condition</th>
+                            <th>Purchase Price</th>
+                            <th>Selling Price</th>
+                            <th>Source</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for record in imei_records %}
+                        <tr>
+                            <td class="ps-3">{{ loop.index }}</td>
+
+                            <td>{{ record.imei1 }}</td>
+
+                            <td>{{ record.imei2 or '—' }}</td>
+
+                            <td>{{ record.variant or '—' }}</td>
+
+                            <td>{{ record.color or '—' }}</td>
+
+                            <td>
+                                {% if record.condition == 'Used' %}
+                                    <span class="badge text-bg-warning">Used</span>
+                                    {% if record.used_grade %}
+                                        <div class="small text-secondary">
+                                            {{ record.used_grade }}
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge text-bg-primary">
+                                        {{ record.condition }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td class="text-nowrap">
+                                ₹{{ "%.2f"|format(record.purchase_price or 0) }}
+                            </td>
+
+                            <td class="text-nowrap">
+                                ₹{{ "%.2f"|format(record.selling_price or 0) }}
+                            </td>
+
+                            <td>
+                                {% if record.source == 'direct' %}
+                                    <span class="badge text-bg-success">Direct</span>
+                                {% elif record.source == 'supplier' %}
+                                    <span class="badge text-bg-info">Supplier</span>
+                                {% else %}
+                                    <span class="badge text-bg-secondary">
+                                        {{ record.source or 'Unknown' }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if record.status == 'in_stock' %}
+                                    <span class="badge text-bg-success">In Stock</span>
+                                {% else %}
+                                    <span class="badge text-bg-secondary">
+                                        {{ record.status|replace('_', ' ')|title }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                        {% else %}
+                        <tr>
+                            <td colspan="10" class="text-center py-4 text-secondary">
+                                No individual IMEI records found for this product.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

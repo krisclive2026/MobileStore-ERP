@@ -1,0 +1,2097 @@
+
+
+
+{% extends "base.html" %}
+
+{% block title %}Create Bill | MobileStore ERP{% endblock %}
+
+{% block extra_css %}
+
+<style>
+
+.billing-page{max-width:1500px;margin:auto;padding:22px;color:#252943}
+
+.billing-header{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+
+.billing-header h1{font-size:25px;margin:0;font-weight:800}
+
+.billing-muted{color:#858ba1;font-size:12px;margin-top:5px}
+
+.billing-actions{display:flex;gap:9px;flex-wrap:wrap}
+
+.billing-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 15px;border-radius:9px;border:1px solid #e2e5ef;text-decoration:none;font-size:12px;font-weight:750;cursor:pointer}
+
+.billing-primary{background:#615df5;color:white;border-color:#615df5}
+
+.billing-secondary{background:white;color:#444962}
+
+.billing-panel{background:white;border:1px solid #e7e9f2;border-radius:15px;overflow:hidden;min-width:0;box-shadow:0 5px 20px #20243a08}
+
+.billing-panel-head{padding:18px 20px;border-bottom:1px solid #eceef5}
+
+.billing-panel-head h2{font-size:16px;margin:0;font-weight:800}
+
+.billing-panel-body{padding:20px}
+
+.billing-label{display:block;font-size:12px;font-weight:750;color:#555b72;margin-bottom:7px}
+
+.billing-input,.billing-select{width:100%;box-sizing:border-box;min-height:42px;padding:10px 12px;border:1px solid #dfe2ed;border-radius:8px;background:#fff;color:#292e45;font:inherit;font-size:12px}
+
+.billing-layout{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:20px;align-items:start}
+
+.billing-search{margin-bottom:12px}
+
+.billing-filter-grid,.billing-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+
+.billing-products{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-height:580px;overflow:auto}
+
+.billing-product{border:1px solid #e7e9f2;border-radius:11px;padding:13px;display:flex;flex-direction:column;gap:8px;min-width:0}
+
+.billing-product-name{font-size:12px;font-weight:800;overflow-wrap:anywhere}
+
+.billing-product-meta{font-size:10px;color:#858ba1;line-height:1.5;overflow-wrap:anywhere}
+
+.billing-price{font-size:17px;font-weight:900;color:#615df5}
+
+.billing-stock{font-size:10px;color:#178451}
+
+.billing-add{border:1px solid #dedcff;background:#f1f0ff;color:#514ce4;border-radius:7px;padding:9px;font-size:11px;font-weight:800;cursor:pointer;margin-top:auto}
+
+.billing-add:disabled{opacity:.5;cursor:not-allowed}
+
+.billing-count{float:right;border-radius:20px;background:#f0efff;color:#615df5;padding:5px 9px;font-size:10px;font-weight:800}
+
+.billing-customer{background:#fafaff;border:1px solid #e7e9f2;padding:14px;border-radius:10px;margin-bottom:18px}
+
+.billing-table-wrap{overflow-x:auto}
+
+.billing-table{width:100%;min-width:440px;border-collapse:collapse}
+
+.billing-table th{background:#f7f8fc;color:#7e849b;text-align:left;font-size:10px;text-transform:uppercase;padding:10px 7px;white-space:nowrap}
+
+.billing-table td{padding:10px 7px;border-bottom:1px solid #eff0f5;font-size:11px;vertical-align:middle}
+
+.billing-qty{width:55px;padding:7px 4px;border:1px solid #dfe2ed;border-radius:6px;text-align:center;box-sizing:border-box}
+
+.billing-remove{border:0;background:#fff0f0;color:#bd3030;border-radius:6px;padding:6px 9px;cursor:pointer}
+
+.billing-summary{background:#f8f8ff;border:1px solid #ecebff;border-radius:10px;padding:14px;margin-top:16px}
+
+.billing-total-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 0;font-size:12px;color:#727890}
+
+.billing-total-row strong{color:#303550}
+
+.billing-discount{width:115px;max-width:45%;box-sizing:border-box;padding:7px;border:1px solid #dfe2ed;border-radius:7px;text-align:right}
+
+.billing-grand{border-top:1px dashed #d5d6ec;margin-top:8px;padding-top:13px;font-weight:800}
+
+.billing-grand strong{font-size:23px;color:#615df5}
+
+.billing-payment{border-top:1px solid #eceef5;margin-top:20px;padding-top:18px}
+
+.billing-field{margin-bottom:13px;min-width:0}
+
+.billing-balance{display:flex;justify-content:space-between;gap:10px;padding:12px;background:#f3f4fa;border-radius:8px;font-size:12px;margin:12px 0}
+
+.billing-error{display:none;padding:12px;background:#fff1f1;border:1px solid #ffcaca;color:#a82020;border-radius:8px;margin-bottom:13px;font-size:12px}
+
+.billing-empty{grid-column:1/-1;text-align:center;padding:30px 12px;color:#8b90a5;font-size:12px}
+
+.billing-submit{width:100%;min-height:46px}
+
+.billing-note{font-size:11px;color:#777e94;line-height:1.5;margin-top:7px}
+
+.imei-picker{min-width:190px;max-width:260px}
+
+.imei-picker select{width:100%;min-height:76px;padding:6px;border:1px solid #dfe2ed;border-radius:7px;font-size:11px}
+
+.imei-help{display:block;font-size:10px;color:#777e94;margin-top:5px;line-height:1.4}
+
+@media(max-width:1050px){.billing-layout{grid-template-columns:minmax(0,1fr)}}
+
+@media(max-width:560px){.billing-page{padding:10px}.billing-panel-body{padding:14px}.billing-products{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.billing-product{padding:9px}.billing-fields,.billing-filter-grid{grid-template-columns:1fr;gap:0}.billing-header h1{font-size:21px}}
+
+@media print{.billing-header,.billing-layout,.no-print{display:none!important}.billing-page{max-width:none;padding:0}#liveInvoicePreview{box-shadow:none;border:0}}
+
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<main class="billing-page">
+
+    <header class="billing-header no-print">
+
+        <div>
+
+            <h1>Create New Bill</h1>
+
+            <div class="billing-muted">MobileStore ERP · Invoice and payment entry</div>
+
+        </div>
+
+        <div class="billing-actions">
+
+            <a class="billing-btn billing-secondary" href="{{ url_for('billing_list') }}">Billing History</a>
+
+            <a class="billing-btn billing-secondary" href="{{ url_for('dashboard_page') }}">← Dashboard</a>
+
+        </div>
+
+    </header>
+
+    <form id="billingForm" method="POST" action="{{ url_for('billing_create') }}">
+
+        {% if csrf_token is defined %}
+
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        {% endif %}
+
+        <div class="billing-layout">
+
+            <section class="billing-panel">
+
+                <div class="billing-panel-head">
+
+                    <span class="billing-count" id="productCount">{{ products|length }} products</span>
+
+                    <h2>Products</h2>
+
+                    <div class="billing-muted">Search by name, model, product code, barcode or available IMEI.</div>
+
+                </div>
+
+                <div class="billing-panel-body">
+
+                    <div class="billing-search">
+
+                        <label class="billing-label" for="productSearch">Search products</label>
+
+                        <input id="productSearch" class="billing-input" type="search"
+
+                               placeholder="Type or scan barcode, code or IMEI..." autocomplete="off">
+
+                    </div>
+
+                    <div class="billing-filter-grid">
+
+                        <div>
+
+                            <label class="billing-label" for="productTypeFilter">Product group</label>
+
+                            <select id="productTypeFilter" class="billing-select">
+
+                                <option value="all">All products</option>
+
+                                <option value="sealed">Sealed / New Phones</option>
+
+                                <option value="used">Used Phones</option>
+
+                                <option value="accessories">Accessories & Services</option>
+
+                            </select>
+
+                        </div>
+
+                        <div>
+
+                            <label class="billing-label" for="productCategoryFilter">Category</label>
+
+                            <select id="productCategoryFilter" class="billing-select">
+
+                                <option value="all">All categories</option>
+
+                                {% for category in products|map(attribute='category')|select|unique|sort %}
+
+                                <option value="{{ category }}">{{ category }}</option>
+
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <div class="billing-note">For accurate product grouping, use consistent product names and categories.</div>
+
+                    <div id="productResults" class="billing-products mt-3">
+
+                        <div class="billing-empty">Loading products...</div>
+
+                    </div>
+<!-- 
+<select id="productCatalog" hidden>
+
+    {% for product in products %}
+
+        {% if product.is_active and product.stock_quantity > 0 %}
+
+            <option value="{{ product.id }}"
+
+                data-name="{{ product.name }}"
+
+                data-code="{{ product.product_code or '' }}"
+
+                data-barcode="{{ product.barcode or '' }}"
+
+                data-brand="{{ product.brand or '' }}"
+
+                data-model="{{ product.model or '' }}"
+
+                data-category="{{ product.category or '' }}"
+
+                data-price="{{ product.selling_price or 0 }}"
+
+                data-gst="{{ product.gst_percent if product.gst_percent is not none else 5 }}"
+
+                data-stock="{{ product.stock_quantity }}"
+
+                data-track-imei="{{ 'true' if product.track_imei else 'false' }}"
+
+                {% set available_imeis = product.imei_records
+                    | selectattr('status', 'equalto', 'in_stock')
+                    | selectattr('sale_id', 'equalto', none)
+                    | list %}
+                data-imei-records='[
+    {% for record in available_imeis %}
+    {
+        "id": {{ record.id | tojson }},
+        "imei1": {{ record.imei1 | tojson }},
+        "imei2": {{ (record.imei2 or "") | tojson }},
+        "selling_price": {{ record.selling_price | tojson }},
+        "gst_percent": {{ (record.gst_percent or 0) | tojson }},
+        "variant": {{ (record.variant or "") | tojson }},
+        "color": {{ (record.color or "") | tojson }},
+        "condition": {{ (record.condition or "") | tojson }},
+        "used_grade": {{ (record.used_grade or "") | tojson }},
+        "warranty_months": {{ (record.warranty_months or 0) | tojson }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+]'>
+
+                {{ product.name }}
+
+            </option>
+
+        {% endif %}
+
+    {% endfor %}
+
+</select> -->
+
+
+<select id="productCatalog" hidden>
+
+    {% for product in products %}
+
+        {% set available_imeis = product.imei_records
+            | selectattr('status', 'equalto', 'in_stock')
+            | selectattr('sale_id', 'equalto', none)
+            | list %}
+
+        <!-- {% set priced_imeis = available_imeis
+            | selectattr('selling_price', 'gt', 0)
+            | list %} -->
+
+        {% if product.is_active and (
+            (product.track_imei and available_imeis|length > 0)
+            or
+            (not product.track_imei and product.stock_quantity > 0)
+        ) %}
+
+            <option value="{{ product.id }}"
+
+                data-name="{{ product.name }}"
+
+                data-code="{{ product.product_code or '' }}"
+
+                data-barcode="{{ product.barcode or '' }}"
+
+                data-brand="{{ product.brand or '' }}"
+
+                data-model="{{ product.model or '' }}"
+
+                data-category="{{ product.category or '' }}"
+
+                data-price="{{ (product.selling_price if not product.track_imei else 0) or 0 }}"
+
+                data-gst="{{ product.gst_percent if product.gst_percent is not none else 5 }}"
+
+                data-stock="{{ available_imeis|length if product.track_imei else product.stock_quantity }}"
+
+                data-track-imei="{{ 'true' if product.track_imei else 'false' }}"
+
+                data-imei-records='[
+                    {% for record in available_imeis %}
+                    {
+                        "id": {{ record.id | tojson }},
+                        "imei1": {{ record.imei1 | tojson }},
+                        "imei2": {{ (record.imei2 or "") | tojson }},
+                        "selling_price": {{ record.selling_price | tojson }},
+                        "gst_percent": {{ (record.gst_percent or 0) | tojson }},
+                        "variant": {{ (record.variant or "") | tojson }},
+                        "color": {{ (record.color or "") | tojson }},
+                        "condition": {{ (record.condition or "") | tojson }},
+                        "used_grade": {{ (record.used_grade or "") | tojson }},
+                        "warranty_months": {{ (record.warranty_months or 0) | tojson }}
+                    }{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ]'>
+
+                {{ product.name }}
+
+            </option>
+
+        {% endif %}
+
+    {% endfor %}
+
+</select>
+
+
+                </div>
+
+            </section>
+
+            <section class="billing-panel">
+
+                <div class="billing-panel-head">
+
+                    <span class="billing-count" id="cartCount">0 items</span>
+
+                    <h2>Invoice Details</h2>
+
+                    <div class="billing-muted">Choose a customer, select phone IMEIs, and enter payment.</div>
+
+                </div>
+
+                <div class="billing-panel-body">
+
+                    <div id="formError" class="billing-error" role="alert"></div>
+
+                    <div class="billing-customer">
+
+    <label class="billing-label" for="customer_name">
+
+        Customer Name
+
+    </label>
+
+    <div style="position: relative;">
+
+        <input
+
+            type="text"
+
+            class="billing-input"
+
+            id="customer_name"
+
+            name="customer_name"
+
+            placeholder="Type customer name..."
+
+            autocomplete="off"
+
+        >
+
+        <select id="customer_id" name="customer_id" hidden>
+
+            <option value="">Walk-in Customer</option>
+
+            {% for customer in customers %}
+
+<option
+    value="{{ customer.id }}"
+    data-name="{{ customer.name }}"
+    data-phone="{{ customer.phone or '' }}"
+    data-address="{{ customer.address or '' }}"
+>
+    {{ customer.name }}{% if customer.phone %} — {{ customer.phone }}{% endif %}
+</option>
+
+{% endfor %}
+
+        </select>
+
+        <div
+
+            id="customerSuggestions"
+
+            style="
+
+                display:none;
+
+                position:absolute;
+
+                top:100%;
+
+                left:0;
+
+                right:0;
+
+                background:#fff;
+
+                border:1px solid #dfe2ed;
+
+                border-radius:8px;
+
+                max-height:220px;
+
+                overflow-y:auto;
+
+                z-index:1000;
+
+                box-shadow:0 5px 15px rgba(0,0,0,.10);
+
+            "
+
+        ></div>
+
+    </div>
+
+    <div class="billing-note">
+
+        Select an existing customer or type a new customer's name.
+
+    </div>
+
+    <div id="newCustomerDetails" hidden style="margin-top:12px;">
+
+    <div class="billing-field">
+        <label class="billing-label" for="customer_phone">
+            Customer Phone
+        </label>
+
+        <input
+            type="text"
+            class="billing-input"
+            id="customer_phone"
+            name="customer_phone"
+            placeholder="Enter phone number"
+        >
+    </div>
+
+    <div class="billing-field">
+        <label class="billing-label" for="customer_address">
+            Customer Address
+        </label>
+
+        <textarea
+            class="billing-input"
+            id="customer_address"
+            name="customer_address"
+            rows="2"
+            placeholder="Enter customer address"
+        ></textarea>
+    </div>
+
+</div>
+
+</div>
+
+                    <!-- GST Calculation Mode (keep your existing code unchanged) -->
+
+<div class="billing-field">
+
+    <label class="billing-label" for="gst_mode">
+
+        GST Calculation Mode
+
+    </label>
+
+    <select
+
+        class="billing-select"
+
+        id="gst_mode"
+
+        name="gst_mode"
+
+        required
+
+    >
+
+        <option value="exclusive">GST added to selling price</option>
+
+        <option value="inclusive">Selling price includes GST</option>
+
+        <option value="exempt">GST exempt / not applicable</option>
+
+    </select>
+
+    <div class="billing-note">
+
+        Choose the correct GST treatment for this invoice.
+
+    </div>
+
+</div>
+
+                    <div class="billing-table-wrap">
+
+                        <table class="billing-table">
+
+                            <thead>
+
+                                <tr><th>Product / IMEI</th><th>Price</th><th>Qty</th><th>GST</th><th>Total</th><th></th></tr>
+
+                            </thead>
+
+                            <tbody id="cartRows">
+
+                                <tr id="emptyCartRow"><td colspan="6" class="billing-empty">No products added yet.</td></tr>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                    <div class="billing-summary">
+
+                        <div class="billing-total-row"><span>Subtotal (before GST)</span><strong id="subtotalDisplay">₹0.00</strong></div>
+
+                        <div class="billing-total-row"><span>GST</span><strong id="taxDisplay">₹0.00</strong></div>
+
+                        <div class="billing-total-row">
+
+                            <label for="discount_amount">Discount (₹)</label>
+
+                            <input class="billing-discount" id="discount_amount" name="discount_amount" type="number" min="0" step="0.01" value="0" required>
+
+                        </div>
+
+                        <div class="billing-total-row billing-grand"><span>Grand Total</span><strong id="totalDisplay">₹0.00</strong></div>
+
+                    </div>
+
+                    <div class="billing-payment">
+
+                        <h3 style="font-size:14px;margin:0 0 14px">Payment Details</h3>
+
+                        <div class="billing-fields">
+
+                            <div class="billing-field">
+
+                                <label class="billing-label" for="payment_method">Payment Method</label>
+
+                                <select class="billing-select" id="payment_method" name="payment_method" required>
+
+                                    <option value="cash">Cash</option>
+
+                                    <option value="upi">UPI</option>
+
+                                    <option value="card">Card</option>
+
+                                    <option value="bank_transfer">Bank Transfer</option>
+
+                                    <option value="other">Other</option>
+
+                                </select>
+
+                            </div>
+
+                            <div class="billing-field">
+
+                                <label class="billing-label" for="paid_amount">Amount Paid (₹)</label>
+
+                                <input class="billing-input" id="paid_amount" name="paid_amount" type="number" min="0" step="0.01" value="0" required>
+
+                            </div>
+
+                        </div>
+
+                        <div class="billing-field">
+
+                            <label class="billing-label" for="payment_reference">Payment Reference</label>
+
+                            <input class="billing-input" id="payment_reference" name="payment_reference" maxlength="100" placeholder="UPI transaction ID or receipt number">
+
+                        </div>
+
+                        <div class="billing-balance"><span id="balanceLabel">Balance due</span><strong id="balanceDisplay">₹0.00</strong></div>
+
+                        <button class="billing-btn billing-primary billing-submit" id="saveBillBtn" type="submit">Save Bill</button>
+
+                        <button class="billing-btn billing-secondary billing-submit" id="clearBillBtn" type="button" style="margin-top:8px">Clear Bill</button>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+
+        <section class="billing-panel mt-4" id="liveInvoicePreview">
+
+            <div class="billing-panel-head">
+
+                <h2>Live Invoice Preview</h2>
+
+                <div class="billing-muted">Store details, items, GST and payment totals.</div>
+
+            </div>
+
+            <div class="billing-panel-body">
+
+                <div style="display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;border-bottom:2px solid #e2e8f0;padding-bottom:16px">
+
+                    <div>
+
+                        {% if settings and settings.logo_filename %}
+
+                        <img src="{{ url_for('store_logo_file', filename=settings.logo_filename) }}" alt="Store logo" style="max-width:100px;max-height:70px;object-fit:contain;display:block;margin-bottom:10px">
+
+                        {% endif %}
+
+                        <h3 style="font-size:21px;font-weight:800;margin:0 0 8px">{{ settings.store_name if settings and settings.store_name else 'Mobile Store' }}</h3>
+
+                        <div class="billing-muted" style="white-space:pre-line">{{ settings.address if settings and settings.address else '' }}</div>
+
+                        {% if settings and settings.phone %}<div class="billing-muted">Phone: {{ settings.phone }}</div>{% endif %}
+
+                        {% if settings and settings.gstin and settings.show_gstin %}<div class="billing-muted">GSTIN: {{ settings.gstin }}</div>{% endif %}
+
+                    </div>
+
+                    <div><strong style="font-size:20px">INVOICE</strong><div class="billing-muted">Prefix: {{ settings.invoice_prefix if settings and settings.invoice_prefix else 'INV' }}</div><div class="billing-muted">Invoice number assigned when saved</div></div>
+
+                </div>
+
+                <div style="padding:16px 0"><strong>Customer:</strong> <span id="previewCustomer">Walk-in Customer</span></div>
+
+                <div class="billing-table-wrap">
+
+                    <table class="billing-table">
+
+                        <thead><tr><th>Product / IMEI</th><th>Qty</th><th>Price</th><th>Tax</th><th>Total</th></tr></thead>
+
+                        <tbody id="previewItems"><tr><td colspan="5" class="billing-empty">No products added yet.</td></tr></tbody>
+
+                    </table>
+
+                </div>
+
+                <div style="max-width:320px;margin-left:auto;margin-top:12px">
+
+                    <div class="billing-total-row"><span>Subtotal (before GST)</span><strong id="previewSubtotal">₹0.00</strong></div>
+
+                    <div class="billing-total-row"><span>GST</span><strong id="previewTax">₹0.00</strong></div>
+
+                    <div class="billing-total-row"><span>Discount</span><strong id="previewDiscount">₹0.00</strong></div>
+
+                    <div class="billing-total-row billing-grand"><span>Grand Total</span><strong id="previewTotal">₹0.00</strong></div>
+
+                    <div class="billing-total-row"><span>Paid</span><strong id="previewPaid">₹0.00</strong></div>
+
+                    <div class="billing-total-row"><span>Balance Due</span><strong id="previewBalance">₹0.00</strong></div>
+
+                </div>
+
+                <div style="border-top:1px dashed #dfe2ed;margin-top:18px;padding-top:14px">
+
+                    <div class="billing-muted">{{ settings.footer_text if settings and settings.footer_text else 'Thank you for your business!' }}</div>
+
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:10px">
+
+                        {% if settings and settings.instagram_url %}<a href="{{ settings.instagram_url }}" target="\_blank" rel="noopener noreferrer">Instagram</a>{% endif %}
+
+                        {% if settings and settings.facebook_url %}<a href="{{ settings.facebook_url }}" target="\_blank" rel="noopener noreferrer">Facebook</a>{% endif %}
+
+                        {% if settings and settings.whatsapp_url %}<a href="{{ settings.whatsapp_url }}" target="\_blank" rel="noopener noreferrer">WhatsApp</a>{% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </form>
+
+</main>
+
+<template id="cartRowTemplate">
+
+    <tr class="cart-row">
+
+        <td>
+
+            <div class="cart-name" style="font-weight:800;overflow-wrap:anywhere"></div>
+
+            <small class="cart-code" style="color:#858ba1"></small>
+
+            <input class="cart-product-id" type="hidden" name="product_id[]">
+
+            
+<div class="imei-picker" hidden>
+
+    <label class="billing-label mt-2">Select phone IMEI record(s)</label>
+
+    <select class="cart-imeis" multiple></select>
+
+    <small class="imei-help">
+        Select exactly one record for each phone unit. Both IMEI numbers are shown when available.
+    </small>
+
+    <div class="selected-handset-details mt-3" hidden></div>
+
+</div>
+
+
+        </td>
+
+        <td class="cart-price"></td>
+
+        <td><input class="billing-qty cart-qty" type="number" name="quantity[]" min="1" step="1" value="1" required></td>
+
+        <td class="cart-gst"></td>
+
+        <td class="cart-total" style="font-weight:800;white-space:nowrap"></td>
+
+        <td><button type="button" class="billing-remove remove-row" aria-label="Remove product">×</button></td>
+
+    </tr>
+
+</template>
+
+{% endblock %}
+
+{% block extra_js %}
+
+<script>
+
+(() => {
+
+    "use strict";
+
+    const form = document.getElementById("billingForm");
+
+    const search = document.getElementById("productSearch");
+
+    const catalog = document.getElementById("productCatalog");
+
+    const results = document.getElementById("productResults");
+
+    const cart = document.getElementById("cartRows");
+
+    const rowTemplate = document.getElementById("cartRowTemplate");
+
+    const discountInput = document.getElementById("discount_amount");
+
+    const paidInput = document.getElementById("paid_amount");
+
+
+    const customerSelect = document.getElementById("customer_id");
+const customerInput = document.getElementById("customer_name");
+const customerSuggestions = document.getElementById("customerSuggestions");
+
+const newCustomerDetails = document.getElementById("newCustomerDetails");
+const customerPhoneInput = document.getElementById("customer_phone");
+const customerAddressInput = document.getElementById("customer_address");
+
+function normalizeCustomerName(value) {
+    return value
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+}
+
+// Calculate spelling difference between two names.
+function levenshteinDistance(a, b) {
+    const matrix = Array.from(
+        { length: b.length + 1 },
+        () => []
+    );
+
+    for (let i = 0; i <= b.length; i++) {
+        matrix[i][0] = i;
+    }
+
+    for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            const cost = a[j - 1] === b[i - 1] ? 0 : 1;
+
+            matrix[i][j] = Math.min(
+                matrix[i - 1][j] + 1,
+                matrix[i][j - 1] + 1,
+                matrix[i - 1][j - 1] + cost
+            );
+        }
+    }
+
+    return matrix[b.length][a.length];
+}
+
+function renderCustomerSuggestions() {
+    const query = normalizeCustomerName(customerInput.value.trim());
+
+    // A new typed value must not retain an old customer ID.
+    customerSelect.value = "";
+
+    newCustomerDetails.hidden = false;
+
+    customerSuggestions.replaceChildren();
+
+    if (!query) {
+        customerSuggestions.style.display = "none";
+        updateTotals();
+        return;
+    }
+
+    const matches = Array.from(customerSelect.options)
+        .filter(option => option.value)
+        .map(option => {
+           const fullText = option.textContent.trim();
+
+            const customerName =
+                option.dataset.name ||
+                fullText.split(" — ")[0].trim();
+
+            const normalizedName = normalizeCustomerName(customerName);
+
+            let score = Infinity;
+
+            if (normalizedName.includes(query)) {
+                score = 0;
+            } else if (query.includes(normalizedName)) {
+                score = 1;
+            } else {
+                const distance = levenshteinDistance(
+                    query,
+                    normalizedName
+                );
+
+                const allowedErrors = query.length >= 5 ? 2 : 1;
+
+                if (distance <= allowedErrors) {
+                    score = distance + 2;
+                }
+            }
+
+            return {
+                option,
+                customerName,
+                fullText,
+                score
+            };
+        })
+        .filter(item => item.score !== Infinity)
+        .sort((a, b) => a.score - b.score)
+        .slice(0, 8);
+
+    if (!matches.length) {
+        customerSuggestions.style.display = "none";
+        updateTotals();
+        return;
+    }
+
+    matches.forEach(match => {
+        const item = document.createElement("div");
+
+        item.textContent = match.fullText;
+
+        item.style.cssText = `
+            padding: 11px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            border-bottom: 1px solid #f0f0f5;
+        `;
+
+        item.addEventListener("mouseenter", () => {
+            item.style.background = "#f1f0ff";
+        });
+
+        item.addEventListener("mouseleave", () => {
+            item.style.background = "#fff";
+        });
+
+        item.addEventListener("mousedown", event => {
+            event.preventDefault();
+
+            customerSelect.value = match.option.value;
+            customerInput.value = match.customerName;
+
+            newCustomerDetails.hidden = true;
+            customerPhoneInput.value = "";
+            customerAddressInput.value = "";
+
+            customerSuggestions.style.display = "none";
+
+            updateTotals();
+        });
+
+        customerSuggestions.appendChild(item);
+    });
+
+    customerSuggestions.style.display = "block";
+}
+
+customerInput.addEventListener("input", renderCustomerSuggestions);
+
+customerPhoneInput.addEventListener("input", updateTotals);
+customerAddressInput.addEventListener("input", updateTotals);
+
+customerInput.addEventListener("focus", () => {
+    if (customerInput.value.trim()) {
+        renderCustomerSuggestions();
+    }
+});
+
+document.addEventListener("click", event => {
+    if (
+        !customerInput.contains(event.target) &&
+        !customerSuggestions.contains(event.target)
+    ) {
+        customerSuggestions.style.display = "none";
+    }
+});
+
+    
+    const gstModeSelect = document.getElementById("gst_mode");
+
+    const typeFilter = document.getElementById("productTypeFilter");
+
+    const categoryFilter = document.getElementById("productCategoryFilter");
+
+    const errorBox = document.getElementById("formError");
+
+    const saveButton = document.getElementById("saveBillBtn");
+
+    const options = Array.from(catalog.options).filter(o => o.value);
+
+    let submitting = false;
+
+    const saleWarrantyState = new Map();
+
+    const num = value => {
+
+        const n = Number(value);
+
+        return Number.isFinite(n) ? n : 0;
+
+    };
+
+    const round2 = value => Math.round((value + Number.EPSILON) * 100) / 100;
+
+    const money = value => "₹" + num(value).toLocaleString("en-IN", {
+
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+
+    });
+
+    const rows = () => Array.from(cart.querySelectorAll(".cart-row"));
+
+    const optionFor = id => options.find(o => o.value === String(id));
+
+    const rowFor = id => rows().find(r => r.querySelector(".cart-product-id").value === String(id));
+
+    function recordsFor(option) {
+
+        try {
+
+            return JSON.parse(option.dataset.imeiRecords || "[]");
+
+        } catch {
+
+            return [];
+
+        }
+
+    }
+
+    function showError(message) {
+
+        errorBox.textContent = message;
+
+        errorBox.style.display = "block";
+
+    }
+
+    function clearError() {
+
+        errorBox.textContent = "";
+
+        errorBox.style.display = "none";
+
+    }
+
+    function productGroup(option) {
+
+        const d = option.dataset;
+
+        const text = [d.name, d.brand, d.model, d.category].join(" ").toLowerCase();
+
+        if (/(accessor|charger|cable|cover|case|earphone|headphone|tempered|screen guard|service|repair|adapter|power bank|speaker)/i.test(text)) return "accessories";
+
+        if (/(used|second.?hand|pre.?owned|refurbished)/i.test(text)) return "used";
+
+        if (/(sealed|new phone|brand new)/i.test(text)) return "sealed";
+
+        return d.trackImei === "true" ? "sealed" : "other";
+
+    }
+
+    function matchesFilters(option) {
+
+        if (typeFilter.value !== "all" && productGroup(option) !== typeFilter.value) return false;
+
+        if (categoryFilter.value !== "all" && (option.dataset.category || "") !== categoryFilter.value) return false;
+
+        return true;
+
+    }
+
+
+function calculateLine(option, quantity, row = null) {
+
+    let taxable = 0;
+    let tax = 0;
+    let gross = 0;
+    let rates = [];
+
+    if (option.dataset.trackImei === "true" && row) {
+
+        const selectedIds = Array.from(
+            row.querySelector(".cart-imeis").selectedOptions
+        ).map(item => item.value);
+
+        const recordMap = new Map(
+            recordsFor(option).map(record => [
+                String(record.id),
+                record
+            ])
+        );
+
+        selectedIds.forEach(id => {
+
+            const record = recordMap.get(id);
+
+            if (!record) return;
+
+            const handsetGross = num(record.selling_price);
+            const rate = num(record.gst_percent);
+
+            gross += handsetGross;
+            rates.push(rate);
+
+            if (gstModeSelect.value === "inclusive") {
+
+                const handsetTaxable = rate > 0
+                    ? handsetGross / (1 + rate / 100)
+                    : handsetGross;
+
+                taxable += handsetTaxable;
+                tax += handsetGross - handsetTaxable;
+
+            } else if (gstModeSelect.value === "exempt") {
+
+                taxable += handsetGross;
+
+            } else {
+
+                taxable += handsetGross;
+                tax += handsetGross * rate / 100;
+
+            }
+
+        });
+
+    } else {
+
+        const rate = num(option.dataset.gst);
+
+        gross = num(option.dataset.price) * quantity;
+        rates.push(rate);
+
+        if (gstModeSelect.value === "inclusive") {
+
+            taxable = rate > 0
+                ? gross / (1 + rate / 100)
+                : gross;
+
+            tax = gross - taxable;
+
+        } else if (gstModeSelect.value === "exempt") {
+
+            taxable = gross;
+
+        } else {
+
+            taxable = gross;
+            tax = taxable * rate / 100;
+
+        }
+
+    }
+
+    gross = round2(gross);
+    taxable = round2(taxable);
+    tax = round2(tax);
+
+    const price = quantity > 0
+        ? round2(gross / quantity)
+        : 0;
+
+    const uniqueRates = [...new Set(rates)].sort((a, b) => a - b);
+
+    const rateLabel = uniqueRates.length
+        ? uniqueRates.map(rate => rate + "%").join(" / ")
+        : "0%";
+
+    return {
+        price,
+        rate: rateLabel,
+        quantity,
+        taxable,
+        tax,
+        gross: round2(taxable + tax)
+    };
+
+}
+
+    function updateImeiPicker(row, option) {
+
+        const picker = row.querySelector(".imei-picker");
+
+        const select = row.querySelector(".cart-imeis");
+
+        const qty = Math.max(1, Math.floor(num(row.querySelector(".cart-qty").value)));
+
+        const tracked = option.dataset.trackImei === "true";
+
+        picker.hidden = !tracked;
+
+        const previouslySelected = new Set(
+            Array.from(select.selectedOptions).map(item => item.value)
+        );
+
+        select.replaceChildren();
+
+        select.disabled = !tracked;
+
+        if (!tracked) {
+
+            select.removeAttribute("name");
+
+            return;
+
+        }
+
+        select.name = `imei_record_ids[${option.value}][]`;
+
+        select.size = Math.min(5, Math.max(2, qty));
+
+        const selectedInOtherRows = new Set();
+        rows().forEach(otherRow => {
+            if (otherRow === row) return;
+            const otherSelect = otherRow.querySelector(".cart-imeis");
+            if (!otherSelect) return;
+            Array.from(otherSelect.selectedOptions).forEach(item => {
+                selectedInOtherRows.add(item.value);
+            });
+        });
+
+        const availableRecords = recordsFor(option).filter(
+            record => !selectedInOtherRows.has(String(record.id))
+        );
+
+        availableRecords.forEach(record => {
+            const opt = document.createElement("option");
+            opt.value = String(record.id);
+
+            const imeiLabel = record.imei2
+            ? `${record.imei1} / ${record.imei2}`
+            : record.imei1;
+
+            opt.textContent = `${imeiLabel} — ${money(record.selling_price)}`;
+           
+            opt.selected = previouslySelected.has(opt.value);
+            select.appendChild(opt);
+        });
+
+        const help = picker.querySelector(".imei-help");
+
+        if (!availableRecords.length) {
+
+            help.textContent = "No available IMEI records. Add IMEI records in inventory before billing this phone.";
+
+        } else {
+
+            help.textContent = `Select exactly ${qty} record(s). Available: ${availableRecords.length}.`;
+
+        }
+
+
+        const detailsPanel = picker.querySelector(".selected-handset-details");
+
+        const selectedRecords = availableRecords.filter(record =>
+            previouslySelected.has(String(record.id))
+        );
+
+        if (!selectedRecords.length) {
+            detailsPanel.hidden = true;
+            detailsPanel.replaceChildren();
+        } else {
+            detailsPanel.hidden = false;
+
+            detailsPanel.innerHTML = selectedRecords.map(record => `
+                <div class="border rounded p-3 mb-2">
+                    <strong>Handset Details</strong>
+
+                    <div class="mt-2">
+                        <div><strong>IMEI 1:</strong> ${record.imei1 || "-"}</div>
+                        <div><strong>IMEI 2:</strong> ${record.imei2 || "-"}</div>
+                        <div><strong>Variant:</strong> ${record.variant || "-"}</div>
+                        <div><strong>Colour:</strong> ${record.color || "-"}</div>
+                        <div><strong>Condition:</strong> ${record.condition || "-"}</div>
+                        <div><strong>Grade:</strong> ${record.used_grade || "-"}</div>
+                        
+<div><strong>Original Warranty:</strong> ${record.warranty_months || 0} months</div>
+
+<div class="mt-2">
+    <label>
+        <input
+            type="checkbox"
+            class="sale-warranty-toggle"
+            name="sale_warranty_enabled[${record.id}]"
+            value="1"
+            ${(saleWarrantyState.get(String(record.id))?.enabled ?? (Number(record.warranty_months) > 0)) ? "checked" : ""}
+        >
+        Add warranty to this handset
+    </label>
+
+    <div class="mt-2">
+        <label>Sales Warranty (Months)</label>
+        <input
+            type="number"
+            class="sale-warranty-months form-control"
+            name="sale_warranty_months[${record.id}]"
+            min="1"
+            max="120"
+            value="${saleWarrantyState.get(String(record.id))?.months ?? (Number(record.warranty_months) > 0 ? Number(record.warranty_months) : 12)}"
+            ${(saleWarrantyState.get(String(record.id))?.enabled ?? (Number(record.warranty_months) > 0)) ? "" : "disabled"}
+        >
+    </div>
+</div>
+
+<div><strong>Selling Price:</strong> ${money(record.selling_price)}</div>
+
+                    </div>
+                </div>
+            `).join("");
+        }
+
+
+    }
+
+    function renderProducts() {
+
+        results.replaceChildren();
+
+        const query = search.value.trim().toLowerCase();
+
+        const matches = options.filter(option => {
+
+            if (!matchesFilters(option)) return false;
+
+            if (!query) return true;
+
+            const d = option.dataset;
+
+            const imeiText = recordsFor(option).map(r => `${r.imei1} ${r.imei2}`).join(" ");
+
+            return [d.name, d.code, d.barcode, d.brand, d.model, d.category, imeiText]
+
+                .join(" ").toLowerCase().includes(query);
+
+        }).slice(0, 100);
+
+        document.getElementById("productCount").textContent =
+
+            matches.length + (query ? " matches" : " products");
+
+        if (!matches.length) {
+
+            const empty = document.createElement("div");
+
+            empty.className = "billing-empty";
+
+            empty.textContent = "No matching products found.";
+
+            results.appendChild(empty);
+
+            return;
+
+        }
+
+        matches.forEach(option => {
+
+            const d = option.dataset;
+
+            const row = rowFor(option.value);
+
+            const qtyInCart = row ? num(row.querySelector(".cart-qty").value) : 0;
+
+            const available = Math.max(0, num(d.stock) - qtyInCart);
+
+            const card = document.createElement("article");
+
+            card.className = "billing-product";
+
+            const name = document.createElement("div");
+
+            name.className = "billing-product-name";
+
+            name.textContent = d.name || option.textContent.trim();
+
+            const meta = document.createElement("div");
+
+            meta.className = "billing-product-meta";
+
+            meta.textContent = [d.brand, d.model, d.category, d.code ? "Code: " + d.code : "", d.barcode ? "Barcode: " + d.barcode : ""].filter(Boolean).join(" · ");
+
+           const price = document.createElement("div");
+
+price.className = "billing-price";
+
+if (d.trackImei === "true") {
+    price.textContent = "Select IMEI to view handset price";
+    price.style.fontSize = "11px";
+    price.style.color = "#777e94";
+} else {
+    price.textContent = money(d.price);
+}
+
+            const stock = document.createElement("div");
+
+            stock.className = "billing-stock";
+
+            stock.textContent = "Available stock: " + available;
+
+            const add = document.createElement("button");
+
+            add.type = "button";
+
+            add.className = "billing-add";
+
+            add.textContent = available > 0 ? "+ Add to Bill" : "Stock limit reached";
+
+            add.disabled = available <= 0;
+
+            add.addEventListener("click", () => addProduct(option.value));
+
+            if (d.trackImei === "true") {
+
+                const imeiInfo = document.createElement("div");
+
+                imeiInfo.className = "billing-note";
+
+                imeiInfo.textContent = "IMEI tracked · " + recordsFor(option).length + " available records";
+
+                card.append(name, meta, price, stock, imeiInfo, add);
+
+            } else {
+
+                card.append(name, meta, price, stock, add);
+
+            }
+
+            results.appendChild(card);
+
+        });
+
+    }
+
+
+function addProduct(id, imeiRecordId = null) {
+
+    clearError();
+
+    const option = optionFor(id);
+
+    if (!option) return;
+
+    const stock = num(option.dataset.stock);
+    const existing = rowFor(id);
+    let targetRow;
+
+    if (existing) {
+
+        const qtyInput = existing.querySelector(".cart-qty");
+        const nextQty = num(qtyInput.value) + 1;
+
+        if (nextQty > stock) {
+            showError(`Only ${stock} units are available for ${option.dataset.name}.`);
+            return;
+        }
+
+        qtyInput.value = String(nextQty);
+        updateImeiPicker(existing, option);
+        targetRow = existing;
+
+    } else {
+
+        const fragment = rowTemplate.content.cloneNode(true);
+        const row = fragment.querySelector(".cart-row");
+
+        row.querySelector(".cart-product-id").value = option.value;
+        row.querySelector(".cart-name").textContent = option.dataset.name || option.textContent.trim();
+        row.querySelector(".cart-code").textContent = option.dataset.code || option.dataset.barcode || "";
+        row.querySelector(".cart-qty").max = String(stock);
+
+        cart.appendChild(fragment);
+        updateImeiPicker(row, option);
+        targetRow = row;
+    }
+
+    // Automatically select the exact IMEI when one is supplied.
+    if (imeiRecordId) {
+        const imeiSelect = targetRow.querySelector(".cart-imeis");
+
+        if (imeiSelect) {
+            const targetOption = Array.from(imeiSelect.options).find(
+                opt => opt.value === String(imeiRecordId)
+            );
+
+            if (targetOption) {
+    targetOption.selected = true;
+    updateImeiPicker(targetRow, option);
+}
+        }
+    }
+
+    updateTotals();
+    renderProducts();
+}
+
+    function updateTotals() {
+
+        let subtotal = 0, tax = 0, itemCount = 0;
+
+        const currentRows = rows();
+
+        currentRows.forEach(row => {
+
+            const option = optionFor(row.querySelector(".cart-product-id").value);
+
+            if (!option) return;
+
+            const qtyInput = row.querySelector(".cart-qty");
+
+            const qty = Math.max(0, Math.floor(num(qtyInput.value)));
+
+            const line = calculateLine(option, qty, row);
+
+            subtotal += line.taxable;
+
+            tax += line.tax;
+
+            itemCount += qty;
+
+            row.querySelector(".cart-price").textContent = money(line.price);
+
+            row.querySelector(".cart-gst").textContent =
+
+            gstModeSelect.value === "exempt" ? "Exempt" : line.rate;
+
+            row.querySelector(".cart-total").textContent = money(line.gross);
+
+            qtyInput.max = String(num(option.dataset.stock));
+
+        });
+
+        subtotal = round2(subtotal);
+
+        tax = round2(tax);
+
+        const grossTotal = round2(subtotal + tax);
+
+        const discount = Math.max(0, num(discountInput.value));
+
+        const total = round2(Math.max(0, grossTotal - discount));
+
+        const paid = Math.max(0, num(paidInput.value));
+
+        const balance = round2(total - paid);
+
+        document.getElementById("subtotalDisplay").textContent = money(subtotal);
+
+        document.getElementById("taxDisplay").textContent = money(tax);
+
+        document.getElementById("totalDisplay").textContent = money(total);
+
+        document.getElementById("cartCount").textContent = itemCount + (itemCount === 1 ? " item" : " items");
+
+        document.getElementById("balanceLabel").textContent = balance < 0 ? "Overpayment" : "Balance due";
+
+        document.getElementById("balanceDisplay").textContent = money(Math.abs(balance));
+
+        const previewItems = document.getElementById("previewItems");
+
+        previewItems.replaceChildren();
+
+        if (!currentRows.length) {
+
+            const tr = document.createElement("tr");
+
+            const td = document.createElement("td");
+
+            td.colSpan = 5;
+
+            td.className = "billing-empty";
+
+            td.textContent = "No products added yet.";
+
+            tr.appendChild(td);
+
+            previewItems.appendChild(tr);
+
+        }
+
+        currentRows.forEach(row => {
+
+            const option = optionFor(row.querySelector(".cart-product-id").value);
+
+            if (!option) return;
+
+            const qty = Math.max(0, Math.floor(num(row.querySelector(".cart-qty").value)));
+
+            const line = calculateLine(option, qty, row);
+
+            const selectedIds = Array.from(row.querySelector(".cart-imeis").selectedOptions).map(o => o.value);
+
+            const recordMap = new Map(recordsFor(option).map(r => [String(r.id), r]));
+
+            const selectedLabels = selectedIds.map(id => {
+
+                const record = recordMap.get(id);
+
+                return record ? (record.imei2 ? `${record.imei1} / ${record.imei2}` : record.imei1) : "";
+
+            }).filter(Boolean);
+
+            const values = [
+
+                (option.dataset.name || "Product") + (selectedLabels.length ? "\nIMEI: " + selectedLabels.join(", ") : ""),
+
+                String(qty), money(line.price), money(line.tax), money(line.gross)
+
+            ];
+
+            const tr = document.createElement("tr");
+
+            values.forEach((value, index) => {
+
+                const td = document.createElement("td");
+
+                td.textContent = value;
+
+                if (index === 0) td.style.whiteSpace = "pre-line";
+
+                tr.appendChild(td);
+
+            });
+
+            previewItems.appendChild(tr);
+
+        });
+
+       const previewCustomer = document.getElementById("previewCustomer");
+
+previewCustomer.replaceChildren();
+
+const selectedCustomer = customerSelect.selectedOptions[0];
+
+if (customerSelect.value && selectedCustomer) {
+
+    // Existing customer
+    const name = selectedCustomer.dataset.name || customerInput.value.trim();
+    const phone = selectedCustomer.dataset.phone || "";
+    const address = selectedCustomer.dataset.address || "";
+
+    // previewCustomer.innerHTML = "";
+
+    const nameLine = document.createElement("div");
+    nameLine.textContent = name;
+    nameLine.style.fontWeight = "700";
+    previewCustomer.appendChild(nameLine);
+
+    if (phone) {
+        const phoneLine = document.createElement("div");
+        phoneLine.textContent = "Phone: " + phone;
+        previewCustomer.appendChild(phoneLine);
+    }
+
+    if (address) {
+        const addressLine = document.createElement("div");
+        addressLine.textContent = "Address: " + address;
+        previewCustomer.appendChild(addressLine);
+    }
+
+    newCustomerDetails.hidden = true;
+
+} else if (customerInput.value.trim()) {
+
+    // New customer
+    newCustomerDetails.hidden = false;
+
+    const nameLine = document.createElement("div");
+    nameLine.textContent = customerInput.value.trim();
+    nameLine.style.fontWeight = "700";
+    previewCustomer.appendChild(nameLine);
+
+    if (customerPhoneInput.value.trim()) {
+        const phoneLine = document.createElement("div");
+        phoneLine.textContent = "Phone: " + customerPhoneInput.value.trim();
+        previewCustomer.appendChild(phoneLine);
+    }
+
+    if (customerAddressInput.value.trim()) {
+        const addressLine = document.createElement("div");
+        addressLine.textContent = "Address: " + customerAddressInput.value.trim();
+        previewCustomer.appendChild(addressLine);
+    }
+
+} else {
+
+    newCustomerDetails.hidden = true;
+    previewCustomer.textContent = "Walk-in Customer";
+
+}
+
+        document.getElementById("previewSubtotal").textContent = money(subtotal);
+
+        document.getElementById("previewTax").textContent = money(tax);
+
+        document.getElementById("previewDiscount").textContent = money(discount);
+
+        document.getElementById("previewTotal").textContent = money(total);
+
+        document.getElementById("previewPaid").textContent = money(paid);
+
+        document.getElementById("previewBalance").textContent = money(Math.max(0, balance));
+
+        const emptyRow = document.getElementById("emptyCartRow");
+
+        if (emptyRow) emptyRow.remove();
+
+        if (!currentRows.length) {
+
+            const tr = document.createElement("tr");
+
+            tr.id = "emptyCartRow";
+
+            const td = document.createElement("td");
+
+            td.colSpan = 6;
+
+            td.className = "billing-empty";
+
+            td.textContent = "No products added yet.";
+
+            tr.appendChild(td);
+
+            cart.appendChild(tr);
+
+        }
+
+        return {subtotal, tax, discount, total, grossTotal, paid, balance};
+
+    }
+
+    search.addEventListener("input", () => {
+
+        clearError();
+
+        renderProducts();
+
+    });
+
+
+search.addEventListener("keydown", event => {
+
+    if (event.key !== "Enter") return;
+
+    event.preventDefault();
+
+    const query = search.value.trim().toLowerCase();
+
+    if (!query) return;
+
+    // Ignore spaces and hyphens when comparing IMEI numbers.
+    const normalizeImei = value =>
+        String(value || "").toLowerCase().replace(/[\s-]/g, "");
+
+    let exactMatch = null;
+
+    for (const option of options) {
+
+        if (!matchesFilters(option)) continue;
+
+        const d = option.dataset;
+
+        const exactCode = (d.code || "").toLowerCase() === query;
+        const exactBarcode = (d.barcode || "").toLowerCase() === query;
+
+        const matchedRecord = recordsFor(option).find(r =>
+            normalizeImei(r.imei1) === normalizeImei(query) ||
+            normalizeImei(r.imei2) === normalizeImei(query)
+        );
+
+        if (matchedRecord) {
+            exactMatch = {
+                product: option,
+                imeiRecordId: matchedRecord.id
+            };
+            break;
+        }
+
+        if (exactCode || exactBarcode) {
+            exactMatch = {
+                product: option,
+                imeiRecordId: null
+            };
+            break;
+        }
+    }
+
+    if (exactMatch) {
+
+        addProduct(exactMatch.product.value, exactMatch.imeiRecordId);
+
+        search.value = "";
+        renderProducts();
+
+    } else {
+
+        showError("No exact barcode, product code or available IMEI match was found.");
+
+    }
+
+});
+
+    typeFilter.addEventListener("change", renderProducts);
+
+    categoryFilter.addEventListener("change", renderProducts);
+
+    cart.addEventListener("input", event => {
+
+        if (!event.target.matches(".cart-qty")) return;
+
+        clearError();
+
+        const row = event.target.closest(".cart-row");
+
+        const option = optionFor(row.querySelector(".cart-product-id").value);
+
+        if (option) updateImeiPicker(row, option);
+
+        updateTotals();
+
+        renderProducts();
+
+    });
+
+    cart.addEventListener("change", event => {
+
+        if (event.target.matches(".cart-qty")) {
+
+            const row = event.target.closest(".cart-row");
+
+            const option = optionFor(row.querySelector(".cart-product-id").value);
+
+            const stock = option ? num(option.dataset.stock) : 0;
+
+            const quantity = num(event.target.value);
+
+            if (!Number.isInteger(quantity) || quantity < 1 || quantity > stock) {
+
+                showError("Quantity must be a whole number between 1 and " + stock + ".");
+
+                event.target.value = String(Math.min(stock, Math.max(1, Math.floor(quantity) || 1)));
+
+                if (option) updateImeiPicker(row, option);
+
+            }
+
+            updateTotals();
+
+            renderProducts();
+
+        }
+
+        
+if (event.target.matches(".cart-imeis")) {
+    clearError();
+
+    const changedRow = event.target.closest(".cart-row");
+    const changedOption = optionFor(
+        changedRow.querySelector(".cart-product-id").value
+    );
+
+    if (changedOption) {
+        updateImeiPicker(changedRow, changedOption);
+    }
+
+    rows().forEach(otherRow => {
+        if (otherRow === changedRow) return;
+
+        const otherOption = optionFor(
+            otherRow.querySelector(".cart-product-id").value
+        );
+
+        if (otherOption) {
+            updateImeiPicker(otherRow, otherOption);
+        }
+    });
+
+    updateTotals();
+}
+
+
+    });
+
+
+cart.addEventListener("change", event => {
+
+    if (
+        event.target.matches(".sale-warranty-toggle") ||
+        event.target.matches(".sale-warranty-months")
+    ) {
+        const row = event.target.closest(".cart-row");
+        const recordId = event.target.name.match(/\[(\d+)\]/)?.[1];
+
+        if (!recordId || !row) return;
+
+        const checkbox = row.querySelector(
+            `.sale-warranty-toggle[name="sale_warranty_enabled[${recordId}]"]`
+        );
+
+        const monthsInput = row.querySelector(
+            `.sale-warranty-months[name="sale_warranty_months[${recordId}]"]`
+        );
+
+        if (!checkbox || !monthsInput) return;
+
+        monthsInput.disabled = !checkbox.checked;
+
+        saleWarrantyState.set(recordId, {
+            enabled: checkbox.checked,
+            months: Math.max(1, Math.min(120, Number(monthsInput.value) || 12))
+        });
+    }
+
+});
+
+
+    cart.addEventListener("click", event => {
+
+        const button = event.target.closest(".remove-row");
+
+        if (!button) return;
+
+        button.closest(".cart-row").remove();
+
+        clearError();
+
+        updateTotals();
+
+        renderProducts();
+
+    });
+
+    discountInput.addEventListener("input", updateTotals);
+
+    paidInput.addEventListener("input", updateTotals);
+
+    customerSelect.addEventListener("change", updateTotals);
+
+
+    gstModeSelect.addEventListener("change", () => {
+
+        clearError();
+
+        updateTotals();
+
+    });
+
+    document.getElementById("clearBillBtn").addEventListener("click", () => {
+
+        rows().forEach(row => row.remove());
+
+        discountInput.value = "0";
+
+        paidInput.value = "0";
+
+        gstModeSelect.value = "exclusive";
+
+        customerInput.value = "";
+
+        customerSelect.value = "";
+        customerPhoneInput.value = "";
+        customerAddressInput.value = "";
+        newCustomerDetails.hidden = true;
+
+        customerSuggestions.style.display = "none";
+
+        clearError();
+
+        updateTotals();
+
+        renderProducts();
+
+        search.focus();
+
+    });
+
+    form.addEventListener("submit", event => {
+
+        clearError();
+
+        const currentRows = rows();
+
+        if (!currentRows.length) {
+
+            event.preventDefault();
+
+            showError("Add at least one product before saving the bill.");
+
+            return;
+
+        }
+
+        const requested = new Map();
+
+        const selectedImeiIds = new Set();
+
+        for (const row of currentRows) {
+
+            const id = row.querySelector(".cart-product-id").value;
+
+            const option = optionFor(id);
+
+            const qty = num(row.querySelector(".cart-qty").value);
+
+            if (!option || !Number.isInteger(qty) || qty < 1) {
+
+                event.preventDefault();
+
+                showError("Please check each product and its quantity.");
+
+                return;
+
+            }
+
+            const totalQty = (requested.get(id) || 0) + qty;
+
+            requested.set(id, totalQty);
+
+            if (totalQty > num(option.dataset.stock)) {
+
+                event.preventDefault();
+
+                showError("Requested quantity exceeds stock for " + option.dataset.name + ".");
+
+                return;
+
+            }
+
+            if (option.dataset.trackImei === "true") {
+
+                const selected = Array.from(row.querySelector(".cart-imeis").selectedOptions).map(o => o.value);
+
+                if (selected.length !== qty) {
+
+                    event.preventDefault();
+
+                    showError(`Select exactly ${qty} IMEI record(s) for ${option.dataset.name}.`);
+
+                    return;
+
+                }
+
+                for (const recordId of selected) {
+
+                    if (selectedImeiIds.has(recordId)) {
+
+                        event.preventDefault();
+
+                        showError("An IMEI record cannot be selected more than once.");
+
+                        return;
+
+                    }
+
+                    selectedImeiIds.add(recordId);
+
+                }
+
+            }
+
+        }
+
+        const totals = updateTotals();
+
+        const discount = num(discountInput.value);
+
+        const paid = num(paidInput.value);
+
+        if (!Number.isFinite(discount) || discount < 0 || discount > totals.grossTotal) {
+
+            event.preventDefault();
+
+            showError("Discount must be between ₹0 and the bill total before discount.");
+
+            discountInput.focus();
+
+            return;
+
+        }
+
+        if (!Number.isFinite(paid) || paid < 0 || paid > totals.total) {
+
+            event.preventDefault();
+
+            showError("Amount paid must be between ₹0 and the grand total.");
+
+            paidInput.focus();
+
+            return;
+
+        }
+
+        if (submitting) {
+
+            event.preventDefault();
+
+            return;
+
+        }
+
+        submitting = true;
+
+        saveButton.disabled = true;
+
+        saveButton.textContent = "Saving Bill...";
+
+    });
+
+    updateTotals();
+
+    renderProducts();
+
+})();
+
+</script>
+
+{% endblock %}

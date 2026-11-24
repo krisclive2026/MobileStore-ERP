@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Logs | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Audit Logs</h2>
+            <p class="text-secondary mb-0">
+                Review recent activities performed in the system.
+            </p>
+        </div>
+
+        <span class="badge text-bg-primary fs-6">
+            {{ logs|length }} recent records
+        </span>
+
+        <a href="{{ url_for('dashboard_page') }}"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>
+            Back to Dashboard
+        </a>
+        
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Date &amp; Time</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Module</th>
+                            <th>Record ID</th>
+                            <th>Details</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td class="ps-3 text-nowrap">
+                                {% if log.created_at %}
+                                    {{ log.created_at.strftime('%d-%m-%Y %I:%M %p') }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if log.user %}
+                                    {{ log.user.full_name or log.user.username }}
+                                {% else %}
+                                    System / Deleted User
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <span class="badge text-bg-secondary">
+                                    {{ log.action or 'Activity' }}
+                                </span>
+                            </td>
+
+                            <td>{{ log.entity or '—' }}</td>
+                            <td>{{ log.entity_id if log.entity_id is not none else '—' }}</td>
+
+                            <td style="min-width: 220px; max-width: 360px; white-space: normal; overflow-wrap: anywhere;">
+                                {{ log.details or '—' }}
+                            </td>
+
+                            <td class="text-nowrap">{{ log.ip_address or '—' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-secondary">
+                                <div class="mb-2">
+                                    <i class="bi bi-clipboard-data fs-1"></i>
+                                </div>
+                                <h5>No audit records yet</h5>
+                                <p class="mb-0">
+                                    Activities will appear here after audit logging is connected to your routes.
+                                </p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

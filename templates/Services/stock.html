@@ -1,0 +1,352 @@
+ 
+{% extends "base.html" %}
+
+{% block title %}Service Stock | MobileStore ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .service-stock-page {
+        padding: 24px;
+    }
+
+    .page-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 22px;
+    }
+
+    .page-heading h2 {
+        font-weight: 700;
+        margin: 0;
+        color: #20243a;
+    }
+
+    .stock-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 22px;
+        margin-bottom: 22px;
+        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .stock-card h5 {
+        font-weight: 700;
+        margin-bottom: 20px;
+        color: #30344b;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #45495d;
+    }
+
+    .form-control {
+        min-height: 42px;
+    }
+
+    .btn-add-stock {
+        background: #5656df;
+        color: #fff;
+        border: none;
+        padding: 10px 22px;
+        border-radius: 7px;
+        font-weight: 600;
+    }
+
+    .btn-add-stock:hover {
+        background: #4141c5;
+        color: #fff;
+    }
+
+    .profit-summary {
+        background: #f0faf4;
+        border: 1px solid #d4efdf;
+        border-radius: 10px;
+        padding: 18px;
+        margin-bottom: 22px;
+    }
+
+    .profit-summary small {
+        color: #43845a;
+        font-weight: 600;
+    }
+
+    .profit-summary h3 {
+        color: #198754;
+        font-weight: 700;
+        margin: 6px 0 0;
+    }
+
+    .table-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 22px;
+        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .table thead th {
+        background: #f5f6fb;
+        color: #45495d;
+        white-space: nowrap;
+        font-size: 13px;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .profit-value {
+        color: #198754;
+        font-weight: 700;
+    }
+
+    @media (max-width: 768px) {
+        .service-stock-page {
+            padding: 14px;
+        }
+
+        .stock-card,
+        .table-card {
+            padding: 15px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<a href="{{ url_for('services_list') }}"
+   class="btn btn-outline-secondary mb-4">
+    <i class="bi bi-arrow-left me-2"></i>
+    Back to Services
+</a>
+
+<div class="service-stock-page">
+
+    <div class="page-heading">
+        <div>
+            <h2>Service Stock</h2>
+            <p class="text-muted mb-0">
+                Manage spare parts used for mobile repair services.
+            </p>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- SERVICE PROFIT SUMMARY -->
+    <div class="profit-summary">
+        <small>Total Service Stock Profit</small>
+        <h3>₹{{ "%.2f"|format(total_service_profit) }}</h3>
+    </div>
+
+    <!-- ADD SERVICE STOCK FORM -->
+    <div class="stock-card">
+        <h5>Add Service Stock</h5>
+
+        <form method="POST" action="{{ url_for('service_stock') }}">
+
+            {% if csrf_token is defined %}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% endif %}
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <label class="form-label">Purchased Date</label>
+                    <input
+                        type="date"
+                        name="purchased_date"
+                        class="form-control"
+                        value="{{ request.form.get('purchased_date', '') }}"
+                        required
+                    >
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Product Name</label>
+                    <input
+                        type="text"
+                        name="product_name"
+                        class="form-control"
+                        placeholder="Example: Samsung A14"
+                        value="{{ request.form.get('product_name', '') }}"
+                        required
+                    >
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Stock Name</label>
+                    <input
+                        type="text"
+                        name="stock_name"
+                        class="form-control"
+                        placeholder="Example: Display"
+                        value="{{ request.form.get('stock_name', '') }}"
+                        required
+                    >
+                </div>
+
+
+
+<div class="col-12">
+    <div class="row g-3">
+
+        <div class="col-md-4">
+            <label class="form-label">Contact</label>
+            <input
+                type="text"
+                name="contact"
+                class="form-control"
+                placeholder="Supplier contact"
+                value="{{ request.form.get('contact', '') }}"
+            >
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label">Supplier Name</label>
+            <input
+                type="text"
+                name="supplier_name"
+                class="form-control"
+                placeholder="Enter supplier name"
+                value="{{ request.form.get('supplier_name', '') }}"
+            >
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label">Quantity</label>
+            <input
+                type="number"
+                name="quantity"
+                class="form-control"
+                min="1"
+                value="{{ request.form.get('quantity', '1') }}"
+                required
+            >
+        </div>
+
+    </div>
+</div>
+
+
+    
+                <div class="col-md-4">
+                    <label class="form-label">Cost Price (CP)</label>
+                    <input
+                        type="number"
+                        name="cost_price"
+                        class="form-control"
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                        value="{{ request.form.get('cost_price', '') }}"
+                        required
+                    >
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Selling Price (SP)</label>
+                    <input
+                        type="number"
+                        name="selling_price"
+                        class="form-control"
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                        value="{{ request.form.get('selling_price', '') }}"
+                        required
+                    >
+                </div>
+
+                <div class="col-12">
+                    <button type="submit" class="btn-add-stock">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        Add Service Stock
+                    </button>
+                </div>
+
+            </div>
+        </form>
+    </div>
+
+    <!-- SERVICE STOCK TABLE -->
+    <div class="table-card">
+
+        <h5 class="fw-bold mb-3">Service Stock List</h5>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Purchased Date</th>
+                        <th>Product Name</th>
+                        <th>Stock Name</th>
+                        <th>Supplier Name</th>
+                        <th>Contact</th>
+                        <th>Cost Price</th>
+                        <th>Selling Price</th>
+                        <th>Service Profit</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for stock in stocks %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+
+                        <td>
+                            {{ stock.purchased_date.strftime('%d-%m-%Y') }}
+                        </td>
+
+                        <td>{{ stock.product_name }}</td>
+
+                        <td>{{ stock.stock_name }}</td>
+
+                        <td>{{ stock.supplier_name or '-' }}</td>
+
+                        <td>{{ stock.contact or '-' }}</td>
+
+                        <td>
+                            ₹{{ "%.2f"|format(stock.cost_price) }}
+                        </td>
+
+                        <td>
+                            ₹{{ "%.2f"|format(stock.selling_price) }}
+                        </td>
+
+                        <td class="profit-value">
+                            ₹{{ "%.2f"|format(stock.service_profit) }}
+                        </td>
+                    </tr>
+
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                            No service stock records found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

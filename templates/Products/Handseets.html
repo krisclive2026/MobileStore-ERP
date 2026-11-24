@@ -1,0 +1,642 @@
+
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} Entry Details | Mobile Store ERP{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4 handset-details-page">
+
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <a href="{{ url_for('products_list') }}"
+                   class="btn btn-sm btn-light border">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+
+                <span class="text-secondary small">
+                    Product Inventory / Entry Details
+                </span>
+            </div>
+
+            <h2 class="fw-bold mb-1">
+                {{ product.name }} Entry Details
+            </h2>
+
+            <p class="text-secondary mb-0">
+                Product-wise handset stock and individual handset information.
+            </p>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+
+            <a href="{{ url_for('imei_records_list') }}"
+               class="btn btn-outline-dark">
+                <i class="bi bi-upc-scan me-1"></i>
+                Complete Handsets
+            </a>
+
+            <a href="{{ url_for('products_list') }}"
+               class="btn btn-outline-secondary">
+                <i class="bi bi-box-seam me-1"></i>
+                Product Inventory
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- Product Information -->
+    <div class="card detail-card mb-4">
+        <div class="card-body p-4">
+
+            <div class="row align-items-center g-3">
+
+                <div class="col-md-8">
+
+                    <div class="text-secondary small mb-1">
+                        PRODUCT INFORMATION
+                    </div>
+
+                    <h4 class="fw-bold mb-2">
+                        {{ product.name }}
+                    </h4>
+
+                    <div class="d-flex flex-wrap gap-2">
+
+                        {% if product.brand %}
+                            <span class="detail-tag">
+                                <i class="bi bi-phone me-1"></i>
+                                {{ product.brand }}
+                            </span>
+                        {% endif %}
+
+                        {% if product.model %}
+                            <span class="detail-tag">
+                                <i class="bi bi-tag me-1"></i>
+                                {{ product.model }}
+                            </span>
+                        {% endif %}
+
+                        {% if product.product_code %}
+                            <span class="detail-tag">
+                                <i class="bi bi-upc me-1"></i>
+                                {{ product.product_code }}
+                            </span>
+                        {% endif %}
+
+                        {% if product.category %}
+                            <span class="detail-tag">
+                                <i class="bi bi-grid me-1"></i>
+                                {{ product.category }}
+                            </span>
+                        {% endif %}
+
+                    </div>
+                </div>
+
+                <div class="col-md-4 text-md-end">
+
+                    {% if product.is_active %}
+                        <span class="badge rounded-pill text-bg-success px-3 py-2">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Active Product
+                        </span>
+                    {% else %}
+                        <span class="badge rounded-pill text-bg-secondary px-3 py-2">
+                            Inactive Product
+                        </span>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- Summary Cards -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-5 g-3 mb-4">
+
+        <!-- Total Handsets -->
+        <div class="col">
+            <div class="card summary-card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+
+                    <div class="summary-icon total-icon">
+                        <i class="bi bi-phone"></i>
+                    </div>
+
+                    <div>
+                        <div class="text-secondary small">
+                            Total Handsets
+                        </div>
+
+                        <h3 class="fw-bold mb-0">
+                            {{ total_count }}
+                        </h3>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Available Handsets -->
+        <div class="col">
+            <div class="card summary-card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+
+                    <div class="summary-icon available-icon">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+
+                    <div>
+                        <div class="text-secondary small">
+                            Available Handsets
+                        </div>
+
+                        <h3 class="fw-bold mb-0 text-success">
+                            {{ available_count }}
+                        </h3>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Sold Handsets -->
+        <div class="col">
+            <div class="card summary-card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+
+                    <div class="summary-icon sold-icon">
+                        <i class="bi bi-cart-check"></i>
+                    </div>
+
+                    <div>
+                        <div class="text-secondary small">
+                            Sold Handsets
+                        </div>
+
+                        <h3 class="fw-bold mb-0 text-primary">
+                            {{ sold_count }}
+                        </h3>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Total Variants -->
+        <div class="col">
+            <div class="card summary-card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+
+                    <div class="summary-icon variant-icon">
+                        <i class="bi bi-layers"></i>
+                    </div>
+
+                    <div>
+                        <div class="text-secondary small">
+                            Total Variants
+                        </div>
+
+                        <h3 class="fw-bold mb-0">
+                            {{ variants|length }}
+                        </h3>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Total Colours -->
+        <div class="col">
+            <div class="card summary-card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+
+                    <div class="summary-icon color-icon">
+                        <i class="bi bi-palette"></i>
+                    </div>
+
+                    <div>
+                        <div class="text-secondary small">
+                            Total Colours
+                        </div>
+
+                        <h3 class="fw-bold mb-0">
+                            {{ colors|length }}
+                        </h3>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- Variant and Colour Filters -->
+    <div class="card detail-card mb-4">
+
+        <div class="card-header bg-white border-0 px-4 pt-4 pb-2">
+
+            <h5 class="fw-bold mb-1">
+                <i class="bi bi-funnel text-primary me-2"></i>
+                Filter Handsets
+            </h5>
+
+            <p class="small text-secondary mb-0">
+                Select a variant or colour to find matching handsets.
+            </p>
+
+        </div>
+
+        <div class="card-body px-4 pb-4">
+
+            <form method="GET"
+                  action="{{ url_for('product_handset_details', product_id=product.id) }}">
+
+                <div class="row g-3 align-items-end">
+
+                    <!-- Variant -->
+                    <div class="col-12 col-md-5">
+
+                        <label for="variant" class="form-label fw-semibold">
+                            RAM / Storage Variant
+                        </label>
+
+                        <select class="form-select"
+                                name="variant"
+                                id="variant">
+
+                            <option value="">All Variants</option>
+
+                            {% for item in variants %}
+                                <option value="{{ item }}"
+                                    {% if selected_variant == item %}selected{% endif %}>
+                                    {{ item }}
+                                </option>
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- Colour -->
+                    <div class="col-12 col-md-4">
+
+                        <label for="color" class="form-label fw-semibold">
+                            Available Colour
+                        </label>
+
+                        <select class="form-select"
+                                name="color"
+                                id="color">
+
+                            <option value="">All Colours</option>
+
+                            {% for item in colors %}
+                                <option value="{{ item }}"
+                                    {% if selected_color == item %}selected{% endif %}>
+                                    {{ item }}
+                                </option>
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- Buttons -->
+                    <div class="col-12 col-md-3 d-flex gap-2">
+
+                        <button type="submit"
+                                class="btn btn-primary flex-grow-1">
+                            <i class="bi bi-search me-1"></i>
+                            Filter
+                        </button>
+
+                        <a href="{{ url_for('product_handset_details', product_id=product.id) }}"
+                           class="btn btn-outline-secondary"
+                           title="Clear filters">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- Handset Records -->
+    <div class="card detail-card">
+
+        <div class="card-header bg-white border-0 px-4 py-3">
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+
+                <div>
+                    <h5 class="fw-bold mb-1">
+                        Individual Handset Records
+                    </h5>
+
+                    <small class="text-secondary">
+                        Matching handset details for {{ product.name }}.
+                    </small>
+                </div>
+
+                <span class="badge rounded-pill text-bg-light border px-3 py-2">
+                    {{ records|length }} Record(s)
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0 handset-table">
+
+                <thead>
+                    <tr>
+                        <th class="ps-4">#</th>
+                        <th>IMEI 1</th>
+                        <th>IMEI 2</th>
+                        <th>Variant</th>
+                        <th>Colour</th>
+                        <th>Condition</th>
+                        <th>Stock Status</th>
+                        <th class="text-center">Handset Status</th>
+                    </tr>
+                </thead>
+
+
+                <tbody>
+
+                    {% for record in records %}
+
+                        <tr>
+
+                            <td class="ps-4 text-secondary">
+                                {{ loop.index }}
+                            </td>
+
+                            <td>
+                                <span class="fw-semibold">
+                                    {{ record.imei1 or '—' }}
+                                </span>
+                            </td>
+
+                            <td>
+                                {{ record.imei2 or '—' }}
+                            </td>
+
+                            <td>
+                                {% if record.variant %}
+                                    <span class="detail-tag">
+                                        {{ record.variant }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ record.color or '—' }}
+                            </td>
+
+                            <td>
+                                {% if record.condition|default('Sealed', true)|lower == 'used' %}
+                                    <span class="badge text-bg-warning rounded-pill">
+                                        Used
+                                    </span>
+                                {% else %}
+                                    <span class="badge text-bg-primary rounded-pill">
+                                        Sealed
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if record.status == 'in_stock' %}
+                                    <span class="badge text-bg-success rounded-pill">
+                                        Available
+                                    </span>
+                                {% elif record.status == 'sold' %}
+                                    <span class="badge text-bg-primary rounded-pill">
+                                        Sold
+                                    </span>
+                                {% elif record.status == 'returned' %}
+                                    <span class="badge text-bg-warning rounded-pill">
+                                        Returned
+                                    </span>
+                                {% elif record.status == 'damaged' %}
+                                    <span class="badge text-bg-danger rounded-pill">
+                                        Damaged
+                                    </span>
+                                {% else %}
+                                    <span class="badge text-bg-secondary rounded-pill">
+                                        {{ record.status|default('Unknown', true)|replace('_', ' ')|title }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td class="text-center">
+
+                                {% if record.is_active %}
+                                    <span class="text-success small fw-semibold">
+                                        <i class="bi bi-circle-fill me-1"></i>
+                                        Active
+                                    </span>
+                                {% else %}
+                                    <span class="text-secondary small fw-semibold">
+                                        <i class="bi bi-circle-fill me-1"></i>
+                                        Inactive
+                                    </span>
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                    {% else %}
+
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+
+                                <div class="empty-icon mb-3">
+                                    <i class="bi bi-phone"></i>
+                                </div>
+
+                                <h6 class="fw-bold">
+                                    No handsets found
+                                </h6>
+
+                                <p class="text-secondary small mb-0">
+                                    No individual handsets match the selected filters.
+                                </p>
+
+                            </td>
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <div class="card-footer bg-white border-0 px-4 py-3">
+
+            <small class="text-secondary">
+                <i class="bi bi-info-circle me-1"></i>
+                This page displays individual handset records belonging to this product.
+            </small>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<style>
+
+    .handset-details-page {
+        color: #263445;
+    }
+
+    .detail-card,
+    .summary-card {
+        border: 1px solid #edf0f4;
+        border-radius: 14px;
+        box-shadow: 0 3px 14px rgba(25, 42, 70, 0.045);
+        overflow: hidden;
+    }
+
+    .summary-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .summary-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 7px 20px rgba(25, 42, 70, 0.08);
+    }
+
+    .summary-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 13px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+
+    .total-icon {
+        background: #e9f1ff;
+        color: #2463c5;
+    }
+
+    .available-icon {
+        background: #e7f7ee;
+        color: #198754;
+    }
+
+    .sold-icon {
+        background: #e9efff;
+        color: #315dc5;
+    }
+
+    .variant-icon {
+        background: #f1eaff;
+        color: #7544bb;
+    }
+
+    .color-icon {
+        background: #fff1e8;
+        color: #d66a2c;
+    }
+
+    .detail-tag {
+        display: inline-flex;
+        align-items: center;
+        background: #f3f6fa;
+        color: #526174;
+        border: 1px solid #e8edf3;
+        padding: 6px 10px;
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .handset-table {
+        min-width: 850px;
+    }
+
+    .handset-table thead th {
+        background: #f7f9fc;
+        color: #526174;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        padding: 15px 12px;
+        white-space: nowrap;
+        border-bottom: 1px solid #e9edf3;
+    }
+
+    .handset-table tbody td {
+        padding: 14px 12px;
+        border-color: #f0f2f5;
+        font-size: 13px;
+    }
+
+    .handset-table tbody tr:hover {
+        background: #f8fbff;
+    }
+
+    .empty-icon {
+        width: 65px;
+        height: 65px;
+        margin: auto;
+        border-radius: 18px;
+        background: #f0f4f9;
+        color: #8291a5;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 30px;
+    }
+
+    @media (max-width: 767px) {
+
+        .handset-details-page {
+            padding-top: 18px !important;
+        }
+
+    }
+
+</style>
+
+{% endblock %}

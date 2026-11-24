@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#080d20">
+
+    <title>Mobile Store ERP | KriscSoft</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --blue: #38bdf8;
+            --purple: #8b5cf6;
+            --white: #f8fafc;
+            --muted: #94a3b8;
+        }
+
+        body {
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            font-family: "Segoe UI", Arial, sans-serif;
+            color: var(--white);
+
+            background:
+                radial-gradient(
+                    ellipse at 15% 20%,
+                    rgba(37, 99, 235, 0.24),
+                    transparent 42%
+                ),
+                radial-gradient(
+                    ellipse at 85% 75%,
+                    rgba(139, 92, 246, 0.22),
+                    transparent 42%
+                ),
+                linear-gradient(135deg, #050816, #101a35 55%, #080d20);
+        }
+
+        /* Background glow */
+
+        .glow {
+            position: absolute;
+            width: 340px;
+            height: 340px;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.30;
+            pointer-events: none;
+            animation: glowMove 7s ease-in-out infinite alternate;
+        }
+
+        .glow-blue {
+            top: -140px;
+            left: -100px;
+            background: #2563eb;
+        }
+
+        .glow-purple {
+            bottom: -150px;
+            right: -100px;
+            background: #7c3aed;
+            animation-delay: -3s;
+        }
+
+        /* Subtle background grid */
+
+        .grid-background {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.11;
+
+            background-image:
+                linear-gradient(
+                    rgba(148, 163, 184, 0.16) 1px,
+                    transparent 1px
+                ),
+                linear-gradient(
+                    90deg,
+                    rgba(148, 163, 184, 0.16) 1px,
+                    transparent 1px
+                );
+
+            background-size: 48px 48px;
+
+            mask-image: linear-gradient(
+                to bottom,
+                transparent,
+                black 25%,
+                black 75%,
+                transparent
+            );
+        }
+
+        /* Decorative orbs */
+
+        .orb {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--blue);
+            box-shadow: 0 0 20px var(--blue);
+            animation: float 5s ease-in-out infinite;
+        }
+
+        .orb-one {
+            top: 22%;
+            left: 22%;
+        }
+
+        .orb-two {
+            top: 30%;
+            right: 20%;
+            width: 5px;
+            height: 5px;
+            background: #c4b5fd;
+            box-shadow: 0 0 18px #a78bfa;
+            animation-delay: -2s;
+        }
+
+        .orb-three {
+            bottom: 24%;
+            left: 28%;
+            width: 6px;
+            height: 6px;
+            animation-delay: -1s;
+        }
+
+        /* Main content */
+
+        .loading-screen {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 600px;
+            padding: 35px 24px 65px;
+            text-align: center;
+            animation: fadeIn 1s ease both;
+        }
+
+        .brand-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            margin-bottom: 34px;
+            border: 1px solid rgba(125, 211, 252, 0.22);
+            border-radius: 30px;
+            background: rgba(30, 58, 138, 0.17);
+            color: #bae6fd;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 2.5px;
+            backdrop-filter: blur(12px);
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #4ade80;
+            box-shadow: 0 0 10px #4ade80;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Phone and circular loader */
+
+        .phone-stage {
+            position: relative;
+            width: 178px;
+            height: 178px;
+            margin: 0 auto 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .outer-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            box-shadow:
+                0 0 45px rgba(37, 99, 235, 0.12),
+                inset 0 0 35px rgba(139, 92, 246, 0.08);
+        }
+
+        .loader-ring {
+            position: absolute;
+            inset: 9px;
+            border-radius: 50%;
+            border: 3px solid rgba(148, 163, 184, 0.12);
+            border-top-color: var(--blue);
+            border-right-color: var(--purple);
+            animation: spin 1.5s linear infinite;
+            filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.55));
+        }
+
+        .inner-ring {
+            position: absolute;
+            inset: 22px;
+            border-radius: 50%;
+            border: 1px dashed rgba(139, 92, 246, 0.32);
+            animation: spinReverse 12s linear infinite;
+        }
+
+        .phone-glass {
+            width: 69px;
+            height: 112px;
+            border: 2px solid rgba(186, 230, 253, 0.85);
+            border-radius: 15px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(
+                145deg,
+                rgba(56, 189, 248, 0.14),
+                rgba(139, 92, 246, 0.13)
+            );
+            box-shadow:
+                0 0 28px rgba(56, 189, 248, 0.17),
+                inset 0 0 25px rgba(56, 189, 248, 0.07);
+        }
+
+        .phone-speaker {
+            position: absolute;
+            top: 7px;
+            width: 17px;
+            height: 3px;
+            border-radius: 10px;
+            background: #bae6fd;
+            opacity: 0.8;
+        }
+
+        .phone-screen {
+            width: 38px;
+            height: 57px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(56, 189, 248, 0.08);
+        }
+
+        .phone-screen svg {
+            width: 29px;
+            height: 29px;
+            color: var(--blue);
+            filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.7));
+        }
+
+        .phone-button {
+            position: absolute;
+            bottom: 5px;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--blue);
+            box-shadow: 0 0 7px var(--blue);
+        }
+
+        /* Heading */
+
+        .brand-name {
+            font-size: clamp(32px, 6vw, 49px);
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            line-height: 1.2;
+            margin-bottom: 14px;
+            color: #ffffff;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.08);
+        }
+
+        .brand-name .highlight {
+            background: linear-gradient(
+                100deg,
+                #7dd3fc,
+                #38bdf8 45%,
+                #a78bfa 100%
+            );
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.16));
+        }
+
+        .tagline {
+            color: #a5b4fc;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 3.5px;
+            margin-bottom: 30px;
+        }
+
+        .description {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.7;
+            margin: 0 auto 29px;
+            max-width: 360px;
+        }
+
+        /* Loading progress */
+
+        .loading-info {
+            width: min(260px, 85%);
+            margin: 0 auto;
+        }
+
+        .loading-text {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #94a3b8;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+
+        .loading-text span:last-child {
+            color: #7dd3fc;
+        }
+
+        .progress-track {
+            height: 4px;
+            overflow: hidden;
+            border-radius: 20px;
+            background: rgba(148, 163, 184, 0.15);
+        }
+
+        .progress-bar {
+            width: 0;
+            height: 100%;
+            border-radius: 20px;
+            background: linear-gradient(
+                90deg,
+                #2563eb,
+                #38bdf8,
+                #a78bfa
+            );
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.55);
+            animation: progress 4s linear forwards;
+        }
+
+        /* Footer */
+
+        .developer {
+            position: absolute;
+            z-index: 2;
+            bottom: 25px;
+            left: 0;
+            right: 0;
+            padding: 0 15px;
+            text-align: center;
+            color: #64748b;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .developer strong {
+            color: #7dd3fc;
+            font-weight: 700;
+            text-shadow: 0 0 14px rgba(56, 189, 248, 0.2);
+        }
+
+        .footer-line {
+            width: 34px;
+            height: 2px;
+            border-radius: 10px;
+            margin: 0 auto 12px;
+            background: linear-gradient(90deg, #38bdf8, #8b5cf6);
+        }
+
+        /* Animations */
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes spinReverse {
+            to { transform: rotate(-360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); opacity: 0.6; }
+            50% { transform: translateY(-15px); opacity: 1; }
+        }
+
+        @keyframes glowMove {
+            from { transform: translate(0, 0) scale(1); }
+            to { transform: translate(30px, 20px) scale(1.12); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes progress {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        /* Mobile responsive */
+
+        @media (max-width: 480px) {
+            .loading-screen {
+                padding: 20px 18px 60px;
+            }
+
+            .brand-label {
+                margin-bottom: 25px;
+                font-size: 9px;
+            }
+
+            .phone-stage {
+                width: 150px;
+                height: 150px;
+                margin-bottom: 28px;
+            }
+
+            .phone-glass {
+                transform: scale(0.9);
+            }
+
+            .tagline {
+                font-size: 9px;
+                letter-spacing: 2.5px;
+            }
+
+            .description {
+                font-size: 13px;
+            }
+
+            .developer {
+                bottom: 17px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="glow glow-blue"></div>
+    <div class="glow glow-purple"></div>
+    <div class="grid-background"></div>
+
+    <div class="orb orb-one"></div>
+    <div class="orb orb-two"></div>
+    <div class="orb orb-three"></div>
+
+    <main class="loading-screen">
+
+        <div class="brand-label">
+            <span class="status-dot"></span>
+            YOUR STORE, SMARTER
+        </div>
+
+        <div class="phone-stage">
+
+            <div class="outer-ring"></div>
+            <div class="loader-ring"></div>
+            <div class="inner-ring"></div>
+
+            <div class="phone-glass">
+                <div class="phone-speaker"></div>
+
+                <div class="phone-screen">
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                    >
+                        <rect x="5" y="3" width="14" height="18" rx="2"></rect>
+                        <path d="M9 7h6"></path>
+                        <path d="M8 11h2"></path>
+                        <path d="M14 11h2"></path>
+                        <path d="M8 15h2"></path>
+                        <path d="M14 15h2"></path>
+                    </svg>
+                </div>
+
+                <div class="phone-button"></div>
+            </div>
+
+        </div>
+
+        <h1 class="brand-name">
+            Mobile Store <span class="highlight">ERP</span>
+        </h1>
+
+        <p class="tagline">SMART RETAIL MANAGEMENT</p>
+
+        <p class="description">
+            Everything your mobile store needs,
+            beautifully managed in one place.
+        </p>
+
+        <div class="loading-info">
+            <div class="loading-text">
+                <span>Preparing your workspace</span>
+                <span>LOADING</span>
+            </div>
+
+            <div class="progress-track">
+                <div class="progress-bar"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="developer">
+        <div class="footer-line"></div>
+        Developed with care by <strong>KriscSoft</strong>
+    </footer>
+
+    <script>
+        // Keep this endpoint name consistent with your existing Flask app.
+        window.setTimeout(function () {
+            window.location.replace(
+                "{{ url_for('login_page') }}"
+            );
+        }, 4000);
+    </script>
+
+</body>
+</html>

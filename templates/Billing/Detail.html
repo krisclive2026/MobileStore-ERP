@@ -1,0 +1,3349 @@
+{% extends "base.html" %}
+
+{% block title %}Invoice Details | AKSHARA MOBILES{% endblock %}
+
+{% block content %}
+
+{% set total_paid = paid_amount if paid_amount is defined else 0 %}
+{% set amount_due = balance if balance is defined else 0 %}
+{% set gst_total = sale.tax_amount or 0 %}
+{% set cgst_amount = gst_total / 2 %}
+{% set sgst_amount = gst_total / 2 %}
+
+<style>
+/* =====================================================
+   1. ROOT VARIABLES  (navy · royal blue · gold)
+   Colour themes are applied by JavaScript (section 4).
+===================================================== */
+
+:root {
+    --invoice-deep: #081f3f;
+    --invoice-primary: #0f2f5f;      /* navy */
+    --invoice-royal: #2457c5;        /* royal blue */
+    --invoice-light: #eaf1fc;
+    --invoice-border: #d5deea;
+    --invoice-text: #1d2939;
+    --invoice-gold: #d6b36a;
+    --invoice-gold-dark: #a8832f;
+
+    --studio-ink: #17243a;
+    --studio-muted: #66758a;
+    --studio-line: #e2e8f0;
+
+    --invoice-fit-scale: 1;
+    --invoice-user-font-scale: 1;
+}
+
+/* =====================================================
+   2. INVOICE STUDIO LAYOUT (screen only)
+===================================================== */
+
+.invoice-page {
+    width: min(100%, 1680px);
+    max-width: none;
+    margin: 16px auto;
+    display: grid;
+    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.invoice-actions {
+    position: sticky;
+    top: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+    padding: 18px;
+    margin: 0;
+    border: 1px solid var(--studio-line);
+    border-top: 4px solid var(--invoice-gold);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 12px 35px rgba(20,35,58,.08);
+}
+
+.invoice-actions > a {
+    align-self: flex-start;
+}
+
+.invoice-controls {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 11px;
+}
+
+.invoice-controls select {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    border-radius: 10px;
+}
+
+.invoice-controls .form-check {
+    padding: 8px 10px 8px 2rem;
+    border: 1px solid var(--studio-line);
+    border-radius: 10px;
+    background: #fbfcfe;
+}
+
+.invoice-controls .btn {
+    min-height: 42px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+.studio-heading {
+    margin: 3px 0 0;
+    color: var(--studio-ink);
+    font-size: 20px;
+    font-weight: 850;
+}
+
+.studio-subheading {
+    margin: -8px 0 2px;
+    color: var(--studio-muted);
+    font-size: 13px;
+}
+
+.studio-control-label {
+    display: block;
+    margin: 2px 0 5px;
+    color: #34445b;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.studio-divider {
+    height: 1px;
+    margin: 2px 0;
+    background: var(--studio-line);
+}
+
+/* =====================================================
+   3. EMI EDITOR
+===================================================== */
+
+.emi-editor {
+    padding: 13px;
+    border: 1px solid #dce5f1;
+    border-radius: 13px;
+    background: #f8faff;
+}
+
+.emi-editor .form-control,
+.emi-editor .form-select {
+    min-height: 38px;
+    border-radius: 9px;
+    font-size: 14px;
+}
+
+.emi-preview {
+    display: none;
+    margin: 14px 0;
+    padding: 13px 15px;
+    border: 1px solid #cbd8e8;
+    border-left: 5px solid var(--invoice-gold);
+    border-radius: 10px;
+    background: var(--invoice-light);
+    break-inside: avoid;
+}
+
+.emi-preview-title {
+    margin-bottom: 8px;
+    color: var(--invoice-primary);
+    font-size: calc(var(--fs) * .78);
+    font-weight: 900;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+}
+
+.emi-preview-grid {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    margin: 0;
+    font-size: calc(var(--fs) * .78);
+}
+
+.emi-preview-grid th {
+    padding: 8px 5px;
+    background: var(--invoice-primary);
+    color: #fff;
+    border: 1px solid #dee2e6;
+    text-align: center;
+    font-weight: 800;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.emi-preview-grid td {
+    padding: 8px 5px;
+    background: #fff;
+    color: #1e2d43;
+    border: 1px solid #dee2e6;
+    text-align: center;
+    vertical-align: middle;
+    overflow-wrap: anywhere;
+}
+
+.emi-preview-grid td strong {
+    font-size: calc(var(--fs) * .82);
+}
+
+.emi-preview-item span {
+    display: block;
+    color: #5b6b80;
+    font-size: calc(var(--fs) * .78);
+}
+
+.emi-preview-item strong {
+    display: block;
+    color: #1e2d43;
+    font-size: calc(var(--fs) * .9);
+    overflow-wrap: anywhere;
+}
+
+/* =====================================================
+   4. INVOICE PAPER
+===================================================== */
+
+.invoice-paper {
+    --fs: 16px;
+    --paper-pad: 30px;
+    --paper-bg: #fff;
+
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    width: 100%;
+    max-width: 980px;
+    min-width: 0;
+    margin: 0 auto;
+    padding: var(--paper-pad);
+    border: 1px solid #dfe6f0;
+    border-radius: 16px;
+    background: var(--paper-bg);
+    color: var(--invoice-text);
+    font-size: var(--fs);
+    line-height: 1.55;
+    box-shadow: 0 18px 50px rgba(15,23,42,.12);
+}
+
+.invoice-paper,
+.invoice-paper *,
+.invoice-paper *::before,
+.invoice-paper *::after {
+    box-sizing: border-box;
+}
+
+.invoice-paper::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-image: var(--invoice-watermark, none);
+    background-repeat: no-repeat;
+    background-position: center 52%;
+    background-size: min(105%, 900px);
+    opacity: .085;
+    pointer-events: none;
+}
+
+/* Finance / EMI Details spacing */
+.finance-emi-section {
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+}
+
+.finance-emi-section .row {
+    row-gap: 16px;
+}
+
+.finance-emi-section .col,
+.finance-emi-section [class*="col-"] {
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+.finance-emi-section .form-control,
+.finance-emi-section .form-select {
+    width: 100%;
+    min-width: 0;
+}
+
+.finance-emi-section .form-label {
+    margin-bottom: 7px;
+}
+
+.invoice-paper > * {
+    position: relative;
+    z-index: 1;
+}
+
+.invoice-paper h1,
+.invoice-paper h2,
+.invoice-paper h3,
+.invoice-paper h4,
+.invoice-paper h5,
+.invoice-paper h6 {
+    color: var(--invoice-primary);
+}
+
+/* =====================================================
+   5. STORE HEADER AND LOGO
+===================================================== */
+
+.invoice-store-header {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 150px minmax(0,1fr) minmax(200px, auto);
+    align-items: center;
+    gap: 18px;
+    padding: 26px 26px 44px;
+    margin: calc(-1 * var(--paper-pad)) calc(-1 * var(--paper-pad)) 22px;
+    color: #fff;
+    background: linear-gradient(
+        125deg,
+        var(--invoice-deep) 0%,
+        var(--invoice-primary) 52%,
+        var(--invoice-royal) 130%
+    );
+    border-bottom: 5px solid var(--invoice-gold);
+    border-radius: 0 0 34px 34px;
+}
+
+.invoice-store-header::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    width: 115%;
+    height: 75px;
+    left: -7%;
+    bottom: -43px;
+    background: var(--invoice-gold);
+    opacity: .95;
+    border-radius: 50% 50% 0 0;
+    transform: rotate(-2deg);
+}
+
+.invoice-store-header::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    width: 115%;
+    height: 65px;
+    left: 20%;
+    bottom: -48px;
+    background: var(--paper-bg);
+    border-radius: 50% 50% 0 0;
+    transform: rotate(2deg);
+}
+
+.store-header-left {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.invoice-logo {
+    width: 165px;
+    height: 155px;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+    padding: 5px;
+    background: #fff;
+    border: 4px solid var(--invoice-gold);
+    border-radius: 18px;
+    box-shadow: 0 10px 25px rgba(0,0,0,.28);
+}
+
+.store-header-center {
+    min-width: 0;
+    text-align: center;
+}
+
+.invoice-store-name {
+    margin: 0 0 9px;
+    color: #fff !important;
+    font-size: calc(var(--fs) * 2.35);
+    font-weight: 950;
+    letter-spacing: 1.6px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    text-shadow: 0 2px 6px rgba(0,0,0,.25);
+}
+
+.invoice-label {
+    display: inline-block;
+    padding: 6px 22px;
+    border-radius: 5px;
+    background: var(--invoice-gold);
+    color: #14243a;
+    font-size: calc(var(--fs) * .88);
+    font-weight: 900;
+    letter-spacing: 2.4px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.2);
+}
+
+.store-address {
+    margin-top: 10px;
+    color: #f1f5f9;
+    white-space: pre-line;
+    line-height: 1.5;
+    font-size: calc(var(--fs) * .94);
+}
+
+.store-header-center .invoice-muted {
+    color: #e4eaf2;
+    font-size: calc(var(--fs) * .88);
+}
+
+.store-header-right {
+    text-align: right;
+    color: #fff;
+    overflow-wrap: anywhere;
+}
+
+.header-contact-label {
+    margin-bottom: 3px;
+    color: #f2d99e;
+    font-size: calc(var(--fs) * .82);
+    font-weight: 900;
+    letter-spacing: 2px;
+}
+
+.header-phone {
+    color: #fff;
+    font-size: calc(var(--fs) * 1.3);
+    font-weight: 950;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.header-timing {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,.35);
+    color: #fff;
+    font-size: calc(var(--fs) * .88);
+    font-weight: 600;
+    line-height: 1.8;
+}
+
+.header-timing strong {
+    color: #f2d99e;
+}
+
+/* =====================================================
+   6. GENERAL TEXT AND INVOICE TITLE
+===================================================== */
+
+.invoice-muted {
+    color: #54637a;
+    font-size: calc(var(--fs) * .88);
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.billing-title-section {
+    margin: 16px 0;
+    text-align: center;
+    font-size: var(--fs);
+    line-height: 1.8;
+}
+
+.billing-title-section h2 {
+    display: inline-block;
+    margin: 0 0 8px;
+    padding: 0 26px 6px;
+    border-bottom: 3px solid var(--invoice-gold);
+    font-size: calc(var(--fs) * 1.7);
+    font-weight: 950;
+    letter-spacing: 2.4px;
+}
+
+.billing-title-section strong {
+    color: var(--invoice-primary);
+}
+
+.invoice-status {
+    display: inline-block;
+    padding: 5px 15px;
+    border-radius: 30px;
+    font-size: calc(var(--fs) * .8);
+    font-weight: 900;
+    letter-spacing: .5px;
+}
+
+.status-paid {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-partial {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-due {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* =====================================================
+   7. CUSTOMER AND SELLER
+===================================================== */
+
+.invoice-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin: 20px 0;
+}
+
+.invoice-info-box {
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid var(--invoice-border);
+    border-top: 4px solid var(--invoice-gold);
+    border-radius: 12px;
+    background: #fbfcfe;
+    font-size: var(--fs);
+    line-height: 1.75;
+    box-shadow: 0 4px 14px rgba(15,23,42,.04);
+}
+
+.invoice-info-box > strong {
+    display: inline-block;
+    margin-bottom: 4px;
+    color: var(--invoice-primary);
+    font-size: calc(var(--fs) * 1.25);
+    font-weight: 900;
+}
+
+.invoice-info-box .invoice-muted {
+    color: #33435a;
+    font-size: calc(var(--fs) * .95);
+}
+
+.customer-phone {
+    color: var(--invoice-primary) !important;
+    font-size: calc(var(--fs) * 1.1) !important;
+    font-weight: 900;
+    overflow-wrap: anywhere;
+}
+
+.invoice-section-title {
+    margin-bottom: 11px;
+    padding: 0 0 9px 11px;
+    border-bottom: 1px solid var(--invoice-border);
+    border-left: 4px solid var(--invoice-royal);
+    color: var(--invoice-primary);
+    font-size: calc(var(--fs) * .84);
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+}
+
+/* =====================================================
+   8. PRODUCT AND PAYMENT TABLES
+===================================================== */
+
+.invoice-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.invoice-table {
+    width: 100%;
+    min-width: 0;
+    margin: 14px 0;
+    border-collapse: collapse;
+    font-size: calc(var(--fs) * .96);
+}
+
+.invoice-table th,
+.invoice-table td {
+    box-sizing: border-box;
+    padding: 12px 10px;
+    border: 1px solid #d9e0ea;
+    vertical-align: top;
+}
+
+.invoice-table th {
+    background: var(--invoice-primary);
+    border-bottom: 3px solid var(--invoice-gold);
+    color: #fff;
+    font-size: calc(var(--fs) * .88);
+    font-weight: 900;
+    letter-spacing: .4px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.invoice-table tbody tr:nth-child(even) {
+    background: #f4f7fc;
+}
+
+.invoice-table td strong {
+    color: #162a45;
+    font-size: calc(var(--fs) * 1.02);
+}
+
+/* number columns stay on one line; only the description wraps */
+.product-table th:not(:nth-child(2)),
+.product-table td:not(:nth-child(2)) {
+    white-space: nowrap;
+}
+
+.invoice-table td .invoice-imei {
+    margin-top: 2px;
+    color: var(--invoice-primary);
+    font-size: calc(var(--fs) * .95);
+    font-weight: 800;
+    letter-spacing: .4px;
+}
+
+.invoice-table td .invoice-imei span {
+    font-family: Consolas, "Courier New", monospace;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.invoice-subheading {
+    margin: 0 0 4px;
+    padding-left: 11px;
+    border-left: 4px solid var(--invoice-gold);
+    font-size: calc(var(--fs) * 1.1);
+    font-weight: 900;
+}
+
+.text-end {
+    text-align: right !important;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+/* =====================================================
+   9. SUMMARY AND GST
+===================================================== */
+
+.invoice-summary {
+    width: 100%;
+    max-width: 440px;
+    margin: 16px 0 0 auto;
+    padding: 16px 20px;
+    border: 1px solid var(--invoice-border);
+    border-top: 4px solid var(--invoice-gold);
+    border-radius: 12px;
+    background: rgba(255,255,255,.97);
+    font-size: calc(var(--fs) * 1.02);
+    box-shadow: 0 5px 16px rgba(15,23,42,.05);
+}
+
+.invoice-summary-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.invoice-summary-row strong {
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.invoice-summary-row.grand-total {
+    margin: 8px 0 4px;
+    padding: 12px 14px;
+    border-bottom: 0;
+    border-radius: 9px;
+    background: linear-gradient(120deg, var(--invoice-primary), var(--invoice-royal));
+    color: #fff;
+    font-size: calc(var(--fs) * 1.4);
+    font-weight: 950;
+}
+
+.invoice-summary-row.grand-total strong {
+    color: #fff;
+}
+
+.invoice-summary-row.balance-row {
+    color: #b42318;
+    font-weight: 950;
+}
+
+.invoice-summary-row.paid-row {
+    color: #087443;
+    font-weight: 900;
+}
+
+.gst-breakdown-box {
+    margin: 9px 0;
+    padding: 12px;
+    border: 1px dashed var(--invoice-royal);
+    border-radius: 9px;
+    background: var(--invoice-light);
+}
+
+.gst-breakdown-title {
+    margin-bottom: 6px;
+    color: var(--invoice-primary);
+    font-size: calc(var(--fs) * .9);
+    font-weight: 950;
+}
+
+.gst-breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: calc(var(--fs) * .9);
+}
+
+.gst-hidden {
+    display: none !important;
+}
+
+/* =====================================================
+   10. TERMS
+===================================================== */
+
+.invoice-terms {
+    display: block;
+    margin-top: 16px;
+    padding: 15px 18px;
+    border: 1px solid #d6c18e;
+    border-left: 5px solid var(--invoice-gold);
+    border-radius: 10px;
+    background: rgba(255,253,247,.96);
+    color: #273449;
+    text-align: left;
+    font-size: calc(var(--fs) * .88);
+    line-height: 1.65;
+}
+
+.invoice-terms h6 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    color: var(--invoice-primary);
+    font-size: calc(var(--fs) * 1);
+    font-weight: 950;
+}
+
+.invoice-terms-content {
+    min-height: 25px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.terms-language-title {
+    margin-top: 8px;
+    color: var(--invoice-primary);
+    font-weight: 900;
+}
+
+.terms-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 7px;
+    margin: 12px 0;
+}
+
+/* =====================================================
+   11. SIGNATURES
+===================================================== */
+
+.signature-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 32px;
+}
+
+.signature-box {
+    margin-top: 30px;
+    padding-top: 8px;
+    border-top: 1px solid #6b7686;
+    text-align: center;
+    font-size: calc(var(--fs) * .9);
+    font-weight: 700;
+}
+
+/* =====================================================
+   12. QR CODES
+===================================================== */
+
+.social-qr-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 28px;
+    margin: 18px 0;
+}
+
+.social-qr-item {
+    width: 100px;
+    overflow-wrap: anywhere;
+    text-align: center;
+    font-size: calc(var(--fs) * .8);
+    font-weight: 900;
+}
+
+.social-qr-item img {
+    display: block;
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 5px;
+    padding: 3px;
+    border: 1px solid var(--invoice-border);
+    border-radius: 6px;
+    background: #fff;
+    object-fit: contain;
+}
+
+.social-qr-label {
+    color: var(--invoice-primary);
+    font-weight: 950;
+}
+
+/* =====================================================
+   13. FOOTER
+===================================================== */
+
+.invoice-footer {
+    margin-top: 18px;
+    padding-top: 12px;
+    border-top: 3px solid var(--invoice-gold);
+    color: #435066;
+    text-align: center;
+    font-size: calc(var(--fs) * .88);
+    line-height: 1.7;
+}
+
+.invoice-footer .thank-you {
+    color: var(--invoice-primary);
+    font-size: calc(var(--fs) * 1.2);
+    font-weight: 950;
+}
+
+/* =====================================================
+   14. INVOICE FORMATS
+===================================================== */
+
+.invoice-paper.format-corporate {
+    border-top: 6px solid var(--invoice-royal);
+}
+
+.invoice-paper.format-luxury {
+    --paper-bg: #fffdf8;
+    border: 2px solid #b8944d;
+}
+
+.format-luxury .invoice-store-header {
+    background: #17243a;
+}
+
+.format-luxury .invoice-store-name,
+.format-luxury h2,
+.format-luxury .invoice-section-title,
+.format-luxury .invoice-footer {
+    color: #92702e;
+}
+
+.format-luxury .invoice-store-name {
+    color: #fff !important;
+}
+
+.format-luxury .invoice-label {
+    background: #d6b36a;
+}
+
+.format-luxury .invoice-table th {
+    background: #17243a;
+}
+
+.format-luxury .invoice-summary-row.grand-total {
+    background: #17243a;
+    color: #f2d99e;
+}
+
+.format-luxury .invoice-summary-row.grand-total strong {
+    color: #f2d99e;
+}
+
+.invoice-paper.format-black {
+    border-top: 7px solid #202020;
+}
+
+.format-black .invoice-store-header {
+    background: #202020;
+}
+
+.format-black .invoice-label,
+.format-black .invoice-table th {
+    background: #202020;
+}
+
+.format-black .invoice-store-header,
+.format-black .invoice-footer {
+    border-color: #202020;
+}
+
+.format-black .invoice-store-name {
+    color: #fff !important;
+}
+
+.format-black h2,
+.format-black .invoice-section-title {
+    color: #202020;
+}
+
+.format-black .invoice-label {
+    color: #fff;
+}
+
+.format-black .invoice-summary-row.grand-total {
+    background: #202020;
+}
+
+.invoice-paper.format-emerald {
+    --paper-bg: #fbfefb;
+    border-top: 6px solid #16734a;
+}
+
+.format-emerald .invoice-store-header {
+    background: #12583b;
+}
+
+.format-emerald .invoice-label,
+.format-emerald .invoice-table th {
+    background: #16734a;
+}
+
+.format-emerald .invoice-label {
+    color: #fff;
+}
+
+.format-emerald .invoice-store-header,
+.format-emerald .invoice-footer {
+    border-color: #16734a;
+}
+
+.format-emerald .invoice-store-name {
+    color: #fff !important;
+}
+
+.format-emerald h2,
+.format-emerald .invoice-section-title {
+    color: #16734a;
+}
+
+.format-emerald .invoice-summary-row.grand-total {
+    background: #16734a;
+}
+
+.invoice-paper.format-compact {
+    --paper-pad: 16px;
+}
+
+.invoice-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.emi-preview-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 10px 0;
+}
+
+.emi-preview-table th,
+.emi-preview-table td {
+    padding: 14px 18px;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.emi-preview-table th {
+    padding-bottom: 16px;
+}
+
+.emi-preview-table td {
+    padding-top: 16px;
+}
+
+/* =====================================================
+   15. TEXT SIZE OPTIONS
+   (--fs drives every size inside the invoice)
+===================================================== */
+
+.invoice-paper.text-small   { --fs: 14px; }
+.invoice-paper.text-normal  { --fs: 16px; }
+.invoice-paper.text-large   { --fs: 18px; }
+.invoice-paper.text-xlarge  { --fs: 20px; }
+.invoice-paper.text-xxlarge { --fs: 22px; }
+
+/* =====================================================
+   16. RESPONSIVE DESIGN (screen only)
+   Guarded with html:not(.print-fit) so that the print
+   measurement is never affected by the window size.
+===================================================== */
+
+@media screen and (max-width: 1100px) {
+    html:not(.print-fit) .invoice-page {
+        grid-template-columns: 270px minmax(0,1fr);
+        gap: 14px;
+    }
+
+    html:not(.print-fit) .invoice-store-header {
+        grid-template-columns: 105px minmax(0,1fr) 160px;
+        gap: 10px;
+    }
+
+    html:not(.print-fit) .invoice-logo {
+        width: 96px;
+        height: 92px;
+    }
+
+    html:not(.print-fit) .invoice-store-name {
+        font-size: calc(var(--fs) * 1.7);
+    }
+}
+
+@media screen and (max-width: 760px) {
+
+    html:not(.print-fit) .invoice-page {
+    display: grid;
+    grid-template-columns: minmax(200px, 34%) minmax(0, 1fr);
+    gap: 10px;
+    padding: 0 8px;
+    align-items: start;
+    }
+
+    html:not(.print-fit) .invoice-actions {
+    position: static;
+    width: 100%;
+    min-width: 0;
+    }
+
+    html:not(.print-fit) .invoice-paper {
+        width: 100%;
+        --paper-pad: 14px;
+        border-radius: 8px;
+    }
+
+    html:not(.print-fit) .invoice-store-header {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 16px 12px 30px;
+    }
+
+    html:not(.print-fit) .store-header-left,
+    html:not(.print-fit) .store-header-center,
+    html:not(.print-fit) .store-header-right {
+        text-align: center;
+    }
+
+    html:not(.print-fit) .invoice-logo {
+        width: 100px;
+        height: 94px;
+    }
+
+    html:not(.print-fit) .invoice-store-name {
+        font-size: calc(var(--fs) * 1.7);
+    }
+
+    html:not(.print-fit) .invoice-info {
+        grid-template-columns: 1fr;
+    }
+
+    html:not(.print-fit) .invoice-table {
+        min-width: 560px;
+    }
+
+    html:not(.print-fit) .invoice-summary {
+        max-width: 100%;
+    }
+
+    html:not(.print-fit) .signature-area {
+        gap: 15px;
+    }
+
+    html:not(.print-fit) .emi-preview-grid {
+        grid-template-columns: repeat(2,minmax(0,1fr));
+    }
+}
+
+/* =====================================================
+   17. ONE-PAGE A4 PRINT LAYOUT
+
+   How it works
+   ------------
+   • The font sizes are NOT reduced for printing. The
+     invoice keeps the same design and text sizes as on
+     screen.
+   • Only spacing is tightened (padding, margins, gaps).
+   • JavaScript (beforeprint) adds the class "print-fit"
+     to <html>, hides everything except the invoice,
+     measures the real height of the invoice at A4 width
+     and applies one proportional zoom so the whole bill
+     fits on one A4 page.
+   • afterprint removes everything and restores the
+     original screen layout.
+
+   The tightened-spacing rules are written against
+   "html.print-fit" (not inside @media print) so that the
+   measurement made in beforeprint is identical to what
+   is printed.
+===================================================== */
+
+@page {
+    size: A4 portrait;
+    margin: 5mm;
+}
+
+/* elements hidden / reset by JavaScript while printing */
+
+html.print-fit [data-print-hidden] {
+    display: none !important;
+}
+
+html.print-fit [data-print-ancestor] {
+    display: block !important;
+    position: static !important;
+    float: none !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+    box-shadow: none !important;
+    background: none !important;
+}
+
+html.print-fit,
+html.print-fit body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background: #fff !important;
+}
+
+html.print-fit .invoice-actions,
+html.print-fit .no-print,
+html.print-fit .terms-actions {
+    display: none !important;
+}
+
+/* the invoice itself */
+
+html.print-fit #invoicePaper {
+    --paper-pad: 12px;
+
+    display: block !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+    border-bottom: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    line-height: 1.38 !important;
+    transform: none !important;
+    transform-origin: top left !important;
+}
+
+html.print-fit #invoicePaper::before {
+    background-position: center center !important;
+    background-size: 75% auto !important;
+}
+
+/* header: same look, less height */
+
+html.print-fit .invoice-store-header {
+    gap: 12px !important;
+    padding: 14px 16px 28px !important;
+    margin-bottom: 8px !important;
+    border-radius: 0 0 22px 22px !important;
+    grid-template-columns: 110px minmax(0,1fr) minmax(170px, auto) !important;
+}
+
+html.print-fit .invoice-store-header::before {
+    height: 46px !important;
+    bottom: -28px !important;
+}
+
+html.print-fit .invoice-store-header::after {
+    height: 40px !important;
+    bottom: -30px !important;
+}
+
+html.print-fit .invoice-logo {
+    width: 96px !important;
+    height: 90px !important;
+    padding: 5px !important;
+    box-shadow: none !important;
+}
+
+html.print-fit .invoice-store-name {
+    margin-bottom: 5px !important;
+    line-height: 1.1 !important;
+}
+
+html.print-fit .store-address {
+    margin-top: 5px !important;
+    line-height: 1.3 !important;
+}
+
+html.print-fit .store-header-center .invoice-muted,
+html.print-fit .header-timing {
+    line-height: 1.35 !important;
+}
+
+html.print-fit .header-timing {
+    margin-top: 5px !important;
+    padding-top: 4px !important;
+}
+
+/* title block */
+
+html.print-fit .billing-title-section {
+    margin: 8px 0 !important;
+    line-height: 1.4 !important;
+}
+
+html.print-fit .billing-title-section h2 {
+    margin-bottom: 4px !important;
+    padding-bottom: 3px !important;
+}
+
+/* seller / customer */
+
+html.print-fit .invoice-info {
+    gap: 10px !important;
+    margin: 8px 0 !important;
+}
+
+html.print-fit .invoice-info-box {
+    padding: 9px 12px !important;
+    line-height: 1.38 !important;
+    box-shadow: none !important;
+}
+
+html.print-fit .invoice-section-title {
+    margin-bottom: 5px !important;
+    padding-bottom: 4px !important;
+}
+
+html.print-fit .invoice-muted {
+    line-height: 1.35 !important;
+}
+
+/* tables */
+
+html.print-fit .invoice-table-wrap {
+    overflow: visible !important;
+}
+
+html.print-fit .invoice-table {
+    min-width: 0 !important;
+    margin: 6px 0 !important;
+    table-layout: auto !important;
+}
+
+html.print-fit .invoice-table th,
+html.print-fit .invoice-table td {
+    padding: 5px 7px !important;
+    line-height: 1.3 !important;
+    overflow-wrap: anywhere !important;
+}
+
+html.print-fit .invoice-table th {
+    white-space: normal !important;
+}
+
+html.print-fit .invoice-table tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+}
+
+html.print-fit .invoice-table thead {
+    display: table-header-group !important;
+}
+
+html.print-fit .invoice-subheading {
+    margin-bottom: 2px !important;
+}
+
+html.print-fit .mt-3 {
+    margin-top: 8px !important;
+}
+
+/* EMI */
+
+html.print-fit .emi-preview {
+    margin: 6px 0 !important;
+    padding: 7px 10px !important;
+}
+
+html.print-fit .emi-preview-title {
+    margin-bottom: 3px !important;
+}
+
+html.print-fit .emi-preview-grid {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+}
+
+html.print-fit .emi-preview-grid th,
+html.print-fit .emi-preview-grid td {
+    padding: 5px 3px !important;
+    font-size: calc(var(--fs) * .72) !important;
+    overflow-wrap: anywhere !important;
+}
+
+/* totals */
+
+html.print-fit .invoice-summary {
+    max-width: 105mm !important;
+    margin-top: 8px !important;
+    padding: 6px 12px !important;
+    box-shadow: none !important;
+}
+
+html.print-fit .invoice-summary-row {
+    padding: 3px 0 !important;
+}
+
+html.print-fit .invoice-summary-row.grand-total {
+    margin: 4px 0 2px !important;
+    padding: 6px 10px !important;
+}
+
+html.print-fit .gst-breakdown-box {
+    margin: 4px 0 !important;
+    padding: 5px 9px !important;
+}
+
+html.print-fit .gst-breakdown-row {
+    padding: 1px 0 !important;
+}
+
+/* signatures, QR codes, terms, footer */
+
+html.print-fit .signature-area {
+    gap: 30px !important;
+    margin-top: 10px !important;
+}
+
+html.print-fit .signature-box {
+    margin-top: 18px !important;
+    padding-top: 4px !important;
+}
+
+html.print-fit .social-qr-container {
+    gap: 18px !important;
+    margin: 8px 0 !important;
+}
+
+html.print-fit .social-qr-item img {
+    margin-bottom: 2px !important;
+}
+
+html.print-fit .invoice-terms {
+    margin-top: 8px !important;
+    padding: 7px 11px !important;
+    line-height: 1.3 !important;
+}
+
+html.print-fit .invoice-terms h6 {
+    margin-bottom: 3px !important;
+}
+
+html.print-fit .invoice-terms-content {
+    min-height: 0 !important;
+    line-height: 1.3 !important;
+}
+
+html.print-fit .terms-language-title {
+    margin-top: 3px !important;
+}
+
+html.print-fit .invoice-footer {
+    margin-top: 8px !important;
+    padding-top: 6px !important;
+    line-height: 1.4 !important;
+}
+
+html.print-fit .mt-2 {
+    margin-top: 3px !important;
+}
+
+/* -----------------------------------------------------
+   Readable print: paper-sized text + compact layout.
+   The text sizes below are the printed sizes (before the
+   final fit zoom). The "Printing Text Size" menu changes
+   them. A more compact layout means less shrinking, so
+   the printed text stays larger and clearer.
+----------------------------------------------------- */
+
+html.print-fit #invoicePaper.text-small   { --fs: 12px; }
+html.print-fit #invoicePaper.text-normal  { --fs: 14px; }
+html.print-fit #invoicePaper.text-large   { --fs: 15.5px; }
+html.print-fit #invoicePaper.text-xlarge  { --fs: 17px; }
+html.print-fit #invoicePaper.text-xxlarge { --fs: 18.5px; }
+
+/* compact header */
+
+
+html.print-fit .invoice-store-header{
+    grid-template-columns: 130px minmax(0,1fr) minmax(150px, auto) !important;
+    gap: 10px !important;
+    padding: 8px 14px 20px !important;
+    margin-bottom: 6px !important;
+    border-bottom-width: 4px !important;
+    border-radius: 0 0 16px 16px !important;
+}
+
+html.print-fit .invoice-store-header::before {
+    height: 30px !important;
+    bottom: -20px !important;
+}
+
+html.print-fit .invoice-store-header::after {
+    height: 26px !important;
+    bottom: -22px !important;
+}
+
+html.print-fit .invoice-logo {
+    width: 110px !important;
+    height: 100px !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    padding: 3px !important;
+    border-width: 3px !important;
+    border-radius: 12px !important;
+}
+
+html.print-fit .invoice-store-name {
+    margin-bottom: 3px !important;
+    font-size: calc(var(--fs) * 1.9) !important;
+}
+
+html.print-fit .invoice-label {
+    padding: 2px 14px !important;
+}
+
+html.print-fit .store-address {
+    margin-top: 3px !important;
+}
+
+html.print-fit .header-timing {
+    margin-top: 3px !important;
+    padding-top: 3px !important;
+}
+
+/* title row: heading left, invoice no/date middle, status right */
+
+html.print-fit .billing-title-section {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 2px 14px !important;
+    margin: 6px 0 !important;
+    text-align: left !important;
+}
+
+html.print-fit .billing-title-section h2 {
+    margin: 0 !important;
+    padding: 0 14px 2px 0 !important;
+    font-size: calc(var(--fs) * 1.45) !important;
+    letter-spacing: 1.5px !important;
+}
+
+html.print-fit .billing-title-section .mt-1 {
+    margin-top: 0 !important;
+}
+
+/* product details on one line */
+
+html.print-fit .invoice-table td .invoice-muted {
+    display: inline-block !important;
+    margin-right: 10px !important;
+    font-size: calc(var(--fs) * .86) !important;
+}
+
+html.print-fit .invoice-table td strong {
+    display: block !important;
+}
+
+/* payment history (left) beside the totals (right) */
+
+html.print-fit .totals-payments {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 0 14px;
+    align-items: start;
+}
+
+html.print-fit .totals-payments > .invoice-summary {
+    grid-column: 2;
+    grid-row: 1;
+    max-width: none !important;
+    margin: 6px 0 0 !important;
+}
+
+html.print-fit .totals-payments > .mt-3 {
+    grid-column: 1;
+    grid-row: 1;
+    margin-top: 6px !important;
+}
+
+/* signatures and QR codes on one row */
+
+html.print-fit .sign-qr-row {
+    display: grid !important;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
+    gap: 16px;
+    margin-top: 6px;
+}
+
+html.print-fit .sign-qr-row .signature-area {
+    display: contents !important;
+}
+
+html.print-fit .sign-qr-row .signature-box {
+    margin-top: 20px !important;
+    grid-row: 1;
+}
+
+html.print-fit .sign-qr-row .signature-box:nth-child(1) {
+    grid-column: 1;
+}
+
+html.print-fit .sign-qr-row .signature-box:nth-child(2) {
+    grid-column: 3;
+}
+
+html.print-fit .sign-qr-row .social-qr-container {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0 !important;
+    gap: 12px !important;
+}
+
+html.print-fit .social-qr-item {
+    width: 66px !important;
+}
+
+html.print-fit .social-qr-item img {
+    width: 52px !important;
+    height: 52px !important;
+}
+
+/* terms: English and Tamil side by side
+   (no !important on display, so "Remove Terms" still hides it) */
+
+html.print-fit .invoice-terms {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 16px;
+}
+
+html.print-fit .invoice-terms > h6 {
+    grid-column: 1 / -1;
+    grid-row: 1;
+}
+
+html.print-fit .invoice-terms {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    align-content: start !important;
+}
+
+html.print-fit .invoice-terms > * {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+}
+
+
+html.print-fit .invoice-terms > :nth-child(2) { grid-column: 1; grid-row: 2; }
+html.print-fit .invoice-terms > :nth-child(3) { grid-column: 1; grid-row: 3; }
+html.print-fit .invoice-terms > :nth-child(4) { grid-column: 2; grid-row: 2; }
+html.print-fit .invoice-terms > :nth-child(5) { grid-column: 2; grid-row: 3; }
+
+html.print-fit .product-table th:not(:nth-child(2)),
+html.print-fit .product-table td:not(:nth-child(2)) {
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+}
+
+html.print-fit .invoice-store-header,
+html.print-fit .billing-title-section,
+html.print-fit .invoice-info,
+html.print-fit .invoice-summary,
+html.print-fit .emi-preview,
+html.print-fit .signature-area,
+html.print-fit .social-qr-container,
+
+/* html.print-fit .invoice-footer {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+} */
+
+html.print-fit .invoice-footer {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+}
+
+/* Allow Terms & Conditions to use the remaining page space */
+html.print-fit .invoice-terms {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+}
+
+/* basic print rules (also apply if JavaScript is blocked) */
+
+@media print {
+
+    html,
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .invoice-actions,
+    .no-print,
+    .terms-actions {
+        display: none !important;
+    }
+
+    .invoice-paper {
+        box-shadow: none !important;
+    }
+
+    .invoice-terms {
+        display: block !important;
+        margin-top: 8px !important;
+        padding: 7px 10px !important;
+        font-size: 8px !important;
+        line-height: 1.25 !important;
+        border-radius: 5px !important;
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+    }
+
+    .invoice-terms * {
+        line-height: 1.25 !important;
+    }
+
+    a {
+        text-decoration: none !important;
+        color: inherit !important;
+    }
+}
+
+
+/* =================================================
+   INVOICE STUDIO + PREVIEW SIDE BY SIDE
+================================================= */
+
+@media screen {
+
+    html:not(.print-fit) .invoice-page {
+        display: grid !important;
+        grid-template-columns: minmax(0, 25%) minmax(0, 1fr) !important;
+        gap: 12px !important;
+        align-items: start !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    html:not(.print-fit) .invoice-actions {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        position: static !important;
+        box-sizing: border-box !important;
+    }
+
+    html:not(.print-fit) .invoice-paper {
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        justify-self: stretch !important;
+        box-sizing: border-box !important;
+    }
+}
+
+
+</style>
+
+<div class="container-fluid">
+<div class="invoice-page">
+
+    <!-- LEFT: INVOICE STUDIO -->
+
+    <div class="invoice-actions no-print">
+
+        <a href="{{ url_for('billing_list') }}"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Bills
+        </a>
+
+        <h3 class="studio-heading">Invoice Studio</h3>
+
+        <p class="studio-subheading">
+            Edit on the left · Preview on the right
+        </p>
+
+        <div class="studio-divider"></div>
+
+        <div class="invoice-controls">
+
+            {% if amount_due > 0.009 %}
+            <a href="{{ url_for('billing_receive_payment', sale_id=sale.id) }}"
+               class="btn btn-success">
+                <i class="bi bi-cash-coin"></i> Receive Due Payment
+            </a>
+            {% endif %}
+
+            <label class="studio-control-label" for="invoiceFormat">
+                Invoice Design
+            </label>
+
+            <select id="invoiceFormat" class="form-select form-select-sm">
+                <option value="corporate">Modern Blue</option>
+                <option value="luxury">Premium Gold</option>
+                <option value="black">Black Edition</option>
+                <option value="emerald">Emerald</option>
+                <option value="compact">Compact</option>
+            </select>
+
+            <label class="studio-control-label" for="invoiceTextSize">
+                Printing Text Size
+            </label>
+
+            <select id="invoiceTextSize" class="form-select form-select-sm">
+                <option value="text-small">Small Text</option>
+                <option value="text-normal" selected>Normal Text</option>
+                <option value="text-large">Large Text</option>
+                <option value="text-xlarge">Extra Large</option>
+                <option value="text-xxlarge">XXL Text</option>
+            </select>
+
+            <label class="studio-control-label" for="invoiceTheme">
+                Invoice Colour
+            </label>
+
+            <select id="invoiceTheme" class="form-select form-select-sm">
+                <option value="blue">Blue Colour</option>
+                <option value="green">Green Colour</option>
+                <option value="purple">Purple Colour</option>
+                <option value="maroon">Maroon Colour</option>
+                <option value="black">Black Colour</option>
+            </select>
+
+            {% if store and store.gstin %}
+            <label class="form-check mb-0">
+                <input type="checkbox"
+                       class="form-check-input"
+                       id="toggleGstin"
+                       {% if store.show_gstin %}checked{% endif %}>
+                <span class="form-check-label">Store GSTIN</span>
+            </label>
+            {% endif %}
+
+            <label class="form-check mb-0">
+                <input type="checkbox"
+                       class="form-check-input"
+                       id="toggleGstBreakdown"
+                       {% if not store or store.show_tax_breakdown %}checked{% endif %}>
+                <span class="form-check-label">GST Details</span>
+
+                <label class="form-check mb-0">
+    <input type="checkbox"
+           class="form-check-input"
+           id="toggleSellerWarranty">
+    <span class="form-check-label">Show Warranty in Consigner Details</span>
+</label>
+            </label>
+
+
+            <div class="studio-divider"></div>
+
+<div class="studio-divider"></div>
+            
+<!-- EMI EDITOR -->
+
+<section class="emi-editor">
+
+    <div class="d-flex align-items-center justify-content-between mb-2">
+        <strong class="small text-dark">FINANCE DETAILS</strong>
+        <span class="badge text-bg-light">Print option</span>
+    </div>
+
+    <div class="form-check mb-2">
+        <input class="form-check-input"
+               type="checkbox"
+               id="financeEnabled">
+        <label class="form-check-label fw-semibold"
+               for="financeEnabled">
+            FINANCE
+        </label>
+    </div>
+
+    <div class="form-check mb-3">
+        <input class="form-check-input"
+               type="checkbox"
+               id="emiEnabled"
+               disabled>
+        <label class="form-check-label fw-semibold"
+               for="emiEnabled">
+            EMI
+        </label>
+    </div>
+
+    
+<div id="emiInputFields" style="display:none;">
+
+    <!-- FINANCE INPUTS: always shown when FINANCE is checked -->
+
+    <label class="studio-control-label" for="emiProvider">
+        Finance company / Bank
+    </label>
+
+    <input class="form-control mb-2"
+           id="emiProvider"
+           placeholder="e.g. Bajaj Finance">
+
+    <div class="d-flex align-items-center justify-content-between mb-1">
+        <label class="studio-control-label mb-0" for="emiTenure">
+            EMI Tenure (months)
+        </label>
+        <label class="form-check mb-0">
+            <input class="form-check-input"
+                   type="checkbox"
+                   id="emiTenureEnabled"
+                   disabled>
+            <span class="form-check-label small">Show on invoice</span>
+        </label>
+    </div>
+
+    <input class="form-control mb-2"
+           id="emiTenure"
+           type="number"
+           min="1"
+           step="1"
+           placeholder="12">
+
+    <!-- EXTRA EMI INPUTS: shown only when EMI is checked -->
+
+    <div id="emiExtraInputFields" style="display:none;">
+
+        <label class="studio-control-label" for="emiDownPayment">
+            Down payment (₹)
+        </label>
+
+        <input class="form-control mb-2"
+               id="emiDownPayment"
+               type="number"
+               min="0"
+               step="0.01"
+               placeholder="0">
+
+        <label class="studio-control-label" for="emiPrincipal">
+            EMI financed amount (₹)
+        </label>
+
+        <input class="form-control mb-2"
+               id="emiPrincipal"
+               type="number"
+               min="0"
+               step="0.01"
+               placeholder="0">
+
+        <div class="row g-2">
+            <div class="col-6">
+                <label class="studio-control-label" for="emiMonthly">
+                    Monthly EMI (₹)
+                </label>
+
+                <input class="form-control"
+                       id="emiMonthly"
+                       type="number"
+                       min="0"
+                       step="0.01"
+                       placeholder="0">
+            </div>
+
+            <div class="col-6">
+                <label class="studio-control-label" for="emiStartDate">
+                    First EMI date
+                </label>
+
+                <input class="form-control"
+                       id="emiStartDate"
+                       type="date">
+            </div>
+        </div>
+
+        <label class="studio-control-label mt-2" for="emiReference">
+            Loan / transaction reference
+        </label>
+
+        <input class="form-control"
+               id="emiReference"
+               placeholder="Optional reference">
+
+        <div class="form-text">
+            These details appear on the invoice preview and printout.
+            They are not saved to the database yet.
+        </div>
+
+    </div>
+
+</div>
+
+        <label class="studio-control-label mt-2" for="emiStartDate">
+            First EMI date
+        </label>
+
+        <input class="form-control"
+               id="emiStartDate"
+               type="date">
+
+        <!-- <label class="studio-control-label mt-2" for="emiReference">
+            Loan / transaction reference
+        </label>
+
+        <input class="form-control"
+               id="emiReference"
+               placeholder="Optional reference"> -->
+
+        <div class="form-text">
+            These details appear on the invoice preview and printout.
+            They are not saved to the database.
+        </div>
+
+    </div>
+
+</section>
+
+            <div class="studio-divider"></div>
+
+            <button type="button"
+                    class="btn btn-primary"
+                    onclick="window.print()">
+                <i class="bi bi-printer"></i> Print Invoice
+            </button>
+
+        </div>
+
+    <!-- RIGHT: INVOICE PREVIEW -->
+
+    <div class="invoice-paper format-corporate text-normal"
+         id="invoicePaper"
+         {% if store and store.logo_filename %}
+         style="--invoice-watermark: url('{{ url_for('store_logo_file', filename=store.logo_filename) }}')"
+         {% endif %}>
+
+        <!-- STORE HEADER -->
+
+        <div class="invoice-store-header">
+
+            <div class="store-header-left">
+
+                {% if store and store.logo_filename %}
+
+                <img src="{{ url_for('store_logo_file', filename=store.logo_filename) }}"
+                     alt="AKSHARA MOBILES Logo"
+                     class="invoice-logo"
+                     onerror="this.style.display='none';">
+
+                {% else %}
+
+                <div class="invoice-logo d-flex align-items-center justify-content-center">
+                    <i class="bi bi-phone"
+                       style="font-size:55px;color:#142f50;"></i>
+                </div>
+
+                {% endif %}
+
+            </div>
+
+            <div class="store-header-center">
+
+                <h1 class="invoice-store-name">AKSHARA MOBILES</h1>
+
+                <div class="invoice-label">TAX INVOICE</div>
+
+                {% if store and store.address %}
+                <div class="store-address">{{ store.address }}</div>
+                {% endif %}
+
+                {% if store and store.gstin %}
+                <div id="store-gstin-line"
+                     class="invoice-muted"
+                     {% if not store.show_gstin %}style="display:none;"{% endif %}>
+                    <strong>GSTIN:</strong> {{ store.gstin }}
+                </div>
+                {% endif %}
+
+                <div class="invoice-muted">
+                    MOBILE SALES • SERVICE • ACCESSORIES
+                </div>
+
+                <div class="invoice-muted">Tamil Nadu, India</div>
+
+            </div>
+
+            <div class="store-header-right">
+
+                {% if store and store.phone %}
+
+                <div class="header-contact-label">CONTACT US</div>
+
+                <div class="header-phone">
+                    <i class="bi bi-telephone-fill"></i>
+                    {{ store.phone }}
+                </div>
+
+                {% endif %}
+
+                <div class="header-timing">
+
+                    {% if store and store.opening_time %}
+                    <div>
+                        <i class="bi bi-clock"></i>
+                        <strong>Opening:</strong> {{ store.opening_time }}
+                    </div>
+                    {% endif %}
+
+                    {% if store and store.closing_time %}
+                    <div>
+                        <i class="bi bi-clock-history"></i>
+                        <strong>Closing:</strong> {{ store.closing_time }}
+                    </div>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- INVOICE DETAILS -->
+
+        <div class="billing-title-section">
+
+            <h2>INVOICE DETAILS</h2>
+
+            <div>
+                <strong>Invoice No:</strong> {{ sale.invoice_number }}
+
+                &nbsp; | &nbsp;
+
+                <strong>Date:</strong>
+
+                {% if sale.sale_date %}
+                    {{ sale.sale_date.strftime('%d-%m-%Y') }}
+                {% else %}
+                    —
+                {% endif %}
+            </div>
+
+            <div class="mt-1">
+                <strong>Payment Status:</strong>
+
+                {% if amount_due <= 0.009 %}
+                    <span class="invoice-status status-paid">PAID</span>
+                {% elif total_paid > 0 %}
+                    <span class="invoice-status status-partial">PARTIALLY PAID</span>
+                {% else %}
+                    <span class="invoice-status status-due">PAYMENT DUE</span>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <!-- SELLER AND CUSTOMER -->
+
+        <div class="invoice-info">
+
+            <div class="invoice-info-box">
+
+                <div class="invoice-section-title">
+                    <i class="bi bi-building"></i>
+                    Consigner / Seller
+                </div>
+
+                <strong>{{ store.store_name if store and store.store_name else 'My Store' }}</strong>
+
+                {% if store and store.address %}
+                <div class="invoice-muted">{{ store.address }}</div>
+                {% endif %}
+
+                {% if store and store.phone %}
+                <div class="customer-phone">
+                    Phone: {{ store.phone }}
+                </div>
+                {% endif %}
+
+                <!-- {% if store and store.gstin %}
+                <div class="invoice-muted">
+                    GSTIN: {{ store.gstin }}
+                </div>
+                {% endif %} -->
+
+                <div class="invoice-muted">State: Tamil Nadu</div>
+
+                <div id="sellerWarrantyLine"
+     class="invoice-muted"
+     style="display:none;">
+    <strong>WARRANTY:</strong>
+    <span id="sellerWarrantyText">12 Months</span>
+</div>
+
+            </div>
+
+            <div class="invoice-info-box">
+
+                <div class="invoice-section-title">
+                    <i class="bi bi-person-badge"></i>
+                    Receiver / Customer
+                </div>
+
+                {% if sale.customer %}
+
+                    <strong>{{ sale.customer.name }}</strong>
+
+                    {% if sale.customer.phone %}
+                    <div class="customer-phone">
+                        Phone: {{ sale.customer.phone }}
+                    </div>
+                    {% endif %}
+
+                    {% if sale.customer.email %}
+                    <div class="invoice-muted">
+                        Email: {{ sale.customer.email }}
+                    </div>
+                    {% endif %}
+
+                    {% if sale.customer.address %}
+                    <div class="invoice-muted">
+                        Address: {{ sale.customer.address }}
+                    </div>
+                    {% endif %}
+
+                    {% if sale.customer.gst_number %}
+                    <div class="invoice-muted">
+                        <strong>GSTIN:</strong> {{ sale.customer.gst_number }}
+                    </div>
+                    {% endif %}
+
+                {% else %}
+                    <strong>Walk-in Customer</strong>
+                    <div class="invoice-muted">
+                        Customer ID: {{ sale.customer_id or 'Not linked' }}
+                    </div>
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        <!-- PRODUCT TABLE -->
+
+        <div class="invoice-table-wrap">
+
+            <table class="invoice-table product-table">
+
+                <thead>
+                    <tr>
+                        <th style="width:28px;">#</th>
+                        <th>Product Description</th>
+                        <th>HSN</th>
+                        <th class="text-center">Qty</th>
+                        <th class="text-end">Unit Price</th>
+                        <th class="text-end gst-column">GST</th>
+                        <th class="text-end">Amount</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for item in sale.items %}
+
+                    <tr>
+
+                        <td>{{ loop.index }}</td>
+
+                        <td>
+    <strong>
+        {{ item.product.name if item.product else 'Product' }}
+    </strong>
+
+    {% if item.product and item.product.model %}
+    <div class="invoice-muted">
+        {{ item.product.model }}
+    </div>
+    {% endif %}
+
+    {% set sold_imeis = [] %}
+
+    {% if item.product %}
+        {% set sold_imeis = item.product.imei_records
+            | selectattr('sale_id', 'equalto', sale.id)
+            | list %}
+    {% endif %}
+
+    {% if sold_imeis %}
+        {% for rec in sold_imeis %}
+            <div class="invoice-muted">
+                {% if sold_imeis|length > 1 %}
+                    #{{ loop.index }}
+                {% endif %}
+
+                {% if rec.variant or item.product.variant %}
+                    Variant: {{ rec.variant or item.product.variant }}
+                {% endif %}
+
+                {% if rec.color or item.product.color %}
+                    {% if rec.variant or item.product.variant %} | {% endif %}
+                    Colour: {{ rec.color or item.product.color }}
+                {% endif %}
+            </div>
+
+            <div class="invoice-muted invoice-imei">
+                {% if sold_imeis|length > 1 %}#{{ loop.index }} {% endif %}
+                IMEI: <span>{{ rec.imei1 }}</span>
+
+                {% if rec.imei2 %}
+                    &nbsp; IMEI 2: <span>{{ rec.imei2 }}</span>
+                {% endif %}
+            </div>
+
+ <div class="invoice-muted sales-warranty-line">
+    <strong>Sales Warranty:</strong>
+    {% if rec.sale_warranty_months and rec.sale_warranty_months > 0 %}
+        {{ rec.sale_warranty_months }} Months
+    {% else %}
+        No Warranty
+    {% endif %}
+</div>
+
+        {% endfor %}
+    {% else %}
+        {% if item.product and (item.product.variant or item.product.color) %}
+        <div class="invoice-muted">
+            {% if item.product.variant %}
+                Variant: {{ item.product.variant }}
+            {% endif %}
+
+            {% if item.product.color %}
+                {% if item.product.variant %} | {% endif %}
+                Colour: {{ item.product.color }}
+            {% endif %}
+        </div>
+        {% endif %}
+    {% endif %}
+</td>
+
+
+
+
+
+                        <td>
+                            {{ item.product.hsn_code if item.product and item.product.hsn_code else '—' }}
+                        </td>
+
+                        <td class="text-center">{{ item.quantity }}</td>
+
+                        <td class="text-end">
+                            ₹{{ '%.2f'|format(item.unit_price or 0) }}
+                        </td>
+
+                        <td class="text-end gst-column">
+                            ₹{{ '%.2f'|format(item.tax_amount or 0) }}
+                        </td>
+
+                        <td class="text-end">
+                            ₹{{ '%.2f'|format(item.subtotal or 0) }}
+                        </td>
+
+                    </tr>
+
+                    {% else %}
+
+                    <tr>
+                        <td colspan="7"
+                            id="empty-invoice-row"
+                            class="text-center">
+                            No items found for this invoice.
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- EMI PREVIEW -->
+        <!-- EMI PREVIEW -->
+
+<section class="emi-preview" id="emiPreview">
+
+    <div class="emi-preview-title" id="emiPreviewTitle">
+        FINANCE
+    </div>
+
+    <div class="invoice-table-wrap">
+
+        <table class="emi-preview-table" id="emiPreviewGrid">
+
+            <thead>
+                <tr>
+                    <th>Finance</th>
+                    <th class="emi-tenure-preview-item">EMI Tenure</th>
+                    <th class="emi-extra-preview-item">Down Payment</th>
+                    <th class="emi-extra-preview-item">Financed Amount</th>
+                    <th class="emi-extra-preview-item">Monthly EMI</th>
+                    <th class="emi-extra-preview-item">First EMI Date</th>
+                    <th class="emi-extra-preview-item">Loan Reference</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td><strong id="emiOutProvider">—</strong></td>
+                    <td class="emi-tenure-preview-item">
+                        <strong id="emiOutTenure">—</strong>
+                    </td>
+                    <td class="emi-extra-preview-item">
+                        <strong id="emiOutDownPayment">—</strong>
+                    </td>
+                    <td class="emi-extra-preview-item">
+                        <strong id="emiOutPrincipal">—</strong>
+                    </td>
+                    <td class="emi-extra-preview-item">
+                        <strong id="emiOutMonthly">—</strong>
+                    </td>
+                    <td class="emi-extra-preview-item">
+                        <strong id="emiOutStartDate">—</strong>
+                    </td>
+                    <td class="emi-extra-preview-item">
+                        <strong id="emiOutReference">—</strong>
+                    </td>
+                </tr>
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+        
+        <!-- TOTALS + PAYMENT HISTORY (side by side when printing) -->
+
+        <div class="totals-payments">
+
+        <!-- TOTALS -->
+
+        <div class="invoice-summary">
+
+            <div class="invoice-summary-row">
+                <span>Taxable Subtotal</span>
+                <strong>
+                    ₹{{ '%.2f'|format(sale.subtotal or 0) }}
+                </strong>
+            </div>
+
+            <div class="invoice-summary-row gst-column">
+                <span>Total GST</span>
+                <strong>₹{{ '%.2f'|format(gst_total) }}</strong>
+            </div>
+
+            <div class="gst-breakdown-box gst-column" id="gstBreakdown">
+
+                <div class="gst-breakdown-title">
+                    GST Breakdown — Intra-state illustration
+                </div>
+
+                <div class="gst-breakdown-row">
+                    <span>CGST (50% of recorded GST)</span>
+                    <strong>₹{{ '%.2f'|format(cgst_amount) }}</strong>
+                </div>
+
+                <div class="gst-breakdown-row">
+                    <span>SGST (50% of recorded GST)</span>
+                    <strong>₹{{ '%.2f'|format(sgst_amount) }}</strong>
+                </div>
+
+                <div class="invoice-muted mt-1">
+                    Confirm the applicable GST treatment and place of supply
+                    before issuing the invoice.
+                </div>
+
+            </div>
+
+            <div class="invoice-summary-row">
+                <span>Discount</span>
+                <strong>
+                    ₹{{ '%.2f'|format(sale.discount_amount or 0) }}
+                </strong>
+            </div>
+
+            <div class="invoice-summary-row grand-total">
+                <span>Grand Total</span>
+                <strong>
+                    ₹{{ '%.2f'|format(sale.total_amount or 0) }}
+                </strong>
+            </div>
+
+            <div class="invoice-summary-row paid-row">
+                <span>Total Paid</span>
+                <strong>₹{{ '%.2f'|format(total_paid) }}</strong>
+            </div>
+
+            <div class="invoice-summary-row balance-row">
+                <span>Balance Due</span>
+                <strong>₹{{ '%.2f'|format(amount_due) }}</strong>
+            </div>
+
+        </div>
+
+        <!-- PAYMENT HISTORY -->
+
+        {% if payments %}
+
+        <div class="mt-3">
+
+            <h6 class="fw-bold mb-1 invoice-subheading">
+                Payment History
+            </h6>
+
+            <div class="invoice-table-wrap">
+
+                <table class="invoice-table">
+
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Method</th>
+                            <th>Reference</th>
+                            <th class="text-end">Amount</th>
+                            <th>Status</th>
+                            
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for payment in payments %}
+
+                        <tr>
+
+                            <td>{{ loop.index }}</td>
+
+                            <td>
+    {% if payment.created_at %}
+        {{ payment.created_at.strftime('%d-%m-%Y') }}
+    {% elif payment.payment_date is defined and payment.payment_date %}
+        {{ payment.payment_date.strftime('%d-%m-%Y') }}
+    {% else %}
+        —
+    {% endif %}
+</td>
+
+                            <td>
+                                {{ (payment.method or 'cash')|replace('_',' ')|title }}
+                            </td>
+
+                            <td>{{ payment.reference or '—' }}</td>
+
+                            <td class="text-end">
+                                ₹{{ '%.2f'|format(payment.amount or 0) }}
+                            </td>
+
+                            <td>
+                                {{ (payment.status or 'completed')|title }}
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+        </div>
+
+        <!-- SIGNATURES + QR CODES (one row when printing) -->
+
+        <div class="sign-qr-row">
+
+        <!-- SIGNATURES -->
+
+        <div class="signature-area">
+
+            <div class="signature-box">
+                Customer Signature
+            </div>
+
+            <div class="signature-box">
+                For AKSHARA MOBILES
+                <br>
+                Authorized Signature
+            </div>
+
+        </div>
+
+        <!-- SOCIAL QR CODES -->
+
+        <div class="social-qr-container">
+
+            {% if store and store.instagram_url %}
+            <div class="social-qr-item">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&amp;data={{ store.instagram_url|urlencode }}"
+                     alt="Instagram QR Code">
+                <div class="social-qr-label">INSTAGRAM</div>
+                <div class="invoice-muted">Follow Us</div>
+            </div>
+            {% endif %}
+
+            {% if store and store.facebook_url %}
+            <div class="social-qr-item">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&amp;data={{ store.facebook_url|urlencode }}"
+                     alt="Facebook QR Code">
+                <div class="social-qr-label">FACEBOOK</div>
+                <div class="invoice-muted">Like Our Page</div>
+            </div>
+            {% endif %}
+
+            {% if store and store.whatsapp_url %}
+            <div class="social-qr-item">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&amp;data={{ store.whatsapp_url|urlencode }}"
+                     alt="WhatsApp QR Code">
+                <div class="social-qr-label">WHATSAPP</div>
+                <div class="invoice-muted">Contact Us</div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        </div>
+
+        <!-- FOOTER -->
+
+        <div class="invoice-footer">
+
+            {% if store and store.footer_text %}
+
+                <div class="mb-1">{{ store.footer_text }}</div>
+
+            {% else %}
+
+                <div class="thank-you">
+                    Thank you for shopping with us!
+                </div>
+
+                <div>Please keep this invoice for your records.</div>
+
+            {% endif %}
+
+            <!-- TERMS EDITING -->
+
+            <div class="terms-actions no-print">
+
+                <button type="button"
+                        class="btn btn-sm btn-success"
+                        id="addTerms">
+                    <i class="bi bi-plus-circle"></i> Add Terms
+                </button>
+
+                <button type="button"
+                        class="btn btn-sm btn-primary"
+                        id="editTerms">
+                    <i class="bi bi-pencil"></i> Edit Terms
+                </button>
+
+                <button type="button"
+                        class="btn btn-sm btn-danger"
+                        id="deleteTerms">
+                    <i class="bi bi-trash"></i> Remove Terms
+                </button>
+
+            </div>
+
+            <!-- DEFAULT TERMS -->
+
+            <div class="invoice-terms" id="invoiceTermsSection">
+
+                <h6 id="invoiceTermsHeading">
+                    TERMS &amp; CONDITIONS / விதிமுறைகள் மற்றும் நிபந்தனைகள்
+                </h6>
+
+                <div class="terms-language-title">ENGLISH</div>
+
+                <div id="invoiceTermsEnglish"
+                     class="invoice-terms-content">1. Please check the product and accessories before leaving the store.
+2. Products are covered only under the applicable manufacturer warranty, if available.
+3. Physical damage, liquid damage and unauthorised repairs are not covered under manufacturer warranty.
+4. Please keep this invoice safely for warranty and service purposes.
+5. Goods once sold are subject to the store's applicable return and exchange policy.
+6. Any warranty claim will be handled according to the manufacturer's terms and conditions.</div>
+
+                <div class="terms-language-title">தமிழ்</div>
+
+                <div id="invoiceTermsTamil"
+                     class="invoice-terms-content">1. கடையை விட்டு செல்லும் முன் பொருள் மற்றும் அதனுடன் வழங்கப்படும் உபகரணங்களை சரிபார்த்துக் கொள்ளவும்.
+2. பொருட்களுக்கு உற்பத்தியாளர் வழங்கும் பொருந்தக்கூடிய உத்தரவாத விதிமுறைகள் மட்டுமே பொருந்தும்.
+3. உடைப்பு, தண்ணீர் பாதிப்பு மற்றும் அங்கீகரிக்கப்படாத பழுதுபார்ப்பு ஆகியவை உற்பத்தியாளர் உத்தரவாதத்தில் அடங்காது.
+4. உத்தரவாதம் மற்றும் சேவை தேவைகளுக்காக இந்த ரசீதை பாதுகாப்பாக வைத்திருக்கவும்.
+5. விற்பனை செய்யப்பட்ட பொருட்களுக்கு கடையின் பொருந்தக்கூடிய திரும்பப் பெறுதல் மற்றும் மாற்றுக் கொள்கை பொருந்தும்.
+6. உத்தரவாதக் கோரிக்கைகள் உற்பத்தியாளரின் விதிமுறைகளின்படி கையாளப்படும்.</div>
+
+            </div>
+
+            <div class="mt-2">
+                This is a computer-generated invoice.
+            </div>
+
+        </div>
+
+    </div>
+</div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const invoicePaper = document.getElementById("invoicePaper");
+
+    if (!invoicePaper) return;
+
+    /* =================================================
+       1. EMI LIVE PREVIEW
+    ================================================= */
+
+    
+const emiFields = {
+    provider: "emiProvider",
+    downPayment: "emiDownPayment",
+    principal: "emiPrincipal",
+    tenure: "emiTenure",
+    monthly: "emiMonthly",
+    startDate: "emiStartDate",
+    reference: "emiReference"
+};
+
+const emiPreview = document.getElementById("emiPreview");
+const emiPreviewTitle = document.getElementById("emiPreviewTitle");
+const emiPreviewGrid = document.getElementById("emiPreviewGrid");
+
+const financeEnabled = document.getElementById("financeEnabled");
+const emiEnabled = document.getElementById("emiEnabled");
+const emiTenureEnabled = document.getElementById("emiTenureEnabled");
+const emiInputFields = document.getElementById("emiInputFields");
+
+const money = value =>
+    "₹" + Number(value || 0).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+
+function updateEmiPreview() {
+
+    const financeOn = !!(financeEnabled && financeEnabled.checked);
+    const emiOn = !!(emiEnabled && emiEnabled.checked && financeOn);
+    const tenureOn = !!(emiTenureEnabled && emiTenureEnabled.checked && financeOn);
+
+    // EMI options are available only when FINANCE is enabled
+    if (emiEnabled) {
+        emiEnabled.disabled = !financeOn;
+
+        if (!financeOn) {
+            emiEnabled.checked = false;
+        }
+    }
+
+    // EMI tenure can be selected only when FINANCE is enabled.
+    if (emiTenureEnabled) {
+        emiTenureEnabled.disabled = !financeOn;
+
+        if (!financeOn) {
+            emiTenureEnabled.checked = false;
+        }
+    }
+
+    // Show or hide EMI input fields
+    if (emiInputFields) {
+    emiInputFields.style.display = financeOn ? "block" : "none";
+}
+
+const emiExtraInputFields = document.getElementById("emiExtraInputFields");
+
+if (emiExtraInputFields) {
+    emiExtraInputFields.style.display = emiOn ? "block" : "none";
+}
+
+    // Show finance section only when FINANCE is checked
+    if (emiPreview) {
+        emiPreview.style.display = financeOn ? "block" : "none";
+    }
+
+    // Update invoice heading
+    if (emiPreviewTitle) {
+        emiPreviewTitle.textContent = emiOn
+            ? "FINANCE / EMI DETAILS"
+            : "FINANCE";
+    }
+
+    // Show EMI details only when EMI is checked
+    if (emiPreviewGrid) {
+    emiPreviewGrid.style.display = financeOn ? "table" : "none";
+    }
+
+document.querySelectorAll(".emi-extra-preview-item").forEach(item => {
+    item.style.display = emiOn ? "" : "none";
+});
+
+// Show the EMI tenure key and value only when its checkbox is selected.
+document.querySelectorAll(".emi-tenure-preview-item").forEach(item => {
+    item.style.display = tenureOn ? "" : "none";
+});
+
+    const get = key => {
+        const element = document.getElementById(emiFields[key]);
+        return element ? element.value.trim() : "";
+    };
+
+    const rawDate = get("startDate");
+    let formattedDate = "—";
+
+    if (rawDate) {
+        const parts = rawDate.split("-");
+
+        formattedDate = parts.length === 3
+            ? `${parts[2]}-${parts[1]}-${parts[0]}`
+            : rawDate;
+    }
+
+    const values = {
+        emiOutProvider: get("provider") || "—",
+
+        emiOutDownPayment: get("downPayment")
+            ? money(get("downPayment"))
+            : "—",
+
+        emiOutPrincipal: get("principal")
+            ? money(get("principal"))
+            : "—",
+
+        emiOutTenure: get("tenure")
+            ? get("tenure") + " months"
+            : "—",
+
+        emiOutMonthly: get("monthly")
+            ? money(get("monthly"))
+            : "—",
+
+        emiOutStartDate: formattedDate,
+
+        emiOutReference: get("reference") || "—"
+    };
+
+    Object.entries(values).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+
+        if (element) {
+            element.textContent = value;
+        }
+    });
+}
+
+// Checkbox events
+if (financeEnabled) {
+    financeEnabled.addEventListener("change", updateEmiPreview);
+}
+
+if (emiEnabled) {
+    emiEnabled.addEventListener("change", updateEmiPreview);
+}
+
+if (emiTenureEnabled) {
+    emiTenureEnabled.addEventListener("change", updateEmiPreview);
+}
+
+// EMI input events
+Object.values(emiFields).forEach(id => {
+
+    const field = document.getElementById(id);
+
+    if (field) {
+        field.addEventListener("input", updateEmiPreview);
+        field.addEventListener("change", updateEmiPreview);
+    }
+
+});
+
+updateEmiPreview();
+
+    /* =================================================
+       2. FORMAT SELECTION
+    ================================================= */
+
+    const formatSelect = document.getElementById("invoiceFormat");
+
+    const formatClasses = [
+        "format-luxury",
+        "format-corporate",
+        "format-black",
+        "format-emerald",
+        "format-compact"
+    ];
+
+    function applyFormat(format) {
+
+        if (!formatClasses.includes("format-" + format)) {
+            format = "corporate";
+        }
+
+        invoicePaper.classList.remove(...formatClasses);
+        invoicePaper.classList.add("format-" + format);
+    }
+
+    if (formatSelect) {
+
+        formatSelect.addEventListener("change", function () {
+            applyFormat(this.value);
+        });
+
+        applyFormat(formatSelect.value);
+    }
+
+    /* =================================================
+       3. TEXT SIZE
+    ================================================= */
+
+    const textSizeSelect = document.getElementById("invoiceTextSize");
+
+    const textSizeClasses = [
+        "text-small",
+        "text-normal",
+        "text-large",
+        "text-xlarge",
+        "text-xxlarge"
+    ];
+
+    const printSizeMap = {
+        "text-small": "0.90",
+        "text-normal": "1",
+        "text-large": "1.05",
+        "text-xlarge": "1.10",
+        "text-xxlarge": "1.15"
+    };
+
+    function applyTextSize(size) {
+
+        if (!textSizeClasses.includes(size)) {
+            size = "text-normal";
+        }
+
+        invoicePaper.classList.remove(...textSizeClasses);
+        invoicePaper.classList.add(size);
+
+        document.documentElement.style.setProperty(
+            "--invoice-user-font-scale",
+            printSizeMap[size]
+        );
+    }
+
+    if (textSizeSelect) {
+
+        textSizeSelect.addEventListener("change", function () {
+            applyTextSize(this.value);
+        });
+
+        applyTextSize(textSizeSelect.value);
+    }
+
+    /* =================================================
+       4. COLOUR THEMES
+    ================================================= */
+
+    const themes = {
+
+        blue: {
+            primary: "#0f2f5f",
+            royal: "#2457c5",
+            deep: "#081f3f",
+            light: "#eaf1fc"
+        },
+
+        green: {
+            primary: "#14603a",
+            royal: "#1f8f55",
+            deep: "#0b3d25",
+            light: "#e8f6ee"
+        },
+
+        purple: {
+            primary: "#4a2a78",
+            royal: "#7041a6",
+            deep: "#2e1850",
+            light: "#f1eafb"
+        },
+
+        maroon: {
+            primary: "#6e1b2a",
+            royal: "#9a2c3d",
+            deep: "#450f19",
+            light: "#f9e9ec"
+        },
+
+        black: {
+            primary: "#252525",
+            royal: "#3d3d3d",
+            deep: "#0e0e0e",
+            light: "#eeeeee"
+        }
+    };
+
+    const themeSelect = document.getElementById("invoiceTheme");
+
+    function applyTheme(name) {
+
+        const theme = themes[name] || themes.blue;
+        const root = document.documentElement.style;
+
+        root.setProperty("--invoice-primary", theme.primary);
+        root.setProperty("--invoice-royal", theme.royal);
+        root.setProperty("--invoice-deep", theme.deep);
+        root.setProperty("--invoice-light", theme.light);
+    }
+
+    if (themeSelect) {
+
+        themeSelect.addEventListener("change", function () {
+            applyTheme(this.value);
+        });
+
+        applyTheme(themeSelect.value);
+    }
+
+    /* =================================================
+       5. GSTIN VISIBILITY
+    ================================================= */
+
+    const gstinToggle = document.getElementById("toggleGstin");
+    const gstinLine = document.getElementById("store-gstin-line");
+
+    function updateGstinVisibility() {
+
+        if (gstinToggle && gstinLine) {
+            gstinLine.style.display =
+                gstinToggle.checked ? "" : "none";
+        }
+    }
+
+    if (gstinToggle) {
+
+        gstinToggle.addEventListener(
+            "change",
+            updateGstinVisibility
+        );
+
+        updateGstinVisibility();
+    }
+
+    /* =================================================
+       6. GST VISIBILITY
+    ================================================= */
+
+    const gstToggle = document.getElementById("toggleGstBreakdown");
+
+    function updateGstVisibility() {
+
+        if (!gstToggle) return;
+
+        document.querySelectorAll(".gst-column").forEach(element => {
+
+            element.classList.toggle(
+                "gst-hidden",
+                !gstToggle.checked
+            );
+
+        });
+
+        const emptyRow = document.getElementById("empty-invoice-row");
+
+        if (emptyRow) {
+            emptyRow.colSpan = gstToggle.checked ? 7 : 6;
+        }
+    }
+
+    if (gstToggle) {
+
+        gstToggle.addEventListener(
+            "change",
+            updateGstVisibility
+        );
+
+        updateGstVisibility();
+    }
+
+
+    const sellerWarrantyToggle = document.getElementById("toggleSellerWarranty");
+
+function updateSellerWarrantyVisibility() {
+
+    if (!sellerWarrantyToggle) return;
+
+    document.querySelectorAll(".sales-warranty-line").forEach(element => {
+        element.style.display = sellerWarrantyToggle.checked ? "" : "none";
+    });
+}
+
+if (sellerWarrantyToggle) {
+    sellerWarrantyToggle.addEventListener(
+        "change",
+        updateSellerWarrantyVisibility
+    );
+
+    updateSellerWarrantyVisibility();
+}
+
+
+    /* =================================================
+       7. TERMS AND CONDITIONS
+    ================================================= */
+
+    const addTermsButton = document.getElementById("addTerms");
+    const editTermsButton = document.getElementById("editTerms");
+    const deleteTermsButton = document.getElementById("deleteTerms");
+
+    const termsSection = document.getElementById("invoiceTermsSection");
+    const termsHeading = document.getElementById("invoiceTermsHeading");
+    const termsEnglish = document.getElementById("invoiceTermsEnglish");
+    const termsTamil = document.getElementById("invoiceTermsTamil");
+
+    function editTerms() {
+
+        if (!termsSection || !termsHeading ||
+            !termsEnglish || !termsTamil) {
+            return;
+        }
+
+        const heading = prompt(
+            "Enter terms heading:",
+            termsHeading.textContent
+        );
+
+        if (heading === null) return;
+
+        const english = prompt(
+            "Enter or edit English terms:",
+            termsEnglish.textContent
+        );
+
+        if (english === null) return;
+
+        const tamil = prompt(
+            "Enter or edit Tamil terms:",
+            termsTamil.textContent
+        );
+
+        if (tamil === null) return;
+
+        termsHeading.textContent =
+            heading.trim() || "TERMS & CONDITIONS";
+
+        termsEnglish.textContent = english;
+        termsTamil.textContent = tamil;
+
+        termsSection.style.display = "block";
+    }
+
+    if (addTermsButton) {
+
+        addTermsButton.addEventListener("click", function () {
+            editTerms();
+        });
+
+    }
+
+    if (editTermsButton) {
+
+        editTermsButton.addEventListener("click", function () {
+            editTerms();
+        });
+
+    }
+
+    if (deleteTermsButton) {
+
+    deleteTermsButton.addEventListener("click", function () {
+
+        if (!confirm(
+            "Remove terms and conditions from this invoice?"
+        )) {
+            return;
+        }
+
+        if (termsSection) {
+            termsSection.remove();
+        }
+
+    });
+
+    }
+
+    /* =================================================
+       8. ONE-PAGE A4 PRINT FITTING (print only)
+
+       beforeprint:
+         1. add class "print-fit" to <html>
+         2. hide everything except the invoice
+         3. find the largest zoom (<= 1) at which the whole
+            invoice fits the printable A4 area, measuring the
+            real content height at the real A4 print width
+         4. apply that zoom to the invoice only
+
+       afterprint:
+         remove all of the above -> screen layout restored
+    ================================================= */
+
+    const MM_TO_PX = 96 / 25.4;
+
+    // A4 = 210 x 297 mm, @page margin = 5 mm on every side
+    const PRINT_WIDTH_PX  = (210 - 10) * MM_TO_PX;
+    // 1.5% safety margin for printer / browser rounding
+    const PRINT_HEIGHT_PX = (297 - 10) * MM_TO_PX * 0.985;
+
+    const keepVisibleTags = ["SCRIPT", "STYLE", "LINK", "META", "TEMPLATE"];
+
+    let printActive = false;
+    let markedHidden = [];
+    let markedAncestors = [];
+
+    function enterPrintMode() {
+
+        if (printActive) return;
+
+        printActive = true;
+
+        document.documentElement.classList.add("print-fit");
+
+        // Hide every element that is not the invoice or one of
+        // its ancestors, and neutralise the ancestors' spacing.
+        let node = invoicePaper;
+
+        while (node && node !== document.body) {
+
+            const parent = node.parentElement;
+
+            if (!parent) break;
+
+            Array.from(parent.children).forEach(sibling => {
+
+                if (sibling === node) return;
+                if (keepVisibleTags.includes(sibling.tagName)) return;
+
+                sibling.setAttribute("data-print-hidden", "");
+                markedHidden.push(sibling);
+            });
+
+            parent.setAttribute("data-print-ancestor", "");
+            markedAncestors.push(parent);
+
+            node = parent;
+        }
+
+        document.documentElement.setAttribute("data-print-ancestor", "");
+        markedAncestors.push(document.documentElement);
+    }
+
+    function leavePrintMode() {
+
+        markedHidden.forEach(element => {
+            element.removeAttribute("data-print-hidden");
+        });
+
+        markedAncestors.forEach(element => {
+            element.removeAttribute("data-print-ancestor");
+        });
+
+        markedHidden = [];
+        markedAncestors = [];
+        printActive = false;
+
+        invoicePaper.style.removeProperty("zoom");
+        invoicePaper.style.removeProperty("width");
+
+        document.documentElement.style.removeProperty("--invoice-fit-scale");
+        document.documentElement.classList.remove("print-fit");
+    }
+
+    // Layout height (CSS px, unzoomed) of the invoice when it is
+    // laid out so that, after zooming by z, it is exactly one
+    // printable A4 width wide.
+    function measureHeightAt(z) {
+
+        invoicePaper.style.setProperty("zoom", "1");
+
+        invoicePaper.style.setProperty(
+            "width",
+            (PRINT_WIDTH_PX / z).toFixed(2) + "px",
+            "important"
+        );
+
+        return invoicePaper.getBoundingClientRect().height;
+    }
+
+    function fitInvoiceToOnePage() {
+
+        enterPrintMode();
+
+        let scale = 1;
+
+        if (measureHeightAt(1) > PRINT_HEIGHT_PX) {
+
+            // Largest z in [0.2, 1] where height * z still fits.
+            let low = 0.2;
+            let high = 1;
+
+            for (let i = 0; i < 16; i++) {
+
+                const mid = (low + high) / 2;
+
+                if (measureHeightAt(mid) * mid <= PRINT_HEIGHT_PX) {
+                    low = mid;
+                } else {
+                    high = mid;
+                }
+            }
+
+            scale = low;
+        }
+
+        // Final layout width for the chosen scale, then zoom.
+        const layoutHeight = measureHeightAt(scale);
+
+        invoicePaper.style.setProperty("zoom", scale.toFixed(4));
+
+        // Zooming can change text wrapping slightly, so check the real
+        // zoomed height and tighten the scale until it fits the page.
+        // (Only done when the browser reports zoomed sizes, which is
+        // detected by comparing against the unzoomed layout height.)
+        let zoomedHeight = invoicePaper.getBoundingClientRect().height;
+
+        const reportsZoomedSize =
+            Math.abs(zoomedHeight - layoutHeight * scale) <
+            Math.abs(zoomedHeight - layoutHeight);
+
+        if (reportsZoomedSize) {
+
+            for (let i = 0; i < 20 && zoomedHeight > PRINT_HEIGHT_PX; i++) {
+
+                scale = Math.max(
+                    0.2,
+                    scale * (PRINT_HEIGHT_PX / zoomedHeight) * 0.995
+                );
+
+                invoicePaper.style.setProperty(
+                    "width",
+                    (PRINT_WIDTH_PX / scale).toFixed(2) + "px",
+                    "important"
+                );
+
+                invoicePaper.style.setProperty("zoom", scale.toFixed(4));
+
+                zoomedHeight = invoicePaper.getBoundingClientRect().height;
+            }
+        }
+
+        document.documentElement.style.setProperty(
+            "--invoice-fit-scale",
+            scale.toFixed(4)
+        );
+
+        console.log("Invoice fit scale:", scale);
+        console.log("Invoice measured height:", invoicePaper.getBoundingClientRect().height);
+        console.log("Available print height:", PRINT_HEIGHT_PX);
+    }
+
+    window.addEventListener("beforeprint", fitInvoiceToOnePage);
+
+    window.addEventListener("afterprint", leavePrintMode);
+
+    // Some browser versions apply print media before beforeprint
+    // has finished, so react to the media query as well.
+    const printMedia = window.matchMedia("print");
+
+    const onPrintMediaChange = function (event) {
+
+        if (event.matches) {
+            fitInvoiceToOnePage();
+        } else {
+            leavePrintMode();
+        }
+    };
+
+    // if (printMedia.addEventListener) {
+    //     printMedia.addEventListener("change", onPrintMediaChange);
+    // } else if (printMedia.addListener) {
+    //     printMedia.addListener(onPrintMediaChange);
+    // }
+
+});
+</script>
+
+{% endblock %}

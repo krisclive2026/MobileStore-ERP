@@ -1,0 +1,1248 @@
+
+{% extends "base.html" %}
+
+{% block title %}Contact Dashboard | MobileStore ERP{% endblock %}
+
+{% block content %}
+
+<style>
+    .contacts-page {
+        --contact-primary: #315efb;
+        --contact-primary-light: #edf2ff;
+        --contact-border: #e8edf5;
+        --contact-muted: #718096;
+        color: #243047;
+    }
+
+    .contacts-page .page-heading {
+        font-weight: 750;
+        letter-spacing: -0.5px;
+        color: #17243b;
+    }
+
+    .contacts-page .page-subtitle {
+        color: var(--contact-muted);
+        font-size: .9rem;
+    }
+
+    .contacts-page .back-btn {
+        border-radius: 9px;
+        font-weight: 600;
+        padding: 9px 16px;
+    }
+
+    .contacts-page .summary-card,
+    .contacts-page .section-card,
+    .contacts-page .filter-card,
+    .contacts-page .account-card {
+        background: #fff;
+        border: 1px solid var(--contact-border);
+        border-radius: 14px;
+        box-shadow: 0 3px 12px rgba(30, 50, 90, .035);
+    }
+
+    .contacts-page .summary-card {
+        transition: transform .2s ease, box-shadow .2s ease;
+        height: 100%;
+    }
+
+    .contacts-page .summary-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 22px rgba(30, 50, 90, .08);
+    }
+
+    .contacts-page .summary-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 21px;
+    }
+
+    .contacts-page .icon-blue {
+        background: #edf2ff;
+        color: #315efb;
+    }
+
+    .contacts-page .icon-purple {
+        background: #f2edff;
+        color: #7952d8;
+    }
+
+    .contacts-page .icon-green {
+        background: #e9f8f0;
+        color: #15945b;
+    }
+
+    .contacts-page .summary-label {
+        color: var(--contact-muted);
+        font-size: .83rem;
+        font-weight: 600;
+    }
+
+    .contacts-page .summary-value {
+        color: #17243b;
+        font-size: 1.7rem;
+        font-weight: 750;
+        line-height: 1.3;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+    .contacts-page .summary-value-icon {
+        font-size: 23px;
+        line-height: 1;
+    }
+
+    .contacts-page .section-card,
+    .contacts-page .account-card {
+        overflow: hidden;
+    }
+
+    .contacts-page .section-header {
+        padding: 17px 20px;
+        border-bottom: 1px solid var(--contact-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .contacts-page .section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #243047;
+        margin: 0;
+    }
+
+    .contacts-page .section-description {
+        font-size: .8rem;
+        color: var(--contact-muted);
+        margin-top: 4px;
+    }
+
+    .contacts-page .section-count {
+        background: var(--contact-primary-light);
+        color: var(--contact-primary);
+        padding: 5px 11px;
+        border-radius: 20px;
+        font-size: .77rem;
+        font-weight: 700;
+    }
+
+    .contacts-page .form-label {
+        color: #526078;
+        font-size: .82rem;
+        font-weight: 650;
+        margin-bottom: 7px;
+    }
+
+    .contacts-page .form-control,
+    .contacts-page .form-select {
+        min-height: 42px;
+        border-color: #dfe5ef;
+        border-radius: 9px;
+        font-size: .88rem;
+        box-shadow: none;
+    }
+
+    .contacts-page .form-control:focus,
+    .contacts-page .form-select:focus {
+        border-color: var(--contact-primary);
+        box-shadow: 0 0 0 3px rgba(49, 94, 251, .10);
+    }
+
+    .contacts-page .btn-primary {
+        background: var(--contact-primary);
+        border-color: var(--contact-primary);
+        border-radius: 9px;
+        font-weight: 600;
+        padding: 9px 17px;
+    }
+
+    .contacts-page .btn-outline-secondary {
+        border-radius: 9px;
+        font-weight: 600;
+        padding: 9px 15px;
+    }
+
+    .contacts-page .table {
+        margin-bottom: 0;
+        white-space: nowrap;
+        font-size: .86rem;
+    }
+
+    .contacts-page .table thead th {
+        background: #f7f9fc;
+        color: #68758b;
+        font-size: .75rem;
+        font-weight: 750;
+        text-transform: uppercase;
+        letter-spacing: .45px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--contact-border);
+    }
+
+    .contacts-page .table tbody td {
+        padding: 14px 16px;
+        color: #43516a;
+        border-color: #edf0f5;
+        vertical-align: middle;
+    }
+
+    .contacts-page .table tbody tr:hover {
+        background: #f9fbff;
+    }
+
+    .contacts-page .primary-text {
+        color: #243047;
+        font-weight: 650;
+    }
+
+    .contacts-page .secondary-text {
+        color: #8792a5;
+        font-size: .78rem;
+    }
+
+    .contacts-page .contact-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: #edf2ff;
+        color: #315efb;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 750;
+        margin-right: 9px;
+        flex-shrink: 0;
+    }
+
+    .contacts-page .condition-used {
+        background: #fff3d9;
+        color: #9a6500;
+    }
+
+    .contacts-page .condition-sealed,
+    .contacts-page .status-paid {
+        background: #e4f7ed;
+        color: #16834d;
+    }
+
+    .contacts-page .status-partial {
+        background: #fff3d9;
+        color: #9a6500;
+    }
+
+    .contacts-page .status-unpaid {
+        background: #fdebec;
+        color: #c13d48;
+    }
+
+    .contacts-page .soft-badge {
+        display: inline-block;
+        padding: 5px 9px;
+        border-radius: 7px;
+        font-size: .73rem;
+        font-weight: 700;
+    }
+
+    .contacts-page .empty-state {
+        padding: 35px 15px;
+        text-align: center;
+        color: #8a96a9;
+    }
+
+    .contacts-page .empty-state i {
+        display: block;
+        font-size: 25px;
+        margin-bottom: 10px;
+        color: #bdc7d7;
+    }
+
+    .contacts-page .table-footer-note {
+        padding: 11px 17px;
+        background: #fbfcfe;
+        border-top: 1px solid var(--contact-border);
+        color: #8994a7;
+        font-size: .77rem;
+    }
+
+    /* Seller Account UI */
+
+    .contacts-page .account-heading {
+        padding: 20px 22px;
+        border-bottom: 1px solid var(--contact-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .contacts-page .account-heading-icon {
+        width: 43px;
+        height: 43px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: #edf2ff;
+        color: #315efb;
+        font-size: 19px;
+    }
+
+    .contacts-page .balance-badge {
+        display: inline-block;
+        padding: 7px 11px;
+        border-radius: 8px;
+        font-weight: 750;
+        font-size: .82rem;
+    }
+
+    .contacts-page .balance-due {
+        background: #fdebec;
+        color: #c13d48;
+    }
+
+    .contacts-page .balance-clear {
+        background: #e4f7ed;
+        color: #16834d;
+    }
+
+    .contacts-page .history-row td {
+        background: #f7f9fc !important;
+        padding: 18px !important;
+        white-space: normal !important;
+    }
+
+    .contacts-page .history-panel {
+        background: #fff;
+        border: 1px solid var(--contact-border);
+        border-radius: 11px;
+        padding: 15px;
+    }
+
+    .contacts-page .history-panel .table {
+        font-size: .82rem;
+    }
+
+    .contacts-page .history-panel .table thead th {
+        padding: 10px 12px;
+    }
+
+    .contacts-page .history-panel .table tbody td {
+        padding: 10px 12px;
+    }
+
+    .contacts-page .account-modal .modal-content {
+        border: 0;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .contacts-page .account-modal .modal-header {
+        background: #f7f9fc;
+        border-bottom: 1px solid var(--contact-border);
+        padding: 18px 22px;
+    }
+
+    .contacts-page .account-modal .modal-body {
+        padding: 22px;
+    }
+
+    .contacts-page .account-modal .modal-footer {
+        padding: 15px 22px;
+        border-top: 1px solid var(--contact-border);
+    }
+
+    @media (max-width: 767px) {
+        .contacts-page .section-header,
+        .contacts-page .account-heading {
+            padding: 15px;
+        }
+
+        .contacts-page .summary-value {
+            font-size: 1.45rem;
+        }
+
+        .contacts-page .table thead th,
+        .contacts-page .table tbody td {
+            padding: 12px;
+        }
+    }
+</style>
+
+<div class="container-fluid py-4 contacts-page">
+
+    <!-- PAGE HEADER -->
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h3 class="page-heading mb-1">
+                <i class="fas fa-address-book me-2 text-primary"></i>
+                Contact Dashboard
+            </h3>
+            <p class="page-subtitle mb-0">
+                Manage supplier relationships, handset sellers and purchase history.
+            </p>
+        </div>
+
+        <a href="{{ url_for('dashboard_page') }}"
+           class="btn btn-outline-secondary back-btn">
+            <i class="fas fa-arrow-left me-2"></i>
+            Back to Dashboard
+        </a>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="row g-3 mb-4">
+
+        {% if contact_type != 'seller' %}
+        <div class="col-12 col-sm-6 col-xl-4">
+            <div class="summary-card p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="summary-label mb-2">Total Suppliers</div>
+                        <div class="summary-value">
+                            <span class="summary-value-icon">🏬</span>
+                            {{ suppliers|length }}
+                        </div>
+                        <div class="secondary-text mt-1">Registered suppliers</div>
+                    </div>
+                    <div class="summary-icon icon-blue">🏢</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if contact_type != 'supplier' %}
+        <div class="col-12 col-sm-6 col-xl-4">
+            <div class="summary-card p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="summary-label mb-2">Used Handset Sellers</div>
+                        <div class="summary-value">
+                            <span class="summary-value-icon">👤</span>
+                            {{ sellers|length }}
+                        </div>
+                        <div class="secondary-text mt-1">Individual seller records</div>
+                    </div>
+                    <div class="summary-icon icon-purple">👥</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="col-12 col-sm-6 col-xl-4">
+            <div class="summary-card p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="summary-label mb-2">Matching Handsets</div>
+                        <div class="summary-value">
+                            <span class="summary-value-icon">📱</span>
+                            {{ records|length }}
+                        </div>
+                        <div class="secondary-text mt-1">Based on selected filters</div>
+                    </div>
+                    <div class="summary-icon icon-green">📲</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- FILTER SECTION -->
+    <div class="filter-card mb-4">
+
+        <div class="section-header">
+            <div>
+                <h5 class="section-title">
+                    <i class="fas fa-sliders me-2 text-primary"></i>
+                    Search & Filters
+                </h5>
+                <div class="section-description">
+                    Find suppliers, sellers and handset purchase records.
+                </div>
+            </div>
+        </div>
+
+        <div class="p-3 p-md-4">
+            <form method="GET" action="{{ url_for('contacts_dashboard') }}">
+
+                <div class="row g-3">
+
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label">Search Contacts / Records</label>
+                        <input type="text"
+                               name="search"
+                               class="form-control"
+                               value="{{ search }}"
+                               placeholder="Name, phone, invoice, product or IMEI">
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-lg-2">
+                        <label class="form-label">Contact Type</label>
+                        <select name="contact_type" class="form-select">
+                            <option value="all" {% if contact_type == 'all' %}selected{% endif %}>All Contacts</option>
+                            <option value="supplier" {% if contact_type == 'supplier' %}selected{% endif %}>Supplier</option>
+                            <option value="seller" {% if contact_type == 'seller' %}selected{% endif %}>Seller</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-lg-2">
+                        <label class="form-label">Product</label>
+                        <select name="product_id" class="form-select">
+                            <option value="">All Products</option>
+                            {% for product in products %}
+                            <option value="{{ product.id }}"
+                                {% if product_id|string == product.id|string %}selected{% endif %}>
+                                {{ product.name }}{% if product.model %} - {{ product.model }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-lg-2">
+                        <label class="form-label">Condition</label>
+                        <select name="condition" class="form-select">
+                            <option value="">All Conditions</option>
+                            <option value="Used" {% if condition == 'Used' %}selected{% endif %}>Used</option>
+                            <option value="Sealed" {% if condition == 'Sealed' %}selected{% endif %}>Sealed</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-lg-2">
+                        <label class="form-label">From Date</label>
+                        <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-lg-2">
+                        <label class="form-label">To Date</label>
+                        <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+                    </div>
+
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>
+                        Apply Filters
+                    </button>
+
+                    <a href="{{ url_for('contacts_dashboard') }}"
+                       class="btn btn-outline-secondary">
+                        <i class="fas fa-rotate-left me-2"></i>
+                        Reset Filters
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- SUPPLIER DIRECTORY -->
+    {% if contact_type != 'seller' %}
+    <div class="section-card mb-4">
+
+        <div class="section-header">
+            <div>
+                <h5 class="section-title">
+                    <i class="fas fa-building me-2 text-primary"></i>
+                    Supplier Directory
+                </h5>
+                <div class="section-description">
+                    Registered supplier contact information.
+                </div>
+            </div>
+            <span class="section-count">{{ suppliers|length }} Suppliers</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Supplier</th>
+                        <th>Company</th>
+                        <th>Contact Person</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for supplier in suppliers %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="contact-avatar">{{ supplier.name[:1]|upper }}</div>
+                                <div>
+                                    <div class="primary-text">{{ supplier.name }}</div>
+                                    <div class="secondary-text">Supplier</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ supplier.company_name or '-' }}</td>
+                        <td>{{ supplier.contact_person or '-' }}</td>
+                        <td>{{ supplier.phone or '-' }}</td>
+                        <td>{{ supplier.email or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="fas fa-building"></i>
+                                No suppliers found.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer-note">
+            Showing {{ suppliers|length }} supplier records.
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- USED HANDSET SELLER DIRECTORY -->
+    {% if contact_type != 'supplier' %}
+    <div class="section-card mb-4">
+
+        <div class="section-header">
+            <div>
+                <h5 class="section-title">
+                    <i class="fas fa-user-tag me-2 text-primary"></i>
+                    Used Handset Seller Directory
+                </h5>
+                <div class="section-description">
+                    Individual seller details linked to used handsets.
+                </div>
+            </div>
+            <span class="section-count">{{ sellers|length }} Seller Records</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Seller</th>
+                        <th>Phone</th>
+                        <th>Address</th>
+                        <th>Product</th>
+                        <th>IMEI</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for seller in sellers %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="contact-avatar">{{ seller.seller_name[:1]|upper }}</div>
+                                <div>
+                                    <div class="primary-text">{{ seller.seller_name }}</div>
+                                    <div class="secondary-text">Handset Seller</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ seller.seller_phone }}</td>
+                        <td>{{ seller.seller_address or '-' }}</td>
+                        <td>
+                            {% if seller.imei_record and seller.imei_record.product %}
+                                {{ seller.imei_record.product.name }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if seller.imei_record %}
+                                <span class="primary-text">{{ seller.imei_record.imei1 }}</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="fas fa-user-tag"></i>
+                                No used handset sellers found.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer-note">
+            Showing {{ sellers|length }} individual seller records.
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- USED SELLER ACCOUNTS -->
+    {% if contact_type != 'supplier' %}
+    <div class="account-card mb-4">
+
+        <div class="account-heading">
+            <div class="d-flex align-items-center gap-3">
+                <div class="account-heading-icon">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <div>
+                    <h5 class="section-title mb-1">Used Seller Accounts</h5>
+                    <div class="section-description">
+                        Seller-wise purchase, payment and outstanding balance.
+                    </div>
+                </div>
+            </div>
+
+            <span class="section-count">
+                {{ seller_accounts|length }} Accounts
+            </span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+
+                <thead>
+                    <tr>
+                        <th>Seller</th>
+                        <th>Handsets</th>
+                        <th>Total Purchase</th>
+                        <th>Total Paid</th>
+                        <th>Outstanding</th>
+                        <th class="text-center">Payment</th>
+                        <th class="text-center">History</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for account in seller_accounts %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="contact-avatar">
+                                    {{ account.seller_name[:1]|upper }}
+                                </div>
+                                <div>
+                                    <div class="primary-text">{{ account.seller_name }}</div>
+                                    <div class="secondary-text">{{ account.seller_phone }}</div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>{{ account.handset_count }}</td>
+
+                        <td class="primary-text">
+                            ₹{{ "%.2f"|format(account.total_purchase) }}
+                        </td>
+
+                        <td class="text-success fw-semibold">
+                            ₹{{ "%.2f"|format(account.total_paid) }}
+                        </td>
+
+                        <td>
+                            {% if account.outstanding > 0 %}
+                            <span class="balance-badge balance-due">
+                                ₹{{ "%.2f"|format(account.outstanding) }}
+                            </span>
+                            {% else %}
+                            <span class="balance-badge balance-clear">
+                                ₹0.00
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-center">
+                            {% if account.outstanding > 0 %}
+                            <button type="button"
+                                    class="btn btn-sm btn-primary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#sellerPayment{{ loop.index }}">
+                                <i class="fas fa-money-bill-wave me-1"></i>
+                                Pay
+                            </button>
+                            {% else %}
+                            <span class="soft-badge status-paid">Fully Paid</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-center">
+                            {% if account.payment_history %}
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#sellerHistory{{ loop.index }}"
+                                    aria-expanded="false">
+                                <i class="fas fa-clock-rotate-left me-1"></i>
+                                History ({{ account.payment_history|length }})
+                            </button>
+                            {% else %}
+                            <span class="secondary-text">No payments</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <!-- EXPANDABLE PAYMENT HISTORY -->
+                    {% if account.payment_history %}
+                    <tr class="collapse history-row"
+                        id="sellerHistory{{ loop.index }}">
+                        <td colspan="7">
+                            <div class="history-panel">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="fas fa-receipt me-2 text-primary"></i>
+                                    Payment History — {{ account.seller_name }}
+                                </h6>
+
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered bg-white">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Amount</th>
+                                                <th>Method</th>
+                                                <th>Reference</th>
+                                                <th>Notes</th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody>
+                                            {% for payment in account.payment_history %}
+                                            <tr>
+                                                <td>
+                                                    {{ payment.payment_date.strftime('%d-%m-%Y') if payment.payment_date else '-' }}
+                                                </td>
+                                                <td class="text-success fw-semibold">
+                                                    ₹{{ "%.2f"|format(payment.amount) }}
+                                                </td>
+                                                <td>
+                                                    {{ payment.payment_method|replace('_', ' ')|title }}
+                                                </td>
+                                                <td>{{ payment.reference or '-' }}</td>
+                                                <td>{{ payment.notes or '-' }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+
+                    {% else %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <i class="fas fa-wallet"></i>
+                                No used seller account records found.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer-note">
+            Seller accounts are grouped by phone number. Payment history is maintained separately from regular purchase payments.
+        </div>
+    </div>
+
+    <!-- PAYMENT MODALS: OUTSIDE THE TABLE -->
+    {% for account in seller_accounts %}
+        {% if account.outstanding > 0 %}
+        <div class="modal fade account-modal"
+             id="sellerPayment{{ loop.index }}"
+             tabindex="-1"
+             aria-hidden="true">
+
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+
+                    <div class="modal-header">
+                        <div>
+                            <h5 class="modal-title fw-bold mb-1">
+                                <i class="fas fa-money-bill-wave me-2 text-primary"></i>
+                                Record Seller Payment
+                            </h5>
+                            <small class="text-muted">
+                                Enter a partial or full payment.
+                            </small>
+                        </div>
+
+                        <button type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Close">
+                        </button>
+                    </div>
+
+                    <form method="POST"
+                          action="{{ url_for('used_seller_payment') }}">
+
+                        <div class="modal-body">
+
+                            <input type="hidden"
+                                   name="csrf_token"
+                                   value="{{ csrf_token() }}">
+
+                            <input type="hidden"
+                                   name="seller_phone"
+                                   value="{{ account.seller_phone }}">
+
+                            <input type="hidden"
+                                   name="seller_name"
+                                   value="{{ account.seller_name }}">
+
+                            <div class="mb-3">
+                                <label class="form-label">Seller</label>
+                                <input type="text"
+                                       class="form-control"
+                                       value="{{ account.seller_name }} - {{ account.seller_phone }}"
+                                       readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Outstanding Amount</label>
+                                <input type="text"
+                                       class="form-control fw-bold text-danger"
+                                       value="₹{{ '%.2f'|format(account.outstanding) }}"
+                                       readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Payment Amount *</label>
+                                <input type="number"
+                                       name="amount"
+                                       class="form-control"
+                                       min="0.01"
+                                       max="{{ account.outstanding }}"
+                                       step="0.01"
+                                       required
+                                       placeholder="Enter payment amount">
+                                <small class="text-muted">
+                                    Cannot exceed the outstanding amount.
+                                </small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Payment Date *</label>
+                                <input type="date"
+                                       name="payment_date"
+                                       class="form-control"
+                                       value="{{ today_date }}"
+                                       required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Payment Method *</label>
+                                <select name="payment_method"
+                                        class="form-select"
+                                        required>
+                                    <option value="cash">Cash</option>
+                                    <option value="upi">UPI</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="card">Card</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Reference</label>
+                                <input type="text"
+                                       name="reference"
+                                       class="form-control"
+                                       maxlength="100"
+                                       placeholder="Transaction reference">
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="form-label">Notes</label>
+                                <textarea name="notes"
+                                          class="form-control"
+                                          rows="2"
+                                          placeholder="Optional payment notes"></textarea>
+                            </div>
+
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    data-bs-dismiss="modal">
+                                Cancel
+                            </button>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check-circle me-1"></i>
+                                Save Payment
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+    {% endif %}
+
+    <!-- SUPPLIER PURCHASE HISTORY -->
+    {% if contact_type != 'seller' %}
+    <div class="section-card mb-4">
+
+        <div class="section-header">
+            <div>
+                <h5 class="section-title">
+                    <i class="fas fa-file-invoice-dollar me-2 text-primary"></i>
+                    Supplier Purchase History
+                </h5>
+                <div class="section-description">
+                    Purchase invoices, quantities and supplier payment status.
+                </div>
+            </div>
+            <span class="section-count">{{ purchase_items|length }} Purchase Items</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Supplier</th>
+                        <th>Invoice</th>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Purchase Date</th>
+                        <th>Unit Cost</th>
+                        <th>Subtotal</th>
+                        <th>Amount Paid</th>
+                        <th>Balance</th>
+                        <th>Payment Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for item in purchase_items %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+
+                        <td>
+                            {% if item.purchase and item.purchase.supplier %}
+                                <span class="primary-text">{{ item.purchase.supplier.name }}</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <span class="primary-text">
+                                {{ item.purchase.invoice_number if item.purchase else '-' }}
+                            </span>
+                        </td>
+
+                        <td>{{ item.product.name if item.product else '-' }}</td>
+                        <td>{{ item.quantity }}</td>
+
+                        <td>
+                            {% if item.purchase and item.purchase.purchase_date %}
+                                {{ item.purchase.purchase_date.strftime('%d-%m-%Y') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <td>₹{{ "%.2f"|format(item.unit_cost or 0) }}</td>
+
+                        <td class="primary-text">
+                            ₹{{ "%.2f"|format(item.subtotal or 0) }}
+                        </td>
+
+                        <td>
+                            {% if item.purchase %}
+                                ₹{{ "%.2f"|format(item.purchase.amount_paid or 0) }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if item.purchase %}
+                                ₹{{ "%.2f"|format(item.purchase.balance_due or 0) }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if item.purchase %}
+                                {% if item.purchase.payment_status == 'Paid' %}
+                                    <span class="soft-badge status-paid">Paid</span>
+                                {% elif item.purchase.payment_status == 'Partially Paid' %}
+                                    <span class="soft-badge status-partial">Partially Paid</span>
+                                {% else %}
+                                    <span class="soft-badge status-unpaid">Unpaid</span>
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    {% else %}
+                    <tr>
+                        <td colspan="11">
+                            <div class="empty-state">
+                                <i class="fas fa-file-invoice"></i>
+                                No supplier purchase records found.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer-note">
+            Showing {{ purchase_items|length }} purchase item records.
+            Payment amounts are based on the associated purchase invoice.
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- MATCHING HANDSET RECORDS -->
+    <div class="section-card mb-4">
+
+        <div class="section-header">
+            <div>
+                <h5 class="section-title">
+                    <i class="fas fa-mobile-screen-button me-2 text-primary"></i>
+                    Matching Handset Records
+                </h5>
+                <div class="section-description">
+                    Individual handset details based on your selected filters.
+                </div>
+            </div>
+            <span class="section-count">{{ records|length }} Handsets</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th>IMEI</th>
+
+                        {% if contact_type != 'seller' %}
+                        <th>Supplier</th>
+                        {% endif %}
+
+                        {% if contact_type != 'supplier' %}
+                        <th>Seller</th>
+                        {% endif %}
+
+                        <th>Condition</th>
+                        <th>Purchase Date</th>
+                        <th>Purchase Price</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+
+                        <td>
+                            <span class="primary-text">
+                                {{ record.product.name if record.product else '-' }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <span class="primary-text">{{ record.imei1 }}</span>
+                        </td>
+
+                        {% if contact_type != 'seller' %}
+                        <td>
+                            {{ record.supplier.name if record.supplier else '-' }}
+                        </td>
+                        {% endif %}
+
+                        {% if contact_type != 'supplier' %}
+                        <td>
+                            {% if record.used_handset_seller %}
+                                {{ record.used_handset_seller.seller_name }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        {% endif %}
+
+                        <td>
+                            {% if record.condition == 'Used' %}
+                                <span class="soft-badge condition-used">Used</span>
+                            {% else %}
+                                <span class="soft-badge condition-sealed">
+                                    {{ record.condition or 'Sealed' }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if record.purchase_date %}
+                                {{ record.purchase_date.strftime('%d-%m-%Y') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <td class="primary-text">
+                            ₹{{ "%.2f"|format(record.purchase_price or 0) }}
+                        </td>
+                    </tr>
+
+                    {% else %}
+                    <tr>
+                        <td colspan="{{ 6 + (1 if contact_type != 'seller' else 0) + (1 if contact_type != 'supplier' else 0) }}">
+                            <div class="empty-state">
+                                <i class="fas fa-mobile-screen-button"></i>
+                                No matching handset records found.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer-note">
+            Showing {{ records|length }} handset records.
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="text-center text-muted small py-2">
+        <i class="fas fa-shield-alt me-1"></i>
+        MobileStore ERP · Contact Management
+    </div>
+
+</div>
+
+{% endblock %}

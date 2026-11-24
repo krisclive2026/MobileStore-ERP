@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Create User | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Page Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-person-plus me-2 text-primary"></i>Create User
+            </h2>
+            <p class="text-secondary mb-0">
+                Create a new account for your store team.
+            </p>
+        </div>
+
+        <a href="{{ url_for('users_accounts_page') }}"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Users
+        </a>
+    </div>
+
+    <!-- Create User Form -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-9 col-xl-8">
+            <div class="card border-0 shadow-sm rounded-4">
+
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-3 bg-primary bg-opacity-10 text-primary
+                                    d-flex align-items-center justify-content-center"
+                             style="width: 52px; height: 52px;">
+                            <i class="bi bi-person-badge fs-3"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-1">Account Information</h5>
+                            <p class="text-secondary small mb-0">
+                                Enter the details for the new user.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+
+                    <form method="POST"
+                          action="{{ url_for('create_user') }}"
+                          autocomplete="off">
+
+                        {% if csrf_token is defined %}
+                        <input type="hidden"
+                               name="csrf_token"
+                               value="{{ csrf_token() }}">
+                        {% endif %}
+
+                        <div class="row g-3">
+
+                            <!-- Full Name -->
+                            <div class="col-md-6">
+                                <label for="full_name" class="form-label fw-semibold">
+                                    Full Name <span class="text-danger">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="full_name"
+                                    name="full_name"
+                                    maxlength="150"
+                                    value="{{ request.form.get('full_name', '') }}"
+                                    placeholder="Enter full name"
+                                    autocomplete="off"
+                                    required>
+                            </div>
+
+                            <!-- Username -->
+                            <div class="col-md-6">
+                                <label for="username" class="form-label fw-semibold">
+                                    Username <span class="text-danger">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="username"
+                                    name="username"
+                                    maxlength="80"
+                                    value="{{ request.form.get('username', '') }}"
+                                    placeholder="Enter username"
+                                    autocomplete="off"
+                                    required>
+                                <div class="form-text">
+                                    The user will use this to log in.
+                                </div>
+                            </div>
+
+                            <!-- Role -->
+                            <div class="col-12">
+                                <label for="role" class="form-label fw-semibold">
+                                    User Role <span class="text-danger">*</span>
+                                </label>
+                                {% set selected_role = request.form.get('role', 'cashier') %}
+                                <select class="form-select"
+                                        id="role"
+                                        name="role"
+                                        required>
+                                    <option value="cashier"
+                                        {% if selected_role == 'cashier' %}selected{% endif %}>
+                                        Cashier / Staff
+                                    </option>
+                                    <option value="manager"
+                                        {% if selected_role == 'manager' %}selected{% endif %}>
+                                        Manager
+                                    </option>
+                                    <option value="admin"
+                                        {% if selected_role == 'admin' %}selected{% endif %}>
+                                        Admin
+                                    </option>
+                                    <option value="staff"
+                                        {% if selected_role == 'staff' %}selected{% endif %}>
+                                        Staff (Legacy Role)
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <hr class="my-2">
+                                <h6 class="fw-bold mb-0">
+                                    <i class="bi bi-shield-lock me-2 text-primary"></i>
+                                    Login Credentials
+                                </h6>
+                            </div>
+
+                            <!-- Password -->
+                            <div class="col-md-6">
+                                <label for="password" class="form-label fw-semibold">
+                                    Password <span class="text-danger">*</span>
+                                </label>
+                                <input
+                                    type="password"
+                                    class="form-control"
+                                    id="password"
+                                    name="password"
+                                    minlength="8"
+                                    placeholder="Create a password"
+                                    autocomplete="new-password"
+                                    required>
+                                <div class="form-text">
+                                    Minimum 8 characters.
+                                </div>
+                            </div>
+
+                            <!-- Confirm Password -->
+                            <div class="col-md-6">
+                                <label for="confirm_password"
+                                       class="form-label fw-semibold">
+                                    Confirm Password <span class="text-danger">*</span>
+                                </label>
+                                <input
+                                    type="password"
+                                    class="form-control"
+                                    id="confirm_password"
+                                    name="confirm_password"
+                                    minlength="8"
+                                    placeholder="Re-enter password"
+                                    autocomplete="new-password"
+                                    required>
+                            </div>
+
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex flex-wrap justify-content-end gap-2 mt-4 pt-3 border-top">
+                            <a href="{{ url_for('users_accounts_page') }}"
+                               class="btn btn-light border px-4">
+                                Cancel
+                            </a>
+
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-person-check me-1"></i>
+                                Create Account
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+            <!-- Information Note -->
+            <div class="alert alert-info border-0 rounded-3 mt-3">
+                <i class="bi bi-info-circle me-2"></i>
+                The new user account will be active immediately after creation.
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

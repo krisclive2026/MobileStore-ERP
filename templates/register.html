@@ -1,0 +1,974 @@
+
+{% extends "base.html" %}
+
+{% block title %}Create Account | MobileStore ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    html, body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    body {
+        overflow: hidden;
+    }
+
+    .register-page {
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        background: #f4f6fa;
+        overflow: hidden;
+    }
+
+    /* LEFT IMAGE PANEL */
+    .brand-panel {
+        position: relative;
+        width: 46%;
+        height: 100%;
+        flex-shrink: 0;
+        background:
+            linear-gradient(
+                135deg,
+                rgba(8, 17, 40, 0.91),
+                rgba(12, 31, 65, 0.70)
+            ),
+            url("https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1400&q=85");
+        background-size: cover;
+        background-position: center;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        padding: 48px;
+        overflow: hidden;
+    }
+
+    .brand-content {
+        position: relative;
+        z-index: 2;
+        max-width: 470px;
+    }
+
+    .brand-logo {
+        width: 54px;
+        height: 54px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 27px;
+        margin-bottom: 26px;
+        backdrop-filter: blur(8px);
+    }
+
+    .brand-content h1 {
+        font-size: clamp(28px, 3vw, 43px);
+        line-height: 1.18;
+        font-weight: 750;
+        letter-spacing: -1px;
+        margin: 0 0 18px;
+    }
+
+    .brand-content h1 span {
+        color: #7db4ff;
+    }
+
+    .brand-description {
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 15px;
+        line-height: 1.8;
+        margin-bottom: 28px;
+        max-width: 390px;
+    }
+
+    .feature-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: rgba(255, 255, 255, 0.94);
+        font-size: 14px;
+    }
+
+    .feature-icon {
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.12);
+        color: #9dc6ff;
+    }
+
+    /* Prevent browser-added password reveal icons */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none;
+}
+
+    .brand-footer {
+        position: absolute;
+        bottom: 24px;
+        left: 48px;
+        right: 30px;
+        color: rgba(255, 255, 255, 0.65);
+        font-size: 12px;
+    }
+
+    /* RIGHT FORM PANEL */
+    .form-panel {
+        flex: 1;
+        min-width: 0;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 22px 24px;
+        overflow-y: auto;
+        background:
+            radial-gradient(
+                circle at top right,
+                rgba(218, 231, 255, 0.55),
+                transparent 40%
+            ),
+            #f6f8fc;
+    }
+
+    .register-card {
+        width: 100%;
+        max-width: 620px;
+        padding: 24px 28px;
+        background: #fff;
+        border: 1px solid #e9edf5;
+        border-radius: 22px;
+        box-shadow: 0 18px 55px rgba(31, 48, 83, 0.09);
+    }
+
+    .form-heading {
+        margin-bottom: 17px;
+    }
+
+    .form-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: #2864d8;
+        background: #edf4ff;
+        padding: 6px 10px;
+        border-radius: 7px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.7px;
+        text-transform: uppercase;
+        margin-bottom: 11px;
+    }
+
+    .form-heading h2 {
+        color: #17233b;
+        font-size: 27px;
+        font-weight: 750;
+        letter-spacing: -0.8px;
+        margin: 0 0 5px;
+    }
+
+    .form-heading p {
+        color: #7b8497;
+        font-size: 13px;
+        margin: 0;
+    }
+
+    /* FLASH MESSAGES */
+    .flash-messages {
+        margin-bottom: 10px;
+    }
+
+    .flash-messages .alert {
+        padding: 8px 11px;
+        margin-bottom: 6px;
+        border-radius: 9px;
+        font-size: 12px;
+    }
+
+    /* FORM FIELDS */
+    .form-group {
+        margin-bottom: 12px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 5px;
+        color: #34415a;
+        font-size: 12px;
+        font-weight: 650;
+    }
+
+    .input-wrap {
+        position: relative;
+        width: 100%;
+    }
+
+    .input-icon {
+        position: absolute;
+        top: 50%;
+        left: 13px;
+        transform: translateY(-50%);
+        color: #8994a8;
+        font-size: 15px;
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    .form-control,
+    .form-select {
+        width: 100%;
+        min-height: 41px;
+        border: 1px solid #dfe5ef;
+        border-radius: 10px;
+        background-color: #fbfcfe;
+        color: #25334c;
+        font-size: 13px;
+        padding: 9px 12px;
+        box-shadow: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-wrap > .form-control {
+        padding-left: 39px;
+    }
+
+    .form-control::placeholder {
+        color: #69758a;
+        opacity: 1;
+        transition: opacity 0.15s ease;
+    }
+
+    /* Hide placeholder when typing or focused */
+    .form-control:focus::placeholder,
+    .form-control:not(:placeholder-shown)::placeholder {
+        opacity: 0;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        background-color: #fff;
+        border-color: #3478f6;
+        box-shadow: 0 0 0 3px rgba(52, 120, 246, 0.16);
+        outline: none;
+    }
+
+    .form-select {
+        cursor: pointer;
+    }
+
+    /* PASSWORD FIELDS */
+    .input-wrap .password-input {
+        padding-right: 44px !important;
+    }
+
+    .password-toggle {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 17px;
+        z-index: 3;
+        box-shadow: none;
+        outline: none;
+    }
+
+    .password-toggle:hover,
+    .password-toggle:focus {
+        color: #2457d6;
+        background: transparent;
+        box-shadow: none;
+        outline: none;
+    }
+
+    .password-toggle i {
+        pointer-events: none;
+    }
+
+    /* ROLE PREVIEW */
+    .role-preview {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 12px;
+        margin: 0 0 12px;
+        border: 1px solid #dce8ff;
+        border-radius: 11px;
+        background: #f3f7ff;
+    }
+
+    .role-preview-icon {
+        width: 31px;
+        height: 31px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        background: #e0eaff;
+        color: #2864d8;
+        font-size: 15px;
+    }
+
+    .role-preview-title {
+        color: #263957;
+        font-size: 12px;
+        font-weight: 750;
+        margin-bottom: 3px;
+    }
+
+    .role-preview-description {
+        color: #6b7890;
+        font-size: 11px;
+        line-height: 1.45;
+        margin: 0;
+    }
+
+    .role-preview.admin {
+        border-color: #e5ddff;
+        background: #f7f4ff;
+    }
+
+    .role-preview.admin .role-preview-icon {
+        background: #eae2ff;
+        color: #7141cc;
+    }
+
+    .role-preview.admin .role-preview-title {
+        color: #4c2a89;
+    }
+
+    /* CREATE ACCOUNT BUTTON - KEEP SIZE */
+    .btn-register {
+        width: 100%;
+        min-height: 43px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        margin-top: 3px;
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #3478f6, #2457d6);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        box-shadow: 0 7px 16px rgba(47, 103, 222, 0.20);
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+
+    .btn-register:hover {
+        color: #fff;
+        background: linear-gradient(135deg, #286be8, #1d4ec5);
+        box-shadow: 0 9px 20px rgba(47, 103, 222, 0.28);
+        transform: translateY(-1px);
+    }
+
+    .btn-register:active {
+        transform: translateY(0);
+    }
+
+    .form-bottom {
+        margin-top: 15px;
+        padding-top: 13px;
+        border-top: 1px solid #edf0f5;
+        text-align: center;
+        color: #818b9e;
+        font-size: 12px;
+    }
+
+    .form-bottom a {
+        color: #2864d8;
+        text-decoration: none;
+        font-weight: 700;
+    }
+
+    .form-bottom a:hover {
+        text-decoration: underline;
+    }
+
+    .security-note {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin-top: 11px;
+        color: #929bad;
+        font-size: 10px;
+    }
+
+    .security-note i {
+        color: #31966a;
+    }
+
+    /* Hide the browser's built-in password reveal icon */
+input::-ms-reveal,
+input::-ms-clear {
+    display: none;
+}
+
+/* Keep only our custom eye button */
+.input-wrap {
+    position: relative;
+}
+
+.input-wrap .password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+
+.input-wrap .password-input {
+    padding-right: 45px;
+}
+
+    /* SHORT WINDOWS */
+    @media (max-height: 800px) and (min-width: 992px) {
+        .form-panel {
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        .register-card {
+            padding: 17px 24px;
+        }
+
+        .form-heading {
+            margin-bottom: 11px;
+        }
+
+        .form-eyebrow {
+            padding: 4px 8px;
+            margin-bottom: 7px;
+        }
+
+        .form-heading h2 {
+            font-size: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 8px;
+        }
+
+        .form-control,
+        .form-select {
+            min-height: 37px;
+            padding-top: 7px;
+            padding-bottom: 7px;
+        }
+
+        .role-preview {
+            padding: 7px 10px;
+            margin-bottom: 8px;
+        }
+
+        .role-preview-icon {
+            width: 27px;
+            height: 27px;
+        }
+
+        .form-bottom {
+            margin-top: 10px;
+            padding-top: 9px;
+        }
+
+        .security-note {
+            margin-top: 7px;
+        }
+
+        .brand-panel {
+            padding: 32px;
+        }
+
+        .brand-footer {
+            left: 32px;
+        }
+
+        .brand-logo {
+            margin-bottom: 18px;
+        }
+
+        .brand-content h1 {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .brand-description {
+            margin-bottom: 18px;
+            line-height: 1.6;
+        }
+
+        .feature-list {
+            gap: 9px;
+        }
+    }
+
+    /* TABLET */
+    @media (max-width: 991.98px) {
+        body {
+            overflow: auto;
+        }
+
+        .register-page {
+            min-height: 100vh;
+            height: auto;
+            overflow: visible;
+        }
+
+        .brand-panel {
+            display: none;
+        }
+
+        .form-panel {
+            min-height: 100vh;
+            height: auto;
+            padding: 24px 16px;
+            overflow: visible;
+        }
+
+        .register-card {
+            max-height: none;
+            padding: 25px 24px;
+        }
+    }
+
+    /* MOBILE */
+    @media (max-width: 480px) {
+        .form-panel {
+            padding: 15px 12px;
+        }
+
+        .register-card {
+            padding: 22px 18px;
+            border-radius: 17px;
+        }
+
+        .form-heading h2 {
+            font-size: 25px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="register-page">
+
+    <!-- LEFT BRAND PANEL -->
+    <section class="brand-panel">
+        <div class="brand-content">
+
+            <div class="brand-logo">
+                <i class="bi bi-phone"></i>
+            </div>
+
+            <h1>
+                Manage your store.<br>
+                <span>Grow your business.</span>
+            </h1>
+
+            <p class="brand-description">
+                A smarter way to manage mobile inventory, sales,
+                customers, billing and your entire store operation
+                from one place.
+            </p>
+
+            <div class="feature-list">
+                <div class="feature-item">
+                    <span class="feature-icon">
+                        <i class="bi bi-box-seam"></i>
+                    </span>
+                    <span>Real-time inventory management</span>
+                </div>
+
+                <div class="feature-item">
+                    <span class="feature-icon">
+                        <i class="bi bi-receipt"></i>
+                    </span>
+                    <span>Fast and reliable billing</span>
+                </div>
+
+                <div class="feature-item">
+                    <span class="feature-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </span>
+                    <span>Role-based access and security</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="brand-footer">
+            © 2026 MobileStore ERP · Smart Retail Management
+        </div>
+    </section>
+
+    <!-- REGISTRATION FORM -->
+    <main class="form-panel">
+        <div class="register-card">
+
+            <div class="form-heading">
+                <div class="form-eyebrow">
+                    <i class="bi bi-person-plus"></i>
+                    Account Registration
+                </div>
+
+                <h2>Create your account</h2>
+                <p>Enter your details to get started.</p>
+            </div>
+
+            <!-- FLASH MESSAGES -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div
+                                class="alert alert-{{ category }} alert-dismissible fade show"
+                                role="alert"
+                            >
+                                {{ message }}
+                                <button
+                                    type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="alert"
+                                    aria-label="Close"
+                                ></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('register_page') }}">
+                {% if csrf_token is defined %}
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="{{ csrf_token() }}"
+                    >
+                {% endif %}
+
+                <!-- FULL NAME -->
+                <div class="form-group">
+                    <label for="full_name" class="form-label">Full name</label>
+
+                    <div class="input-wrap">
+                        <i class="bi bi-person input-icon"></i>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="full_name"
+                            name="full_name"
+                            placeholder="Enter your full name"
+                            value="{{ request.form.get('full_name', '') }}"
+                            autocomplete="name"
+                            maxlength="120"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <!-- USERNAME -->
+                <div class="form-group">
+                    <label for="username" class="form-label">Username</label>
+
+                    <div class="input-wrap">
+                        <i class="bi bi-at input-icon"></i>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="username"
+                            name="username"
+                            placeholder="Choose a username"
+                            value="{{ request.form.get('username', '') }}"
+                            autocomplete="username"
+                            minlength="3"
+                            maxlength="80"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <!-- PASSWORD -->
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+
+                    <div class="input-wrap">
+                        <i class="bi bi-lock input-icon"></i>
+
+                        <input
+                            type="password"
+                            class="form-control password-input"
+                            id="password"
+                            name="password"
+                            placeholder="Create a password"
+                            autocomplete="new-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="password-toggle"
+                            data-target="password"
+                            aria-label="Show password"
+                            title="Show password"
+                        >
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CONFIRM PASSWORD -->
+                <div class="form-group">
+                    <label for="confirm_password" class="form-label">
+                        Confirm password
+                    </label>
+
+                    <div class="input-wrap">
+                        <i class="bi bi-shield-lock input-icon"></i>
+
+                        <input
+                            type="password"
+                            class="form-control password-input"
+                            id="confirm_password"
+                            name="confirm_password"
+                            placeholder="Enter your password again"
+                            autocomplete="new-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="password-toggle"
+                            data-target="confirm_password"
+                            aria-label="Show password"
+                            title="Show password"
+                        >
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+
+                    <div
+                        id="password-feedback"
+                        class="small mt-1"
+                        style="display:none; font-size:11px;"
+                    ></div>
+                </div>
+
+                
+<!-- ACCOUNT TYPE -->
+<div class="form-group">
+    <label for="role" class="form-label">Account type</label>
+
+    <select
+        class="form-select"
+        id="role"
+        name="role"
+        required
+    >
+        <option
+            value="staff"
+            {% if request.form.get('role', 'staff') == 'staff' %}
+                selected
+            {% endif %}
+        >
+            Staff
+        </option>
+
+        <option
+            value="admin"
+            {% if request.form.get('role') == 'admin' %}
+                selected
+            {% endif %}
+        >
+            Admin
+        </option>
+    </select>
+</div>
+
+<!-- ROLE DESCRIPTION -->
+<div class="role-preview" id="role-preview">
+    <div class="role-preview-icon" id="role-preview-icon">
+        <i class="bi bi-person-badge"></i>
+    </div>
+
+    <div>
+        <div class="role-preview-title" id="role-preview-title">
+            Staff account
+        </div>
+
+        <p
+            class="role-preview-description"
+            id="role-preview-description"
+        >
+            For daily store operations such as billing and
+            customer service, subject to assigned permissions.
+        </p>
+    </div>
+</div>
+
+
+                <!-- SUBMIT BUTTON -->
+                <button type="submit" class="btn-register">
+                    <i class="bi bi-person-check"></i>
+                    Create Account
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+            </form>
+
+            <div class="form-bottom">
+                Already have an account?
+                <a href="{{ url_for('login_page') }}">Sign in</a>
+            </div>
+
+            <div class="security-note">
+                <i class="bi bi-shield-lock-fill"></i>
+                Your account information is protected
+            </div>
+
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const roleSelect = document.getElementById("role");
+    const rolePreview = document.getElementById("role-preview");
+    const roleIcon = document.getElementById("role-preview-icon");
+    const roleTitle = document.getElementById("role-preview-title");
+    const roleDescription = document.getElementById("role-preview-description");
+
+    const password = document.getElementById("password");
+    const confirmPassword = document.getElementById("confirm_password");
+    const passwordFeedback = document.getElementById("password-feedback");
+    const registerForm = document.querySelector(".register-card form");
+
+    /* Update account type description */
+    function updateRolePreview() {
+        const isAdmin = roleSelect.value === "admin";
+
+        if (isAdmin) {
+            rolePreview.classList.add("admin");
+            roleIcon.innerHTML = '<i class="bi bi-shield-lock"></i>';
+            roleTitle.textContent = "Administrator account";
+            roleDescription.textContent =
+                "Full store management access is reserved for authorized administrators.";
+        } else {
+            rolePreview.classList.remove("admin");
+            roleIcon.innerHTML = '<i class="bi bi-person-badge"></i>';
+            roleTitle.textContent = "Staff account";
+            roleDescription.textContent =
+                "For daily store operations such as billing and customer service, subject to assigned permissions.";
+        }
+    }
+
+    /* Show or hide password using the existing eye icon */
+    document.querySelectorAll(".password-toggle").forEach(function (button) {
+        button.addEventListener("click", function () {
+            const input = document.getElementById(button.dataset.target);
+            const icon = button.querySelector("i");
+
+            if (!input || !icon) {
+                return;
+            }
+
+            const showPassword = input.type === "password";
+
+            input.type = showPassword ? "text" : "password";
+            icon.className = showPassword
+                ? "bi bi-eye-slash"
+                : "bi bi-eye";
+
+            button.setAttribute(
+                "aria-label",
+                showPassword ? "Hide password" : "Show password"
+            );
+
+            button.setAttribute(
+                "title",
+                showPassword ? "Hide password" : "Show password"
+            );
+        });
+    });
+
+    /* Confirm that both passwords match */
+    function checkPasswords() {
+        const first = password.value;
+        const second = confirmPassword.value;
+
+        if (second.length === 0) {
+            passwordFeedback.style.display = "none";
+            confirmPassword.setCustomValidity("");
+            return true;
+        }
+
+        passwordFeedback.style.display = "block";
+
+        if (first === second) {
+            passwordFeedback.textContent = "Passwords match";
+            passwordFeedback.style.color = "#198754";
+            confirmPassword.setCustomValidity("");
+            return true;
+        }
+
+        passwordFeedback.textContent = "Passwords do not match";
+        passwordFeedback.style.color = "#dc3545";
+        confirmPassword.setCustomValidity("Passwords do not match.");
+        return false;
+    }
+
+    roleSelect.addEventListener("change", updateRolePreview);
+    password.addEventListener("input", checkPasswords);
+    confirmPassword.addEventListener("input", checkPasswords);
+
+    registerForm.addEventListener("submit", function (event) {
+        if (!checkPasswords()) {
+            event.preventDefault();
+            confirmPassword.reportValidity();
+        }
+    });
+
+    updateRolePreview();
+});
+</script>
+{% endblock %}

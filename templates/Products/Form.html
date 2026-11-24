@@ -1,0 +1,409 @@
+
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if product else 'Register' }} Product | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Page Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">
+                {{ 'Edit Product' if product else ('Register Used Phone' if selected_type == 'Used' else 'Register Sealed Phone') }}
+            </h2>
+            <p class="text-secondary mb-0">
+                Manage product identification and specifications.
+            </p>
+        </div>
+
+        <a href="{{ url_for('products_list') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Products
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+
+            <form method="POST"
+                  action="{{ url_for('product_edit', product_id=product.id) if product else url_for('product_create') }}"
+                  id="productForm">
+
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <!-- Product condition: Sealed or Used -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold" for="productType">
+                        Product condition *
+                    </label>
+
+                    <select class="form-select"
+                            name="condition"
+                            id="productType"
+                            required>
+                        <option value="Sealed"
+                            {% if (product.condition if product else selected_type) == 'Sealed' %}selected{% endif %}>
+                            Sealed
+                        </option>
+                        <option value="Used"
+                            {% if (product.condition if product else selected_type) == 'Used' %}selected{% endif %}>
+                            Used
+                        </option>
+                    </select>
+
+                    <div class="form-text">
+                        Choose whether the phone is sealed or used.
+                    </div>
+                </div>
+
+                <!-- Barcode Lookup -->
+                {% if not product %}
+                <div class="bg-light border rounded-3 p-3 mb-4">
+
+                    <label class="form-label fw-semibold">
+                        How would you like to enter product details?
+                    </label>
+
+                    <div class="d-flex flex-wrap gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input"
+                                   type="radio"
+                                   name="entry_mode"
+                                   id="modeBarcode"
+                                   value="barcode"
+                                   checked>
+                            <label class="form-check-label" for="modeBarcode">
+                                Fill using barcode
+                            </label>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input"
+                                   type="radio"
+                                   name="entry_mode"
+                                   id="modeManual"
+                                   value="manual">
+                            <label class="form-check-label" for="modeManual">
+                                Enter manually
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="barcodeArea" class="mt-3">
+                        <label for="barcodeLookup" class="form-label">
+                            Scan or enter barcode
+                        </label>
+
+                        <div class="input-group">
+                            <input class="form-control"
+                                   id="barcodeLookup"
+                                   autocomplete="off"
+                                   placeholder="Scan barcode or type its number">
+
+                            <button class="btn btn-primary"
+                                    type="button"
+                                    id="lookupButton">
+                                <i class="bi bi-search me-1"></i> Look up
+                            </button>
+                        </div>
+
+                        <div id="barcodeMessage" class="form-text mt-2">
+                            Scan a barcode to check whether the product is already registered.
+                        </div>
+
+                        <div id="existingProductLink" class="mt-2"></div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Basic Information -->
+                <h5 class="fw-bold mb-3">Basic information</h5>
+
+                <div class="row g-3 mb-4">
+
+                    <div class="col-md-4">
+                        <label class="form-label" for="product_code">Product code</label>
+                        <input class="form-control"
+                               name="product_code"
+                               id="product_code"
+                               value="{{ product.product_code if product else '' }}"
+                               placeholder="Generated automatically"
+                               readonly>
+                        <div class="form-text">Internal reference code.</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label" for="barcode">Barcode</label>
+                        <input class="form-control"
+                               name="barcode"
+                               id="barcode"
+                               maxlength="100"
+                               value="{{ product.barcode if product and product.barcode else '' }}"
+                               placeholder="Optional barcode">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label" for="name">Product name *</label>
+                        <input class="form-control"
+                               name="name"
+                               id="name"
+                               required
+                               maxlength="150"
+                               value="{{ product.name if product else '' }}"
+                               placeholder="e.g. Samsung Galaxy A55">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label" for="brand">Brand</label>
+                        <input class="form-control"
+                               name="brand"
+                               id="brand"
+                               value="{{ product.brand if product else '' }}"
+                               placeholder="e.g. Samsung">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label" for="model">Model</label>
+                        <input class="form-control"
+                               name="model"
+                               id="model"
+                               value="{{ product.model if product else '' }}"
+                               placeholder="Model number">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label" for="category">Category</label>
+                        {% set selected_category = product.category if product else 'Mobile' %}
+                        <select class="form-select" name="category" id="category">
+                            {% for option in ['Mobile', 'Tablet', 'Accessory', 'Other'] %}
+                            <option value="{{ option }}"
+                                {% if selected_category == option %}selected{% endif %}>
+                                {{ option }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+    <label class="form-label" for="reorder_level">
+        Reorder Level
+    </label>
+
+    <input type="number"
+           class="form-control"
+           name="reorder_level"
+           id="reorder_level"
+           min="0"
+           step="1"
+           value="{{ product.reorder_level if product else 5 }}"
+           placeholder="e.g. 5">
+
+    <div class="form-text">
+        Alert when available stock reaches this quantity.
+    </div>
+</div>
+
+                </div>
+
+                <!-- Used Phone Details -->
+                <div id="usedFields"
+                     class="border rounded-3 p-3 mb-4 {% if (product.condition if product else selected_type) != 'Used' %}d-none{% endif %}">
+
+                    <h5 class="fw-bold mb-3">Used phone details</h5>
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label" for="used_grade">
+                                Used phone grade *
+                            </label>
+
+                            <select class="form-select"
+                                    name="used_grade"
+                                    id="used_grade">
+                                <option value="">Choose grade</option>
+
+                                {% for option in ['Excellent', 'Good', 'Fair', 'For Parts'] %}
+                                <option value="{{ option }}"
+                                    {% if product and product.used_grade == option %}selected{% endif %}>
+                                    {{ option }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-primary px-4" type="submit">
+                        <i class="bi bi-check-circle me-1"></i>
+                        {{ 'Save Changes' if product else 'Register Product' }}
+                    </button>
+
+                    <a href="{{ url_for('products_list') }}"
+                       class="btn btn-outline-secondary px-4">
+                        Cancel
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(() => {
+    const typeSelect = document.getElementById("productType");
+    const usedFields = document.getElementById("usedFields");
+    const usedGrade = document.getElementById("used_grade");
+
+    const modeBarcode = document.getElementById("modeBarcode");
+    const modeManual = document.getElementById("modeManual");
+    const barcodeArea = document.getElementById("barcodeArea");
+    const barcodeLookup = document.getElementById("barcodeLookup");
+    const barcodeInput = document.getElementById("barcode");
+    const barcodeMessage = document.getElementById("barcodeMessage");
+    const existingProductLink = document.getElementById("existingProductLink");
+    const lookupButton = document.getElementById("lookupButton");
+    const form = document.getElementById("productForm");
+
+    function updateTypeFields() {
+        if (!typeSelect || !usedFields) return;
+
+        const isUsed = typeSelect.value === "Used";
+
+        usedFields.classList.toggle("d-none", !isUsed);
+
+        if (usedGrade) {
+            usedGrade.required = isUsed;
+        }
+    }
+
+    function updateEntryMode() {
+        if (!modeBarcode || !modeManual || !barcodeArea) return;
+
+        const useBarcode = modeBarcode.checked;
+        barcodeArea.classList.toggle("d-none", !useBarcode);
+
+        if (modeManual.checked) {
+            document.getElementById("name")?.focus();
+        } else {
+            barcodeLookup?.focus();
+        }
+    }
+
+    typeSelect?.addEventListener("change", updateTypeFields);
+    modeBarcode?.addEventListener("change", updateEntryMode);
+    modeManual?.addEventListener("change", updateEntryMode);
+
+    updateTypeFields();
+    updateEntryMode();
+
+    async function lookupBarcode() {
+        const code = barcodeLookup?.value.trim();
+
+        if (!code) {
+            if (barcodeMessage) {
+                barcodeMessage.textContent = "Enter or scan a barcode first.";
+            }
+            return;
+        }
+
+        if (existingProductLink) {
+            existingProductLink.replaceChildren();
+        }
+
+        barcodeMessage.textContent = "Searching...";
+        lookupButton.disabled = true;
+
+        try {
+            const response = await fetch(
+                "{{ url_for('product_barcode_lookup') }}" +
+                "?barcode=" + encodeURIComponent(code)
+            );
+
+            if (!response.ok) {
+                throw new Error("Barcode lookup failed.");
+            }
+
+            const data = await response.json();
+
+            if (!data.found) {
+                barcodeInput.value = code;
+                barcodeMessage.textContent =
+                    data.message ||
+                    "Barcode not found. Enter the product details manually.";
+                return;
+            }
+
+            const p = data.product;
+
+            const fields = [
+                "product_code",
+                "barcode",
+                "name",
+                "brand",
+                "model",
+                "category",
+                "variant",
+                "color",
+                "hsn_code",
+                "gst_percent",
+                "cost_price",
+                "selling_price",
+                "condition",
+                "used_grade",
+                "warranty_months"
+            ];
+
+            fields.forEach(key => {
+                const element = document.getElementById(key);
+
+                if (element && p[key] !== undefined && p[key] !== null) {
+                    element.value = p[key];
+                }
+            });
+
+            updateTypeFields();
+
+            barcodeMessage.textContent =
+                "This barcode already belongs to a registered product. " +
+                "Open the existing product instead of creating a duplicate.";
+
+            if (data.product_id && existingProductLink) {
+                const link = document.createElement("a");
+                link.href = "/products/" + data.product_id + "/edit";
+                link.className = "btn btn-sm btn-outline-primary";
+                link.textContent = "Open existing product";
+                existingProductLink.appendChild(link);
+            }
+
+        } catch (error) {
+            barcodeMessage.textContent =
+                "Could not look up the barcode. You can enter details manually.";
+        } finally {
+            lookupButton.disabled = false;
+        }
+    }
+
+    lookupButton?.addEventListener("click", lookupBarcode);
+
+    barcodeLookup?.addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            lookupBarcode();
+        }
+    });
+
+    form?.addEventListener("submit", event => {
+        if (typeSelect?.value === "Used" && usedGrade && !usedGrade.value) {
+            event.preventDefault();
+            usedGrade.focus();
+            alert("Please choose a grade for the used phone.");
+        }
+    });
+})();
+</script>
+{% endblock %}

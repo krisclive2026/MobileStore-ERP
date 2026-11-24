@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit Expense' if expense else 'Add Expense' }} | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">
+                {{ 'Edit Expense' if expense else 'Add Expense' }}
+            </h2>
+            <p class="text-secondary mb-0">
+                Record and manage your store expenses.
+            </p>
+        </div>
+
+        <a href="{{ url_for('expenses_list') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Expenses
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-8 col-xxl-7">
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-receipt-cutoff me-2 text-primary"></i>
+                        Expense Details
+                    </h5>
+                </div>
+
+                <div class="card-body p-4">
+
+                    <form method="POST"
+                          action="{% if expense %}{{ url_for('expense_edit', expense_id=expense.id) }}{% else %}{{ url_for('expense_create') }}{% endif %}">
+
+                        {% if csrf_token is defined %}
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {% endif %}
+
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+                                <label for="title" class="form-label fw-semibold">
+                                    Expense Title <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="title"
+                                       name="title"
+                                       maxlength="150"
+                                       placeholder="e.g. Shop electricity bill"
+                                       value="{{ request.form.get('title', expense.title if expense else '') }}"
+                                       required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="category" class="form-label fw-semibold">
+                                    Category <span class="text-danger">*</span>
+                                </label>
+                                {% set selected_category = request.form.get('category', expense.category if expense else '') %}
+                                <select class="form-select" id="category" name="category" required>
+                                    <option value="">Select category</option>
+                                    {% for category in [
+                                        'Rent',
+                                        'Electricity',
+                                        'Internet',
+                                        'Salary',
+                                        'Transport',
+                                        'Maintenance',
+                                        'Office Supplies',
+                                        'Marketing',
+                                        'Food',
+                                        'Other'
+                                    ] %}
+                                    <option value="{{ category }}"
+                                        {% if selected_category == category %}selected{% endif %}>
+                                        {{ category }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="amount" class="form-label fw-semibold">
+                                    Amount (₹) <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number"
+                                           class="form-control"
+                                           id="amount"
+                                           name="amount"
+                                           min="0.01"
+                                           max="999999999"
+                                           step="0.01"
+                                           placeholder="0.00"
+                                           value="{{ request.form.get('amount', expense.amount if expense else '') }}"
+                                           required>
+                                </div>
+                                <div class="form-text">Enter the actual amount paid.</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="expense_date" class="form-label fw-semibold">
+                                    Expense Date <span class="text-danger">*</span>
+                                </label>
+                                <input type="date"
+                                       class="form-control"
+                                       id="expense_date"
+                                       name="expense_date"
+                                       value="{{ request.form.get('expense_date', expense.expense_date.strftime('%Y-%m-%d') if expense and expense.expense_date else '') }}"
+                                       required>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="notes" class="form-label fw-semibold">
+                                    Notes
+                                </label>
+                                <textarea class="form-control"
+                                          id="notes"
+                                          name="notes"
+                                          rows="4"
+                                          maxlength="2000"
+                                          placeholder="Optional details about this expense...">{{ request.form.get('notes', expense.notes if expense else '') }}</textarea>
+                            </div>
+
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex flex-wrap justify-content-end gap-2">
+                            <a href="{{ url_for('expenses_list') }}"
+                               class="btn btn-light border">
+                                Cancel
+                            </a>
+
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-check-circle me-1"></i>
+                                {{ 'Update Expense' if expense else 'Save Expense' }}
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

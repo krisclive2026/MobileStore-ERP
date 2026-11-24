@@ -1,0 +1,1115 @@
+
+{% extends "base.html" %}
+
+{% block title %}Direct Stock Registration | MobileStore ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h3 class="mb-1">Direct Stock Registration</h3>
+            <p class="text-muted mb-0">
+                Register individual used handsets directly into inventory.
+            </p>
+        </div>
+
+        <a href="{{ url_for('products_list') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Products
+        </a>
+    </div>
+
+    <form method="POST" id="directStockForm" enctype="multipart/form-data">
+
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- PRODUCT DETAILS -->
+        <div class="card border-0 shadow-sm mb-4">
+
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0">Product Details</h5>
+            </div>
+
+            <div class="card-body">
+
+                <div class="row">
+    <div class="col-md-6 mb-3">
+        <label for="supplier_id" class="form-label fw-semibold">
+            Supplier 
+        </label>
+
+        <select name="supplier_id"
+                id="supplier_id"
+                class="form-select"
+                >
+            <option value="">Select Supplier</option>
+
+            {% for supplier in suppliers %}
+                <option value="{{ supplier.id }}">
+                    {{ supplier.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Product Registration Type
+                    </label>
+
+                    <div class="d-flex flex-wrap gap-3">
+
+                        <label class="form-check">
+                            <input class="form-check-input"
+                                   type="radio"
+                                   name="product_mode"
+                                   value="existing"
+                                   checked>
+                            <span class="form-check-label">
+                                Select Existing Product
+                            </span>
+                        </label>
+
+                        <label class="form-check">
+                            <input class="form-check-input"
+                                   type="radio"
+                                   name="product_mode"
+                                   value="new">
+                            <span class="form-check-label">
+                                Create New Product
+                            </span>
+                        </label>
+
+                    </div>
+                </div>
+
+                <!-- EXISTING PRODUCT -->
+                <div id="existingProductSection">
+
+                    <div class="mb-3">
+
+                        <label class="form-label fw-semibold">
+                            Filter Existing Products
+                        </label>
+
+                        <input type="text"
+                               id="productFilter"
+                               class="form-control"
+                               placeholder="Search by product name, brand, model, variant or colour">
+
+                        <small class="text-muted">
+                            Search using the product details available in the product list.
+                        </small>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label class="form-label fw-semibold">
+                            Select Product <span class="text-danger">*</span>
+                        </label>
+
+                        <select name="product_id"
+                                id="product_id"
+                                class="form-select">
+
+                            <option value="">Choose a product</option>
+
+                            {% for product in products %}
+
+                            <option value="{{ product.id }}"
+                                    data-name="{{ product.name or '' }}"
+                                    data-brand="{{ product.brand or '' }}"
+                                    data-model="{{ product.model or '' }}"
+                                    data-variant="{{ product.variant or '' }}"
+                                    data-color="{{ product.color or '' }}"
+                                    data-condition="{{ product.condition or 'Used' }}"
+                                    data-track-imei="{{ 'true' if product.track_imei else 'false' }}"
+                                    {% if selected_product_id == product.id %}selected{% endif %}>
+
+                                {{ product.name }}
+                                {% if product.brand %} - {{ product.brand }}{% endif %}
+                                {% if product.model %} {{ product.model }}{% endif %}
+                                (Stock: {{ product.stock_quantity or 0 }})
+
+                            </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                        <small class="text-muted" id="productFilterMessage"></small>
+
+                    </div>
+
+                    <div id="productInfo" class="small text-muted"></div>
+
+                </div>
+
+                <!-- NEW PRODUCT -->
+                <div id="newProductSection" style="display:none;">
+
+                    <div class="alert alert-info">
+                        Enter the common product information only.
+                        Individual handset specifications, prices, warranty and GST
+                        will be entered separately below.
+                    </div>
+
+                    <div class="row g-3">
+
+                        <div class="col-md-4">
+                            <label class="form-label">
+                                Product Name <span class="text-danger">*</span>
+                            </label>
+
+                            <input type="text"
+                                   name="name"
+                                   class="form-control new-product-field"
+                                   maxlength="150">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">
+                                Brand (Optional)
+                            </label>
+
+                            <input type="text"
+                                   name="brand"
+                                   class="form-control new-product-field">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">
+                                Model (Optional)
+                            </label>
+
+                            <input type="text"
+                                   name="model"
+                                   class="form-control new-product-field">
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- CURRENT HANDSET DETAILS -->
+                {% if selected_product %}
+
+                <hr class="my-4">
+
+                <div class="mt-4">
+
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+
+                        <div>
+                            <h6 class="fw-bold mb-1">
+                                Current Handset Details
+                            </h6>
+
+                            <small class="text-muted">
+                                Existing handsets currently available in this product's stock.
+                            </small>
+                        </div>
+
+                        <span class="badge bg-info text-dark">
+                            {{ existing_handset_records|length }} Handsets
+                        </span>
+
+                    </div>
+
+                    {% if existing_handset_records %}
+
+                    <div class="table-responsive">
+
+                        <table class="table table-bordered table-hover align-middle">
+
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>IMEI 1</th>
+                                    <th>IMEI 2</th>
+                                    <th>Variant</th>
+                                    <th>Colour</th>
+                                    <th>Condition</th>
+                                    <th>Used Grade</th>
+                                    <th>Stock Source</th>
+                                    <th>Supplier / Seller</th>
+                                    <th>Purchase Cost</th>
+                                    <th>Selling Price</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                {% for handset in existing_handset_records %}
+
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+
+                                    <td>{{ handset.imei1 or '—' }}</td>
+
+                                    <td>{{ handset.imei2 or '—' }}</td>
+
+                                    <td>{{ handset.variant or '—' }}</td>
+
+                                    <td>{{ handset.color or '—' }}</td>
+
+                                    <td>{{ handset.condition or '—' }}</td>
+
+                                    <td>{{ handset.used_grade or '—' }}</td>
+
+                                    <td>
+                                        {% if handset.source == 'supplier' %}
+                                            <span class="badge bg-primary">
+                                                Supplier Stock
+                                            </span>
+                                        {% elif handset.source == 'direct' %}
+                                            <span class="badge bg-success">
+                                                Direct Stock
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">
+                                                {{ handset.source or 'Unknown' }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        {% if handset.source == 'supplier' %}
+                                            {{ handset.supplier.name if handset.supplier else 'Supplier not linked' }}
+                                        {% elif handset.used_handset_seller %}
+                                            {{ handset.used_handset_seller.seller_name }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        ₹{{ "%.2f"|format(handset.purchase_price or 0) }}
+                                    </td>
+
+                                    <td>
+                                        ₹{{ "%.2f"|format(handset.selling_price or 0) }}
+                                    </td>
+
+                                </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                    {% else %}
+
+                    <div class="alert alert-light border mb-0">
+                        No existing in-stock handset records were found for this product.
+                    </div>
+
+                    {% endif %}
+
+                </div>
+
+                {% endif %}
+
+                <hr class="my-4">
+
+                <!-- QUANTITY -->
+                <div class="row g-3 align-items-end">
+
+                    <div class="col-md-4">
+
+                        <label class="form-label fw-semibold">
+                            Number of Handsets <span class="text-danger">*</span>
+                        </label>
+
+                        <input type="number"
+                               name="quantity"
+                               id="quantity"
+                               class="form-control"
+                               min="1"
+                               max="100"
+                               value="1"
+                               required>
+
+                        <small class="text-muted">
+                            One individual entry will be created for each handset.
+                        </small>
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <button type="button"
+                                class="btn btn-outline-primary w-100"
+                                id="generateHandsets">
+
+                            <i class="bi bi-plus-circle me-1"></i>
+                            Generate Handset Forms
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- INDIVIDUAL HANDSETS -->
+        <div id="handsetSection" class="mb-4">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+
+                <h5 class="mb-0">
+                    Individual Handset Details
+                </h5>
+
+                <span class="badge bg-primary" id="handsetCount">
+                    1 Handset
+                </span>
+
+            </div>
+
+            <div id="handsetContainer"></div>
+
+        </div>
+
+        <!-- SUBMIT -->
+        <div class="card border-0 shadow-sm">
+
+            <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+                <div class="text-muted small">
+                    <span class="text-danger">*</span> Required fields.
+                    Please verify all IMEI numbers and individual prices before saving.
+                </div>
+
+                <button type="submit"
+                        class="btn btn-success px-4"
+                        id="saveButton">
+
+                    <i class="bi bi-check-circle me-1"></i>
+                    Register Direct Stock
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </form>
+</div>
+
+
+<!-- INDIVIDUAL HANDSET FORM TEMPLATE -->
+<template id="handsetTemplate">
+
+    <div class="card border shadow-sm mb-3 handset-card">
+
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+
+            <strong class="handset-heading">
+                Handset 1
+            </strong>
+
+            <span class="badge bg-secondary">
+                Individual IMEI
+            </span>
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="row g-3">
+
+                <!-- IMEI 1 -->
+                <div class="col-md-6">
+
+                    <label class="form-label">
+                        IMEI 1 <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="text"
+                           name="imei1[]"
+                           class="form-control"
+                           maxlength="15"
+                           minlength="15"
+                           pattern="[0-9]{15}"
+                           inputmode="numeric"
+                           required>
+
+                </div>
+
+                <!-- IMEI 2 -->
+                <div class="col-md-6">
+
+                    <label class="form-label">
+                        IMEI 2 <small class="text-muted">(Optional)</small>
+                    </label>
+
+                    <input type="text"
+                           name="imei2[]"
+                           class="form-control"
+                           maxlength="15"
+                           minlength="15"
+                           pattern="[0-9]{15}"
+                           inputmode="numeric">
+
+                </div>
+
+                <!-- VARIANT -->
+                <div class="col-md-6">
+
+                    <label class="form-label">
+                        Variant / RAM / Storage
+                        <small class="text-muted">(Optional)</small>
+                    </label>
+
+                    <input type="text"
+                           name="variant[]"
+                           class="form-control handset-variant"
+                           placeholder="Example: 8GB / 128GB">
+
+                </div>
+
+                <!-- COLOUR -->
+                <div class="col-md-6">
+
+                    <label class="form-label">
+                        Colour <small class="text-muted">(Optional)</small>
+                    </label>
+
+                    <input type="text"
+                           name="color[]"
+                           class="form-control handset-color">
+
+                </div>
+
+                <!-- CONDITION -->
+                <div class="col-md-4">
+
+                    <label class="form-label">
+                        Condition
+                    </label>
+
+                    <input type="hidden"
+                           name="condition[]"
+                           class="handset-condition"
+                           value="Used">
+
+                    <input type="text"
+                           class="form-control"
+                           value="Used"
+                           readonly>
+
+                </div>
+
+                <!-- USED GRADE -->
+                <div class="col-md-4">
+
+                    <label class="form-label">
+                        Used Grade <small class="text-muted">(Optional)</small>
+                    </label>
+
+                    <select name="used_grade[]"
+                            class="form-select used-grade">
+
+                        <option value="">Select Grade</option>
+                        <option value="Excellent">Excellent</option>
+                        <option value="Good">Good</option>
+                        <option value="Fair">Fair</option>
+                        <option value="For Parts">For Parts</option>
+
+                    </select>
+
+                </div>
+
+                <!-- PURCHASE PRICE -->
+                <div class="col-md-4">
+
+                    <label class="form-label">
+                        Purchase Cost (₹) <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="number"
+                           name="purchase_price[]"
+                           class="form-control"
+                           min="0"
+                           step="0.01"
+                           required>
+
+                </div>
+
+                <!-- SELLING PRICE -->
+                <div class="col-md-4">
+
+                    <label class="form-label">
+                        Selling Price (₹) <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="number"
+                           name="selling_price[]"
+                           class="form-control"
+                           min="0"
+                           step="0.01"
+                           required>
+
+                </div>
+
+                <!-- WARRANTY -->
+      <div class="col-md-4">
+    <label class="form-label">
+        Warranty Duration (Months)
+        <span class="text-danger">*</span>
+    </label>
+
+    <input type="number"
+           name="warranty_months[]"
+           class="form-control"
+           min="0"
+           step="1"
+           placeholder="Enter warranty months">
+
+    <small class="text-muted">
+        Enter warranty duration in months (e.g. 6, 12, 18, 24, 36).
+    </small>
+</div>
+
+                </div>
+
+                <!-- GST -->
+                <div class="col-md-4">
+
+                    <label class="form-label">
+                        GST (%) <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="number"
+                           name="gst_percent[]"
+                           class="form-control gst-percent"
+                           min="0"
+                           max="100"
+                           step="0.01"
+                           placeholder="Example: 18"
+                           required>
+
+                </div>
+
+            </div>
+
+            <!-- INDIVIDUAL SELLER DETAILS -->
+            <div class="col-12 used-seller-wrapper mt-3">
+
+                <div class="border rounded p-3 bg-light">
+
+                    <h6 class="mb-3">
+                        Seller Details & Proof Documents
+                    </h6>
+
+                    <div class="row g-3">
+
+                        <!-- SELLER NAME -->
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Seller Name <span class="text-danger">*</span>
+                            </label>
+
+                            <input type="text"
+                                   name="seller_name[]"
+                                   class="form-control seller-name"
+                                   maxlength="150"
+                                   required>
+
+                        </div>
+
+                        <!-- SELLER PHONE -->
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Seller Phone <span class="text-danger">*</span>
+                            </label>
+
+                            <input type="tel"
+                                   name="seller_phone[]"
+                                   class="form-control seller-phone"
+                                   maxlength="20"
+                                   required>
+
+                        </div>
+
+                        <!-- SELLER ADDRESS -->
+                        <div class="col-12">
+
+                            <label class="form-label">
+                                Seller Address
+                                <small class="text-muted">(Optional)</small>
+                            </label>
+
+                            <textarea name="seller_address[]"
+                                      class="form-control seller-address"
+                                      rows="2"></textarea>
+
+                        </div>
+
+                        <!-- SELLER ID PROOF -->
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Seller ID Proof
+                                <small class="text-muted">(Optional)</small>
+                            </label>
+
+                            <input type="file"
+                                   name="id_proof[]"
+                                   class="form-control seller-id-proof"
+                                   accept=".jpg,.jpeg,.png">
+
+                            <small class="text-muted">
+                                JPG, JPEG or PNG · Maximum 2 MB
+                            </small>
+
+                        </div>
+
+                        <!-- HANDSET PROOF -->
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Handset Proof Image
+                                <small class="text-muted">(Optional)</small>
+                            </label>
+
+                            <input type="file"
+                                   name="handset_proof[]"
+                                   class="form-control handset-proof"
+                                   accept=".jpg,.jpeg,.png">
+
+                            <small class="text-muted">
+                                JPG, JPEG or PNG · Maximum 2 MB
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+</template>
+
+<script id="handsetFilterData" type="application/json">
+    {{ handset_filter_data|tojson }}
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const existingSection = document.getElementById("existingProductSection");
+    const newSection = document.getElementById("newProductSection");
+
+    const productSelect = document.getElementById("product_id");
+    const productInfo = document.getElementById("productInfo");
+
+    const productFilter = document.getElementById("productFilter");
+    const productFilterMessage = document.getElementById("productFilterMessage");
+
+    const quantityInput = document.getElementById("quantity");
+    const generateButton = document.getElementById("generateHandsets");
+
+    const handsetContainer = document.getElementById("handsetContainer");
+    const handsetTemplate = document.getElementById("handsetTemplate");
+
+    const handsetCount = document.getElementById("handsetCount");
+    const form = document.getElementById("directStockForm");
+
+
+    function currentMode() {
+
+        return document.querySelector(
+            'input[name="product_mode"]:checked'
+        ).value;
+
+    }
+
+
+    const handsetFilterData = JSON.parse(
+    document.getElementById("handsetFilterData").textContent || "[]"
+);
+
+function filterProducts() {
+    const searchValue = productFilter.value.trim().toLowerCase();
+    let visibleCount = 0;
+
+    Array.from(productSelect.options).forEach(option => {
+        if (!option.value) {
+            option.hidden = false;
+            return;
+        }
+
+        const productDetails = [
+            option.dataset.model
+        ].join(" ").toLowerCase();
+
+        const handsetMatches = handsetFilterData.some(record => {
+            if (String(record.product_id) !== option.value) return false;
+
+            const details = [
+                record.model,
+                record.variant,
+                record.color,
+                record.seller_name,
+                record.seller_phone
+            ].join(" ").toLowerCase();
+
+            return details.includes(searchValue);
+        });
+
+        const matches = !searchValue ||
+            productDetails.includes(searchValue) ||
+            handsetMatches;
+
+        option.hidden = !matches;
+
+        if (matches) visibleCount++;
+    });
+
+    if (productFilterMessage) {
+        productFilterMessage.textContent = searchValue && visibleCount === 0
+            ? "No matching products found."
+            : `${visibleCount} matching product(s).`;
+    }
+}
+
+    function updateProductMode() {
+
+        const isNew = currentMode() === "new";
+
+        existingSection.style.display = isNew ? "none" : "block";
+        newSection.style.display = isNew ? "block" : "none";
+
+        productSelect.required = !isNew;
+
+        document.querySelectorAll(".new-product-field").forEach(input => {
+
+            input.disabled = !isNew;
+
+            if (input.name === "name") {
+                input.required = isNew;
+            }
+
+        });
+
+        updateProductInfo();
+
+    }
+
+
+    function updateProductInfo() {
+
+        const option = productSelect.selectedOptions[0];
+
+        if (currentMode() !== "existing" || !option || !option.value) {
+            productInfo.textContent = "";
+            return;
+        }
+
+        const imeiTracked = option.dataset.trackImei === "true";
+
+        const details = document.createElement("div");
+
+        details.className = "mt-2 p-3 bg-light rounded";
+
+        const title = document.createElement("strong");
+        title.textContent = option.dataset.name || "";
+
+        details.appendChild(title);
+
+        const fields = [
+            ["Brand", option.dataset.brand],
+            ["Model", option.dataset.model],
+            ["Variant", option.dataset.variant],
+            ["Colour", option.dataset.color],
+            ["Condition", option.dataset.condition || "Used"]
+        ];
+
+        fields.forEach(([label, value]) => {
+
+            const line = document.createElement("div");
+            line.textContent = `${label}: ${value || "—"}`;
+
+            details.appendChild(line);
+
+        });
+
+        const trackingLine = document.createElement("div");
+
+        trackingLine.className = "mt-2";
+
+        trackingLine.textContent = imeiTracked
+            ? "IMEI tracking enabled."
+            : "IMEI tracking is disabled. Enable it before registration.";
+
+        details.appendChild(trackingLine);
+
+        productInfo.replaceChildren(details);
+
+    }
+
+
+    function updateUsedGrade(card) {
+
+        const grade = card.querySelector(".used-grade");
+        const sellerName = card.querySelector(".seller-name");
+        const sellerPhone = card.querySelector(".seller-phone");
+
+        if (grade) {
+            grade.required = false;
+        }
+
+        if (sellerName) {
+            sellerName.required = true;
+        }
+
+        if (sellerPhone) {
+            sellerPhone.required = true;
+        }
+
+    }
+
+
+    // GENERATE INDIVIDUAL HANDSET FORMS
+    function generateHandsetForms() {
+
+        const quantity = Number(quantityInput.value);
+
+        if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100) {
+
+            alert("Enter a quantity between 1 and 100.");
+            return;
+
+        }
+
+        handsetContainer.innerHTML = "";
+
+        for (let i = 0; i < quantity; i++) {
+
+            const fragment = handsetTemplate.content.cloneNode(true);
+
+            const card = fragment.querySelector(".handset-card");
+
+            card.querySelector(".handset-heading").textContent =
+                `Handset ${i + 1}`;
+
+            // No default variant, colour, purchase price or selling price.
+            // Each handset must be entered individually.
+
+            handsetContainer.appendChild(fragment);
+
+            const addedCard = handsetContainer.lastElementChild;
+
+            updateUsedGrade(addedCard);
+
+        }
+
+        handsetCount.textContent =
+            `${quantity} Handset${quantity > 1 ? "s" : ""}`;
+
+    }
+
+
+    // PRODUCT MODE CHANGE
+    document.querySelectorAll(
+        'input[name="product_mode"]'
+    ).forEach(radio => {
+
+        radio.addEventListener("change", function () {
+
+            updateProductMode();
+            generateHandsetForms();
+
+        });
+
+    });
+
+
+    // EXISTING PRODUCT CHANGE
+    productSelect.addEventListener("change", function () {
+
+        updateProductInfo();
+        generateHandsetForms();
+
+    });
+
+
+    // EXISTING PRODUCT FILTER
+    productFilter.addEventListener("input", filterProducts);
+
+
+    // GENERATE HANDSET FORMS
+    generateButton.addEventListener("click", generateHandsetForms);
+
+    quantityInput.addEventListener("change", generateHandsetForms);
+
+
+    // FORM VALIDATION
+    form.addEventListener("submit", function (event) {
+
+        if (currentMode() === "existing") {
+
+            const option = productSelect.selectedOptions[0];
+
+            if (!option || !option.value) {
+
+                event.preventDefault();
+                alert("Please select a product.");
+                return;
+
+            }
+
+            if (option.dataset.trackImei !== "true") {
+
+                event.preventDefault();
+
+                alert(
+                    "IMEI tracking is disabled for this product. "
+                    + "Please enable IMEI tracking before registering handsets."
+                );
+
+                return;
+
+            }
+
+        }
+
+
+        const quantity = Number(quantityInput.value);
+
+        const cards = handsetContainer.querySelectorAll(".handset-card");
+
+
+        if (cards.length !== quantity) {
+
+            event.preventDefault();
+
+            alert("Please generate the handset forms for the selected quantity.");
+
+            return;
+
+        }
+
+
+        for (const card of cards) {
+
+            const imei1 = card.querySelector('[name="imei1[]"]').value.trim();
+
+            const imei2 = card.querySelector('[name="imei2[]"]').value.trim();
+
+            const warranty = card.querySelector('[name="warranty_months[]"]').value;
+
+            const gst = card.querySelector('[name="gst_percent[]"]').value;
+
+
+            if (!/^[0-9]{15}$/.test(imei1)) {
+
+                event.preventDefault();
+
+                alert("Every handset must have a valid 15-digit IMEI 1.");
+
+                return;
+
+            }
+
+
+            if (imei2 && !/^[0-9]{15}$/.test(imei2)) {
+
+                event.preventDefault();
+
+                alert("Enter a valid 15-digit IMEI 2 or leave it empty.");
+
+                return;
+
+            }
+
+
+            if (imei2 && imei1 === imei2) {
+
+                event.preventDefault();
+
+                alert("IMEI 1 and IMEI 2 cannot be identical.");
+
+                return;
+
+            }
+
+            if (warranty === "" || !Number.isInteger(Number(warranty)) || Number(warranty) < 0) {
+
+    event.preventDefault();
+
+    alert("Enter a valid warranty duration in months.");
+
+    return;
+}
+
+            if (gst === "" || !Number.isFinite(Number(gst))
+                || Number(gst) < 0 || Number(gst) > 100) {
+
+                event.preventDefault();
+
+                alert("Enter a valid GST percentage between 0 and 100.");
+
+                return;
+
+            }
+
+        }
+
+
+        // CHECK DUPLICATE IMEIs WITHIN THIS SUBMISSION
+        const imeis = [];
+
+        cards.forEach(card => {
+
+            const imei1 = card.querySelector('[name="imei1[]"]').value.trim();
+
+            const imei2 = card.querySelector('[name="imei2[]"]').value.trim();
+
+            imeis.push(imei1);
+
+            if (imei2) {
+                imeis.push(imei2);
+            }
+
+        });
+
+
+        if (new Set(imeis).size !== imeis.length) {
+
+            event.preventDefault();
+
+            alert("Duplicate IMEI numbers found. Please check the handset entries.");
+
+            return;
+
+        }
+
+    });
+
+
+    updateProductMode();
+
+    filterProducts();
+
+    generateHandsetForms();
+
+});
+</script>
+
+{% endblock %}

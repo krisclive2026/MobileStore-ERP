@@ -1,0 +1,483 @@
+
+{% extends "base.html" %}
+
+{% block title %}Payment Receipt | Mobile Store ERP{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- Page Actions -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 no-print">
+        <div>
+            <h2 class="fw-bold mb-1">Payment Receipt</h2>
+            <p class="text-secondary mb-0">
+                Individual customer payment transaction receipt.
+            </p>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="button" onclick="window.print()" class="btn btn-primary">
+                <i class="bi bi-printer me-1"></i> Print Receipt
+            </button>
+
+            <a href="{{ url_for('billing_collections') }}"
+               class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Receipt Container -->
+    <div class="card border-0 shadow-sm mx-auto receipt-container">
+
+        <div class="card-body p-4 p-md-5">
+
+            <!-- SHOP HEADER -->
+            <div class="receipt-shop-header">
+
+                <!-- Left Corner Logo -->
+                <div class="receipt-logo-box">
+
+                    {% if store and store.logo_filename %}
+                        <img
+                            src="{{ url_for('store_logo_file', filename=store.logo_filename) }}"
+                            alt="Store Logo"
+                            class="receipt-logo"
+                            onerror="this.style.display='none';">
+                    {% endif %}
+
+                </div>
+
+                <!-- Centered Store Details -->
+                <div class="receipt-shop-details">
+
+                    <h2>
+                        {{ store.store_name if store and store.store_name else 'Mobile Store' }}
+                    </h2>
+
+                    {% if store and store.address %}
+                        <p>{{ store.address }}</p>
+                    {% endif %}
+
+                    {% if store and store.phone %}
+                        <p>Phone: {{ store.phone }}</p>
+                    {% endif %}
+
+                    {% if store and store.gstin %}
+                        <p>GSTIN: {{ store.gstin }}</p>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+            <!-- RECEIPT TITLE -->
+            <div class="receipt-title">
+                PAYMENT RECEIPT
+            </div>
+
+            <!-- RECEIPT INFORMATION -->
+            <div class="row g-3 mb-4">
+
+                <div class="col-sm-6">
+                    <div class="text-secondary small">Receipt Number</div>
+                    <div class="fw-bold">PAY-{{ payment.id }}</div>
+                </div>
+
+                <div class="col-sm-6 text-sm-end">
+                    <div class="text-secondary small">Payment Date</div>
+                    <div class="fw-bold">
+                        {% if payment.created_at %}
+                            {{ payment.created_at.strftime('%d-%m-%Y') }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-sm-6">
+                    <div class="text-secondary small">Invoice Number</div>
+                    <div class="fw-bold">
+                        {{ sale.invoice_number }}
+                    </div>
+                </div>
+
+                <div class="col-sm-6 text-sm-end">
+                    <div class="text-secondary small">Customer Name</div>
+                    <div class="fw-bold">
+                        {% if sale.customer %}
+                            {{ sale.customer.name }}
+                        {% else %}
+                            Walk-in Customer
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- PAYMENT TABLE -->
+            <div class="table-responsive mb-4">
+
+                <table class="table table-bordered align-middle mb-0">
+
+                    <thead class="table-light">
+                        <tr>
+                            <th>Description</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td>
+                                Payment received against invoice
+                                {{ sale.invoice_number }}
+                            </td>
+
+                            <td class="text-end fw-bold">
+                                ₹{{ "%.2f"|format(payment.amount or 0) }}
+                            </td>
+                        </tr>
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <!-- BALANCE SUMMARY -->
+            <div class="row justify-content-end">
+
+                <div class="col-md-7 col-lg-6">
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-secondary">Invoice Total</span>
+                        <strong>
+                            ₹{{ "%.2f"|format(sale.total_amount or 0) }}
+                        </strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-secondary">Balance Before Payment</span>
+                        <strong>
+                            ₹{{ "%.2f"|format(balance_before) }}
+                        </strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3 text-success">
+                        <span>Amount Received</span>
+                        <strong>
+                            ₹{{ "%.2f"|format(payment.amount or 0) }}
+                        </strong>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between fs-5">
+                        <strong>Balance After Payment</strong>
+
+                        <strong class="text-danger">
+                            ₹{{ "%.2f"|format(balance_after) }}
+                        </strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- TRANSACTION DETAILS -->
+            <div class="border-top mt-4 pt-4">
+
+                <h6 class="fw-bold mb-3">Transaction Details</h6>
+
+                <div class="row g-3">
+
+                    <div class="col-sm-6">
+                        <div class="text-secondary small">Payment Method</div>
+                        <strong>
+                            {{ (payment.method or 'cash')|replace('_', ' ')|title }}
+                        </strong>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="text-secondary small">Reference Number</div>
+                        <strong>
+                            {{ payment.reference or '—' }}
+                        </strong>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="text-secondary small">Payment Status</div>
+                        <strong class="text-success">
+                            {{ payment.status|title }}
+                        </strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- RECEIPT FOOTER -->
+            <div class="text-center border-top mt-5 pt-4">
+
+                <h6 class="fw-bold mb-2">Thank You!</h6>
+
+                {% if store and store.footer_text %}
+                    <p class="text-secondary small mb-2">
+                        {{ store.footer_text }}
+                    </p>
+                {% endif %}
+
+                <p class="text-secondary small mb-0">
+                    This is a computer-generated payment receipt.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<style>
+
+/* ==================================
+   RECEIPT CONTAINER
+================================== */
+
+.receipt-container {
+    max-width: 850px;
+    width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+
+/* ==================================
+   STORE HEADER
+================================== */
+
+.receipt-shop-header {
+    position: relative;
+    width: 100%;
+    min-height: 145px;
+
+    background: #172554;
+    color: #ffffff;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px 155px;
+
+    border-radius: 8px;
+}
+
+
+/* ==================================
+   LOGO LEFT CORNER
+================================== */
+
+.receipt-logo-box {
+    position: absolute;
+
+    left: 20px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    width: 115px;
+    height: 100px;
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.receipt-logo {
+    display: block;
+
+    max-width: 110px;
+    max-height: 95px;
+
+    width: auto;
+    height: auto;
+
+    object-fit: contain;
+    object-position: left center;
+}
+
+
+/* ==================================
+   CENTERED STORE DETAILS
+================================== */
+
+.receipt-shop-details {
+    width: 100%;
+    text-align: center;
+}
+
+.receipt-shop-details h2 {
+    font-size: 25px;
+    font-weight: 800;
+
+    margin-bottom: 8px;
+
+    color: #ffffff;
+}
+
+.receipt-shop-details p {
+    font-size: 12px;
+
+    margin-bottom: 3px;
+
+    color: #e2e8f0;
+}
+
+
+/* ==================================
+   RECEIPT TITLE
+================================== */
+
+.receipt-title {
+    text-align: center;
+
+    font-size: 19px;
+    font-weight: 800;
+
+    letter-spacing: 2px;
+
+    padding: 20px 0;
+    margin-bottom: 20px;
+
+    border-bottom: 2px solid #172554;
+}
+
+
+/* ==================================
+   GENERAL RECEIPT
+================================== */
+
+.receipt-container table {
+    font-size: 14px;
+}
+
+.receipt-container .text-secondary {
+    color: #64748b !important;
+}
+
+
+/* ==================================
+   RESPONSIVE
+================================== */
+
+@media (max-width: 576px) {
+
+    .receipt-container .card-body {
+        padding: 15px !important;
+    }
+
+    .receipt-shop-header {
+        padding: 15px 10px 15px 105px;
+        min-height: 125px;
+    }
+
+    .receipt-logo-box {
+        left: 10px;
+        width: 90px;
+        height: 85px;
+    }
+
+    .receipt-logo {
+        max-width: 85px;
+        max-height: 80px;
+    }
+
+    .receipt-shop-details h2 {
+        font-size: 18px;
+    }
+
+    .receipt-shop-details p {
+        font-size: 10px;
+    }
+
+    .receipt-title {
+        font-size: 16px;
+    }
+
+}
+
+
+/* ==================================
+   PRINT
+================================== */
+
+@media print {
+
+    @page {
+        size: A4 portrait;
+        margin: 12mm;
+    }
+
+    body {
+        background: #ffffff !important;
+    }
+
+    .no-print,
+    .sidebar,
+    .navbar,
+    nav,
+    footer {
+        display: none !important;
+    }
+
+    .container-fluid {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .receipt-container {
+        max-width: 100% !important;
+        width: 100% !important;
+
+        margin: 0 !important;
+
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .receipt-container .card-body {
+        padding: 0 !important;
+    }
+
+    .receipt-shop-header {
+        background: #172554 !important;
+        color: #ffffff !important;
+
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+
+        border-radius: 0;
+    }
+
+    .receipt-shop-details h2,
+    .receipt-shop-details p {
+        color: #ffffff !important;
+    }
+
+    .receipt-title {
+        page-break-after: avoid;
+    }
+
+    table {
+        page-break-inside: avoid;
+    }
+
+}
+
+</style>
+
+{% endblock %}

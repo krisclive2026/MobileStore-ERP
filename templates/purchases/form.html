@@ -1,0 +1,796 @@
+
+{% extends "base.html" %}
+
+{% block title %}New Purchase | Mobile Store ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <div class="text-primary small fw-semibold mb-2">
+                INVENTORY / PURCHASES
+            </div>
+            <h2 class="fw-bold mb-1">Create Purchase Order</h2>
+            <p class="text-secondary mb-0">
+                Record supplier invoices and products purchased for your store.
+            </p>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('purchase_list') }}"
+               class="btn btn-dark rounded-3">
+                <i class="bi bi-arrow-left me-1"></i> All Purchases
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3">
+                {{ message }}
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('purchase_create') }}" id="purchaseForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="row g-4">
+
+            <!-- Left: Invoice Information -->
+            <div class="col-xl-4">
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-white border-0 px-4 pt-4">
+                        <h5 class="fw-bold mb-1">
+                            <i class="bi bi-file-earmark-text text-primary me-2"></i>
+                            Invoice Information
+                        </h5>
+                        <p class="small text-secondary mb-0">
+                            Supplier and delivery details
+                        </p>
+                    </div>
+
+                    <div class="card-body p-4">
+
+
+
+<div class="mb-3">
+    <label class="form-label fw-semibold">
+        Supplier <span class="text-danger">*</span>
+    </label>
+
+    <div class="position-relative">
+
+        <input type="text"
+               id="supplierSearch"
+               class="form-control rounded-3"
+               placeholder="Search supplier name or company..."
+               autocomplete="off"
+               required>
+
+        <input type="hidden"
+               name="supplier_id"
+               id="supplierId"
+               value="{{ request.form.get('supplier_id', '') }}">
+
+        <div id="supplierSuggestions"
+             class="list-group position-absolute w-100 shadow"
+             style="z-index:1050; max-height:250px; overflow-y:auto; display:none;">
+
+            {% for supplier in suppliers %}
+                <button type="button"
+                        class="list-group-item list-group-item-action text-start supplier-option"
+                        data-id="{{ supplier.id }}"
+                        data-name="{{ supplier.name }}"
+                        data-company="{{ supplier.company_name or '' }}">
+
+                    {{ supplier.name }}
+                    {% if supplier.company_name %}
+                        — {{ supplier.company_name }}
+                    {% endif %}
+
+                </button>
+            {% endfor %}
+
+        </div>
+    </div>
+</div>
+
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Supplier Invoice Number</label>
+                            <input type="text"
+                                   name="invoice_number"
+                                   class="form-control"
+                                   value="Auto-generated on save"
+                                   readonly>
+                            <div class="form-text">
+                                The system generates the purchase reference automatically.
+                            </div>
+                        </div>
+                        
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Purchase Date <span class="text-danger">*</span>
+                            </label>
+                            <input type="date"
+                                   name="purchase_date"
+                                   class="form-control rounded-3"
+                                   value="{{ request.form.get('purchase_date', '') }}"
+                                   required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Expected Delivery
+                            </label>
+                            <input type="date"
+                                   name="expected_delivery_date"
+                                   class="form-control rounded-3"
+                                   value="{{ request.form.get('expected_delivery_date', '') }}">
+                        </div>
+
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold">
+                                Payment Due Date
+                            </label>
+                            <input type="date"
+                                   name="payment_due_date"
+                                   class="form-control rounded-3"
+                                   value="{{ request.form.get('payment_due_date', '') }}">
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Total Summary -->
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-secondary">Items</span>
+                            <span class="fw-semibold" id="itemCount">0</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                            <span class="fw-bold">Grand Total</span>
+                            <h3 class="fw-bold text-primary mb-0">
+                                ₹<span id="grandTotal">0.00</span>
+                            </h3>
+                        </div>
+
+                        <p class="small text-secondary mt-3 mb-0">
+                            The total is calculated from quantity × unit cost.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Product Items -->
+            <div class="col-xl-8">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-header bg-white border-0 p-4">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div>
+                                <h5 class="fw-bold mb-1">
+                                    <i class="bi bi-box-seam text-primary me-2"></i>
+                                    Purchase Items
+                                </h5>
+                                <p class="small text-secondary mb-0">
+                                    Add each product included in the supplier invoice.
+                                </p>
+                            </div>
+
+<div class="d-flex flex-wrap gap-3 mb-3">
+
+    <div>
+        <label class="form-label small fw-semibold">
+            Product Condition
+        </label>
+        <select id="productConditionFilter"
+                class="form-select rounded-3"
+                style="max-width: 220px;">
+            <option value="all">All Products</option>
+            <option value="sealed">Sealed</option>
+            <option value="used">Used</option>
+        </select>
+    </div>
+
+    <div>
+        <label class="form-label small fw-semibold">
+            Stock Source
+        </label>
+        <select id="stockSourceFilter"
+                class="form-select rounded-3"
+                style="max-width: 220px;">
+            <option value="all">All Stock</option>
+            <option value="supplier">Supplier Stock</option>
+            <option value="individual">Individual Seller Stock</option>
+        </select>
+    </div>
+
+</div>
+
+                            <button type="button"
+                                    class="btn btn-outline-primary rounded-3"
+                                    id="addItemBtn">
+                                <i class="bi bi-plus-lg me-1"></i>
+                                Add Product
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-4 pt-0">
+
+                        <div id="purchaseItems">
+                            <div class="purchase-item border rounded-4 p-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="fw-semibold">
+                                        Product <span class="item-number">1</span>
+                                    </span>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger remove-item"
+                                            title="Remove product"
+                                            disabled>
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-lg-5">
+                                        <label class="form-label small fw-semibold">
+                                            Product <span class="text-danger">*</span>
+                                        </label>
+
+                                        <div class="position-relative">
+    <input type="text"
+           class="form-control rounded-3 product-search"
+           placeholder="Search product name, ID, variant or colour..."
+           autocomplete="off"
+           required>
+
+    <div class="product-suggestions list-group position-absolute w-100 shadow"
+         style="z-index:1050; max-height:250px; overflow-y:auto; display:none;">
+    </div>
+</div>
+
+<select name="product_id[]"
+        class="product-select"
+        style="display:none;">
+
+    <option value="">Select product</option>
+
+    {% for product in products %}
+    <option value="{{ product.id }}"
+        data-source="supplier"
+        data-color="{{ (product.color or '')|lower }}"
+        data-variant="{{ (product.variant or '')|lower }}"
+        data-code="{{ product.product_code or '' }}"
+        data-condition="{{ (product.condition or 'Sealed')|lower }}">
+        {{ product.name }}
+        — {{ product.product_code or ('PRD-' ~ product.id) }}
+        {% if product.variant %} — {{ product.variant }}{% endif %}
+        {% if product.color %} — {{ product.color }}{% endif %}
+        — Supplier Stock
+    </option>
+{% endfor %}
+
+{% for handset in individual_handsets %}
+    <option value="direct-{{ handset.id }}"
+        data-source="individual"
+        data-condition="{{ (handset.condition or 'Sealed')|lower }}"
+        data-imei="{{ handset.imei1 }}"
+        data-cost="{{ handset.purchase_price or 0 }}">
+        {{ handset.product.name }}
+        — IMEI: {{ handset.imei1 }}
+        — {{ handset.condition or 'Used' }}
+        — Individual Seller
+    </option>
+{% endfor %}
+
+</select>
+                                        
+                                    </div>
+
+                                    <div class="col-6 col-lg-2">
+                                        <label class="form-label small fw-semibold">
+                                            Quantity
+                                        </label>
+                                        <input type="number"
+                                               name="quantity[]"
+                                               class="form-control rounded-3 quantity-input"
+                                               min="1"
+                                               step="1"
+                                               value="1"
+                                               required>
+                                    </div>
+
+                                    <div class="col-6 col-lg-2">
+                                        <label class="form-label small fw-semibold">
+                                            Unit Cost (₹)
+                                        </label>
+                                        <input type="number"
+                                               name="unit_cost[]"
+                                               class="form-control rounded-3 cost-input"
+                                               min="0"
+                                               step="0.01"
+                                               placeholder="0.00"
+                                               required>
+                                    </div>
+
+                                    <div class="col-lg-3">
+                                        <label class="form-label small fw-semibold">
+                                            Subtotal (₹)
+                                        </label>
+                                        <input type="text"
+                                               class="form-control rounded-3 subtotal-output bg-light"
+                                               value="0.00"
+                                               readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-3 bg-light p-3 mt-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-secondary">Total items</span>
+                                <span class="fw-bold" id="footerItemCount">0</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span class="fw-bold">Grand Total</span>
+                                <span class="fs-4 fw-bold text-primary">
+                                    ₹<span id="footerGrandTotal">0.00</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end flex-wrap gap-2 mt-4">
+                            <a href="{{ url_for('purchase_list') }}"
+                               class="btn btn-light border rounded-3 px-4">
+                                Cancel
+                            </a>
+
+                            <button type="submit"
+                                    class="btn btn-primary rounded-3 px-4">
+                                <i class="bi bi-check2-circle me-1"></i>
+                                Create Purchase Order
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+<script>
+
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const container = document.getElementById("purchaseItems");
+    const addButton = document.getElementById("addItemBtn");
+
+    // Calculate purchase totals
+    function updateTotals() {
+
+        const rows = container.querySelectorAll(".purchase-item");
+
+        let total = 0;
+        let count = 0;
+
+        rows.forEach((row, index) => {
+
+            row.querySelector(".item-number").textContent = index + 1;
+
+            const isIndividualHandset = !!row.dataset.selectedDirectId;
+
+const quantity = isIndividualHandset
+    ? 0
+    : Number(row.querySelector(".quantity-input").value) || 0;
+
+const cost = isIndividualHandset
+    ? 0
+    : Number(row.querySelector(".cost-input").value) || 0;
+
+const subtotal = quantity * cost;
+
+            row.querySelector(".subtotal-output").value =
+                subtotal.toFixed(2);
+
+            if (row.querySelector(".product-select").value) {
+                count++;
+            }
+
+            total += subtotal;
+
+            row.querySelector(".remove-item").disabled =
+                rows.length === 1;
+        });
+
+        document.getElementById("itemCount").textContent = count;
+        document.getElementById("footerItemCount").textContent = count;
+
+        document.getElementById("grandTotal").textContent =
+            total.toFixed(2);
+
+        document.getElementById("footerGrandTotal").textContent =
+            total.toFixed(2);
+    }
+
+
+    // Product live search
+    function attachProductSearch(row) {
+
+        const input = row.querySelector(".product-search");
+        const select = row.querySelector(".product-select");
+        const suggestions = row.querySelector(".product-suggestions");
+
+        function hideSuggestions() {
+            suggestions.style.display = "none";
+        }
+
+        function clearIndividualSelection() {
+    delete row.dataset.selectedDirectId;
+
+    row.querySelector(".quantity-input").readOnly = false;
+    row.querySelector(".cost-input").readOnly = false;
+
+    row.querySelector(".quantity-input").value = "1";
+    row.querySelector(".cost-input").value = "";
+}
+
+        function searchProducts() {
+
+            const searchText = input.value.trim().toLowerCase();
+
+            suggestions.replaceChildren();
+
+            // Clear previous selection when typing
+            select.value = "";
+            clearIndividualSelection();
+
+            if (!searchText) {
+                hideSuggestions();
+                updateTotals();
+                return;
+            }
+
+            const conditionFilter =
+    document.getElementById("productConditionFilter");
+
+const selectedCondition =
+    conditionFilter ? conditionFilter.value : "all";
+
+    const sourceFilter =
+    document.getElementById("stockSourceFilter");
+
+const selectedSource =
+    sourceFilter ? sourceFilter.value : "all";
+
+const options = Array.from(select.options).filter(option => {
+
+    if (!option.value) return false;
+
+    const productCondition =
+        (option.dataset.condition || "").toLowerCase();
+
+    const matchesCondition =
+        selectedCondition === "all" ||
+        productCondition === selectedCondition;
+
+    const productSource = option.dataset.source || "supplier";
+
+    const matchesSource =
+        selectedSource === "all" ||
+        productSource === selectedSource;
+
+    const matchesSearch =
+        option.textContent.toLowerCase().includes(searchText);
+
+    return matchesCondition && matchesSource && matchesSearch;
+});
+
+            options.forEach(option => {
+
+                const button = document.createElement("button");
+
+                button.type = "button";
+                button.className =
+                    "list-group-item list-group-item-action text-start";
+
+                button.textContent = option.textContent.trim();
+
+                button.addEventListener("mousedown", function (event) {
+    event.preventDefault();
+
+    const quantityInput = row.querySelector(".quantity-input");
+    const costInput = row.querySelector(".cost-input");
+
+    if (option.dataset.source === "individual") {
+
+        // Individual handset is for viewing only.
+        select.value = "";
+        row.dataset.selectedDirectId = option.value;
+
+        input.value = option.textContent.trim();
+
+        quantityInput.value = "1";
+        quantityInput.readOnly = true;
+
+        costInput.value = option.dataset.cost || "0";
+        costInput.readOnly = true;
+
+        alert(
+            "Individual Seller Stock cannot be added as a purchase quantity. " +
+            "Each handset is already registered individually."
+        );
+
+    } else {
+
+        clearIndividualSelection();
+
+        select.value = option.value;
+        input.value = option.textContent.trim();
+    }
+
+    hideSuggestions();
+    updateTotals();
+});
+
+                suggestions.appendChild(button);
+
+            });
+
+            if (options.length > 0) {
+                suggestions.style.display = "block";
+            } else {
+                const empty = document.createElement("div");
+                empty.className = "list-group-item text-secondary small";
+                empty.textContent = "No matching products found";
+
+                suggestions.appendChild(empty);
+                suggestions.style.display = "block";
+            }
+
+            updateTotals();
+        }
+
+        input.addEventListener("input", searchProducts);
+
+        input.addEventListener("focus", function () {
+            if (input.value.trim()) {
+                searchProducts();
+            }
+        });
+
+        input.addEventListener("keydown", function (event) {
+
+            if (event.key === "Escape") {
+                hideSuggestions();
+            }
+
+        });
+
+        document.addEventListener("click", function (event) {
+
+            if (!row.contains(event.target)) {
+                hideSuggestions();
+            }
+
+        });
+
+    }
+
+
+    // Existing row events
+    function attachRowEvents(row) {
+
+        attachProductSearch(row);
+
+        row.querySelectorAll(".quantity-input, .cost-input")
+            .forEach(field => {
+
+                field.addEventListener("input", updateTotals);
+                field.addEventListener("change", updateTotals);
+
+            });
+
+        row.querySelector(".remove-item")
+            .addEventListener("click", function () {
+
+                if (container.querySelectorAll(".purchase-item").length > 1) {
+                    row.remove();
+                    updateTotals();
+                }
+
+            });
+
+    }
+
+
+    // Add new purchase item
+    addButton.addEventListener("click", function () {
+
+        const firstRow = container.querySelector(".purchase-item");
+        const newRow = firstRow.cloneNode(true);
+
+        newRow.querySelector(".product-search").value = "";
+
+        newRow.querySelector(".product-select").selectedIndex = 0;
+
+        newRow.querySelector(".product-suggestions").replaceChildren();
+
+        newRow.querySelector(".product-suggestions").style.display = "none";
+
+        newRow.querySelector(".quantity-input").value = "1";
+
+        newRow.querySelector(".cost-input").value = "";
+
+        newRow.querySelector(".subtotal-output").value = "0.00";
+
+        newRow.querySelector(".quantity-input").readOnly = false;
+newRow.querySelector(".cost-input").readOnly = false;
+
+delete newRow.dataset.selectedDirectId;
+
+        container.appendChild(newRow);
+
+        attachRowEvents(newRow);
+
+        updateTotals();
+
+    });
+
+
+    // Supplier live search
+    const supplierInput = document.getElementById("supplierSearch");
+    const supplierId = document.getElementById("supplierId");
+    const supplierSuggestions = document.getElementById("supplierSuggestions");
+
+    if (supplierInput && supplierId && supplierSuggestions) {
+
+        const supplierOptions = Array.from(
+            supplierSuggestions.querySelectorAll(".supplier-option")
+        );
+
+        supplierInput.addEventListener("input", function () {
+
+            const searchText = this.value.trim().toLowerCase();
+
+            supplierId.value = "";
+
+            let matches = 0;
+
+            supplierOptions.forEach(option => {
+
+                const name = option.dataset.name.toLowerCase();
+                const company = option.dataset.company.toLowerCase();
+
+                const show = searchText &&
+                    (name.startsWith(searchText) ||
+                     company.startsWith(searchText));
+
+                option.style.display = show ? "" : "none";
+
+                if (show) matches++;
+            });
+
+            supplierSuggestions.style.display =
+                matches > 0 ? "block" : "none";
+        });
+
+        supplierOptions.forEach(option => {
+
+            option.addEventListener("mousedown", function (event) {
+
+                event.preventDefault();
+
+                supplierId.value = this.dataset.id;
+
+                supplierInput.value =
+                    this.dataset.name +
+                    (this.dataset.company
+                        ? " — " + this.dataset.company
+                        : "");
+
+                supplierSuggestions.style.display = "none";
+            });
+        });
+
+        document.addEventListener("click", function (event) {
+
+            if (!supplierSuggestions.parentElement.contains(event.target)) {
+                supplierSuggestions.style.display = "none";
+            }
+
+        });
+    }
+
+    const conditionFilter =
+    document.getElementById("productConditionFilter");
+
+    if (conditionFilter) {
+    conditionFilter.addEventListener("change", function () {
+        container.querySelectorAll(".purchase-item").forEach(row => {
+            const input = row.querySelector(".product-search");
+            const select = row.querySelector(".product-select");
+
+            select.value = "";
+            input.value = "";
+
+            delete row.dataset.selectedDirectId;
+
+            row.querySelector(".quantity-input").readOnly = false;
+            row.querySelector(".cost-input").readOnly = false;
+
+            row.querySelector(".quantity-input").value = "1";
+            row.querySelector(".cost-input").value = "";
+
+            row.querySelector(".product-suggestions").style.display = "none";
+        });
+
+        updateTotals();
+    });
+}
+
+const sourceFilter = document.getElementById("stockSourceFilter");
+
+if (sourceFilter) {
+    sourceFilter.addEventListener("change", function () {
+
+        container.querySelectorAll(".purchase-item").forEach(row => {
+
+            row.querySelector(".product-select").value = "";
+            row.querySelector(".product-search").value = "";
+
+            delete row.dataset.selectedDirectId;
+
+            row.querySelector(".quantity-input").readOnly = false;
+            row.querySelector(".cost-input").readOnly = false;
+
+            row.querySelector(".quantity-input").value = "1";
+            row.querySelector(".cost-input").value = "";
+
+            row.querySelector(".product-suggestions").style.display = "none";
+        });
+
+        updateTotals();
+    });
+}
+
+document.getElementById("purchaseForm").addEventListener("submit", function (event) {
+
+    const individualSelected = Array.from(
+        container.querySelectorAll(".purchase-item")
+    ).some(row => !!row.dataset.selectedDirectId);
+
+    if (individualSelected) {
+        event.preventDefault();
+
+        alert(
+            "You selected Individual Seller Stock. " +
+            "Remove that handset from the purchase form before creating the purchase order."
+        );
+    }
+
+});
+
+    // Initialize existing row
+    container.querySelectorAll(".purchase-item").forEach(row => {
+        attachRowEvents(row);
+    });
+
+    updateTotals();
+
+});
+
+</script>
+{% endblock %}

@@ -1,0 +1,831 @@
+
+{% extends "base.html" %}
+
+{% block title %}Product Inventory | Mobile Store ERP{% endblock %}
+
+{% block content %}
+{% set product_items = products|default([], true)|list %}
+
+<div class="container-fluid py-4 inventory-page">
+
+    <!-- Page Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Product Inventory</h2>
+            <p class="text-secondary mb-0">
+                Manage your mobile products, suppliers and individual handset stock.
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+
+            <a href="{{ url_for('dashboard_page') }}"
+               class="btn btn-outline-secondary">
+                <i class="bi bi-speedometer2 me-1"></i>
+                Dashboard
+            </a>
+
+            <a href="{{ url_for('imei_records_list') }}"
+               class="btn btn-outline-dark">
+                <i class="bi bi-upc-scan me-1"></i>
+                Complete Handsets
+            </a>
+
+            <a href="{{ url_for('product_create') }}"
+               class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>
+                Add Product
+            </a>
+
+            <a href="{{ url_for('direct_stock_register') }}"
+               class="btn btn-success">
+                <i class="bi bi-box-arrow-in-down me-1"></i>
+                Used Phone Entry
+            </a>
+
+        </div>
+    </div>
+
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card summary-card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="summary-icon bg-primary-subtle text-primary">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div>
+                        <div class="text-secondary small">Filtered Products</div>
+                        <h4 class="fw-bold mb-0">
+                            {{ filtered_count|default(product_items|length) }}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card summary-card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="summary-icon bg-success-subtle text-success">
+                        <i class="bi bi-phone"></i>
+                    </div>
+                    <div>
+                        <div class="text-secondary small">Sealed Mobiles</div>
+                        <h4 class="fw-bold mb-0">
+                            {{ product_items|selectattr('condition', 'defined')|selectattr('condition', 'equalto', 'Sealed')|list|length }}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card summary-card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="summary-icon bg-warning-subtle text-warning">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </div>
+                    <div>
+                        <div class="text-secondary small">Used Mobiles</div>
+                        <h4 class="fw-bold mb-0">
+                            {{ product_items|selectattr('condition', 'defined')|selectattr('condition', 'equalto', 'Used')|list|length }}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card summary-card h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="summary-icon bg-danger-subtle text-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <div class="text-secondary small">Out of Stock</div>
+                        <h4 class="fw-bold mb-0">
+                            {{ out_stock_count|default(0) }}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- Filters -->
+    <div class="card inventory-card mb-4">
+
+        <div class="card-header bg-white border-0 px-4 pt-4 pb-2">
+            <h5 class="fw-bold mb-1">
+                <i class="bi bi-funnel text-primary me-2"></i>
+                Filter Products
+            </h5>
+            <small class="text-secondary">
+                Find products using the available inventory filters.
+            </small>
+        </div>
+
+        <div class="card-body px-4 pb-4">
+
+            <form method="GET" action="{{ url_for('products_list') }}">
+
+                <div class="row g-3 align-items-end">
+
+                    <!-- Search -->
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <label for="search" class="form-label fw-semibold">
+                            Search
+                        </label>
+                        <input
+                            type="search"
+                            class="form-control"
+                            id="search"
+                            name="search"
+                            value="{{ search|default('') }}"
+                            placeholder="Name, code, brand, barcode..."
+                        >
+                    </div>
+
+                    <!-- Product Type -->
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label for="product_type" class="form-label fw-semibold">
+                            Product Type
+                        </label>
+                        <select class="form-select" id="product_type" name="product_type">
+                            <option value="" {% if not product_type %}selected{% endif %}>
+                                All Types
+                            </option>
+                            <option value="Sealed"
+                                {% if product_type == 'Sealed' %}selected{% endif %}>
+                                Sealed
+                            </option>
+                            <option value="Used"
+                                {% if product_type == 'Used' %}selected{% endif %}>
+                                Used
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Product Status -->
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label for="status" class="form-label fw-semibold">
+                            Product Status
+                        </label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="active" {% if status == 'active' %}selected{% endif %}>
+                                Active
+                            </option>
+                            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>
+                                Inactive
+                            </option>
+                            <option value="all" {% if status == 'all' %}selected{% endif %}>
+                                All Products
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label for="category" class="form-label fw-semibold">
+                            Category
+                        </label>
+                        <select class="form-select" id="category" name="category">
+                            <option value="">All Categories</option>
+                            {% for cat in categories|default([], true) %}
+                                <option value="{{ cat }}"
+                                    {% if category == cat %}selected{% endif %}>
+                                    {{ cat }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Supplier -->
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <label for="supplier_id" class="form-label fw-semibold">
+                            Supplier
+                        </label>
+                        <select class="form-select" id="supplier_id" name="supplier_id">
+                            <option value="">All Suppliers</option>
+                            {% for supplier in suppliers %}
+                                <option value="{{ supplier.id }}"
+                                    {% if supplier_id == supplier.id %}selected{% endif %}>
+                                    {{ supplier.name }}
+                                    {% if supplier.company_name %}
+                                        - {{ supplier.company_name }}
+                                    {% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Contact Type -->
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <label for="contact_type" class="form-label fw-semibold">
+                            Contact Type
+                        </label>
+                        <select class="form-select" id="contact_type" name="contact_type">
+                            <option value="all"
+                                {% if contact_type == 'all' %}selected{% endif %}>
+                                All Contacts
+                            </option>
+                            <option value="supplier"
+                                {% if contact_type == 'supplier' %}selected{% endif %}>
+                                Supplier
+                            </option>
+                            <option value="seller"
+                                {% if contact_type == 'seller' %}selected{% endif %}>
+                                Individual Seller
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Stock Status -->
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label for="stock" class="form-label fw-semibold">
+                            Stock Status
+                        </label>
+                        <select class="form-select" id="stock" name="stock">
+                            <option value="" {% if not stock %}selected{% endif %}>
+                                All Stock
+                            </option>
+                            <option value="in" {% if stock == 'in' %}selected{% endif %}>
+                                In Stock
+                            </option>
+                            <option value="low" {% if stock == 'low' %}selected{% endif %}>
+                                Low Stock
+                            </option>
+                            <option value="out" {% if stock == 'out' %}selected{% endif %}>
+                                Out of Stock
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Date From -->
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label for="date_from" class="form-label fw-semibold">
+                            From Date
+                        </label>
+                        <input
+                            type="date"
+                            class="form-control"
+                            id="date_from"
+                            name="date_from"
+                            value="{{ date_from|default('') }}"
+                        >
+                    </div>
+
+                    <!-- Date To -->
+                    <div class="col-12 col-md-6 col-xl-2">
+                        <label for="date_to" class="form-label fw-semibold">
+                            To Date
+                        </label>
+                        <input
+                            type="date"
+                            class="form-control"
+                            id="date_to"
+                            name="date_to"
+                            value="{{ date_to|default('') }}"
+                        >
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="col-12 col-md-6 col-xl-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="bi bi-search me-1"></i>
+                            Apply Filters
+                        </button>
+
+                        <a href="{{ url_for('products_list') }}"
+                           class="btn btn-outline-secondary"
+                           title="Reset filters">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+
+    <!-- Product Inventory Table -->
+    <div class="card inventory-card">
+
+        <div class="card-header bg-white border-0 px-4 py-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h5 class="fw-bold mb-1">Product Inventory</h5>
+                    <small class="text-secondary">
+                        Product-wise stock overview and supplier information.
+                    </small>
+                </div>
+
+                <span class="badge rounded-pill text-bg-light border px-3 py-2">
+                    {{ product_items|length }} Product(s)
+                </span>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0 inventory-table">
+
+                <thead>
+                    <tr>
+                        <th class="ps-4">#</th>
+                        <th>Product</th>
+                        <th>Supplier Details</th>
+                        <th>Used Seller Details</th>
+                        <th>Code / Barcode</th>
+                        <th>Condition</th>
+                        <th>Category</th>
+                        <th class="text-center">Stock</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% set row_number = namespace(value=0) %}
+
+                    {% for product in product_items %}
+
+                        {% set suppliers_for_product = product_suppliers.get(product.id, []) %}
+
+                        {% for supplier_item in suppliers_for_product or [none] %}
+
+                            {% set row_supplier = supplier_item.supplier if supplier_item else none %}
+                            {% set row_number.value = row_number.value + 1 %}
+
+                            <tr>
+
+                                <!-- Number -->
+                                <td class="ps-4 text-secondary">
+                                    {{ row_number.value }}
+                                </td>
+
+                                <!-- Product Name -->
+                                <td>
+                                    <div class="fw-bold text-dark">
+                                        {{ product.name|default('Unnamed Product', true) }}
+                                    </div>
+                                </td>
+
+                                <!-- Supplier Details -->
+                                <td>
+                                    {% if row_supplier %}
+
+                                        <div class="fw-semibold">
+                                            {{ row_supplier.company_name or row_supplier.name }}
+                                        </div>
+
+                                        {% if row_supplier.contact_person %}
+                                            <div class="small text-secondary mt-1">
+                                                <i class="bi bi-person-circle text-primary me-1"></i>
+                                                {{ row_supplier.contact_person }}
+                                            </div>
+                                        {% endif %}
+
+                                        {% if row_supplier.phone %}
+                                            <div class="small text-secondary">
+                                                <i class="bi bi-telephone me-1"></i>
+                                                {{ row_supplier.phone }}
+                                            </div>
+                                        {% endif %}
+
+                                        {% if row_supplier.mobile_number_2 %}
+                                            <div class="small text-secondary">
+                                                <i class="bi bi-telephone me-1"></i>
+                                                {{ row_supplier.mobile_number_2 }}
+                                            </div>
+                                        {% endif %}
+
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Used Seller Details -->
+                                <td>
+
+                                    {% set used_records = product.imei_records
+                                        |selectattr('condition', 'equalto', 'Used')
+                                        |list %}
+
+                                    {% set seller_found = namespace(value=false) %}
+
+                                    {% for record in used_records %}
+
+                                        {% if record.source == 'direct' and record.used_handset_seller %}
+
+                                            {% set seller_found.value = true %}
+
+                                            <div class="seller-info mb-2">
+
+                                                <div class="fw-semibold">
+                                                    <i class="bi bi-person-circle text-primary me-1"></i>
+                                                    {{ record.used_handset_seller.seller_name }}
+                                                </div>
+
+                                                {% if record.used_handset_seller.seller_phone %}
+                                                    <div class="small text-secondary">
+                                                        <i class="bi bi-telephone me-1"></i>
+                                                        {{ record.used_handset_seller.seller_phone }}
+                                                    </div>
+                                                {% endif %}
+
+                                                {% if record.used_handset_seller.seller_address %}
+                                                    <div class="small text-secondary">
+                                                        <i class="bi bi-geo-alt me-1"></i>
+                                                        {{ record.used_handset_seller.seller_address }}
+                                                    </div>
+                                                {% endif %}
+
+                                                <div class="small text-muted">
+                                                    IMEI: {{ record.imei1 }}
+                                                </div>
+
+                                            </div>
+
+                                        {% endif %}
+
+                                    {% endfor %}
+
+                                    {% if not seller_found.value %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+
+                                </td>
+
+                                <!-- Product Code -->
+                                <td>
+                                    <div class="fw-semibold">
+                                        {{ product.product_code|default('—', true) }}
+                                    </div>
+                                    <div class="small text-secondary">
+                                        {{ product.barcode|default('—', true) }}
+                                    </div>
+                                </td>
+
+                                <!-- Condition -->
+                                <td>
+                                    {% set condition = (product.condition|default('Sealed', true)|trim) %}
+
+                                    {% if condition|lower == 'used' %}
+                                        <span class="badge rounded-pill text-bg-warning">
+                                            Used
+                                        </span>
+                                    {% else %}
+                                        <span class="badge rounded-pill text-bg-primary">
+                                            Sealed
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Category -->
+                                <td>
+                                    {{ product.category|default('—', true) }}
+                                </td>
+
+                                <!-- Overall Available Stock -->
+
+<td class="text-center">
+    {% if row_supplier %}
+        {% set qty = supplier_item.quantity|default(0, true)|int %}
+
+        <span class="badge rounded-pill {% if qty <= 0 %}text-bg-danger{% else %}text-bg-success{% endif %} px-3">
+            {{ qty }}
+        </span>
+    {% else %}
+        {% set qty = product_stock.get(product.id, product.stock_quantity or 0)|int %}
+
+        <span class="badge rounded-pill {% if qty <= 0 %}text-bg-danger{% else %}text-bg-success{% endif %} px-3">
+            {{ qty }}
+        </span>
+    {% endif %}
+</td>
+
+
+                                <!-- Product Status -->
+                                <td>
+                                    {% if product.is_active %}
+                                        <span class="status-indicator active-status">
+                                            <span></span>
+                                            Active
+                                        </span>
+                                    {% else %}
+                                        <span class="status-indicator inactive-status">
+                                            <span></span>
+                                            Inactive
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Actions -->
+                                <td class="text-end pe-4">
+
+                                    <div class="product-actions d-flex justify-content-end align-items-center flex-nowrap gap-2">
+
+                                        <!-- Edit Product -->
+<a href="{{ url_for('product_edit', product_id=product.id) }}"
+   class="btn btn-sm btn-outline-primary action-btn"
+   title="Edit Product"
+   aria-label="Edit Product">
+    <i class="bi bi-pencil-square"></i>
+</a>
+
+<!-- View Individual Handsets -->
+<a href="{{ url_for('product_handset_details', product_id=product.id) }}"
+   class="btn btn-sm btn-outline-info action-btn"
+   title="View Handset Details"
+   aria-label="View Handset Details">
+    <i class="bi bi-eye"></i>
+</a>
+
+<!-- Delete Product -->
+{% if loop.first %}
+<form method="POST"
+      action="{{ url_for('product_delete', product_id=product.id) }}"
+      class="d-inline"
+      onsubmit="return confirm('Are you sure you want to delete this product? Products with stock or transaction history will be deactivated instead of permanently deleted.');">
+
+    <input type="hidden"
+           name="csrf_token"
+           value="{{ csrf_token() }}">
+
+    <button type="submit"
+            class="btn btn-sm btn-outline-danger action-btn"
+            title="Delete Product"
+            aria-label="Delete Product">
+
+        <i class="bi bi-trash3"></i>
+
+    </button>
+
+</form>
+{% endif %}
+
+
+                                        <!-- Add Stock -->
+                                        {% if row_supplier %}
+
+                                            <a
+                                                href="{{ url_for('add_stock',
+                                                                 product_id=product.id,
+                                                                 supplier_id=row_supplier.id) }}"
+                                                class="btn btn-sm btn-success add-stock-btn"
+                                                title="Add stock from {{ row_supplier.name }}"
+                                            >
+                                                <i class="bi bi-plus-circle me-1"></i>
+                                                Add Stock
+                                            </a>
+
+                                        {% else %}
+
+                                            <span class="add-stock-btn"
+                                                  style="visibility: hidden;"
+                                                  aria-hidden="true">
+                                                Add Stock
+                                            </span>
+
+                                        {% endif %}
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    {% else %}
+
+                        <tr>
+                            <td colspan="10" class="text-center py-5">
+
+                                <div class="empty-state-icon mb-3">
+                                    <i class="bi bi-box-seam"></i>
+                                </div>
+
+                                <h6 class="fw-bold">No products found</h6>
+
+                                <p class="text-secondary mb-3">
+                                    Try changing your filters or add a new product.
+                                </p>
+
+                                <a href="{{ url_for('products_list') }}"
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>
+                                    Clear Filters
+                                </a>
+
+                            </td>
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- Table Footer -->
+        <div class="card-footer bg-white border-0 px-4 py-3">
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+
+                <small class="text-secondary">
+                    Showing {{ product_items|length }} product(s)
+                </small>
+
+                <small class="text-secondary">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Inventory is updated through stock and billing transactions.
+                </small>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<style>
+
+    .inventory-page {
+        color: #263445;
+    }
+
+    .inventory-card,
+    .summary-card {
+        border: 1px solid #edf0f4;
+        border-radius: 14px;
+        box-shadow: 0 3px 14px rgba(25, 42, 70, 0.045);
+        overflow: hidden;
+    }
+
+    .summary-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .summary-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 7px 20px rgba(25, 42, 70, 0.08);
+    }
+
+    .summary-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 23px;
+        flex-shrink: 0;
+    }
+
+    .inventory-table {
+        min-width: 1100px;
+    }
+
+    .inventory-table thead th {
+        background: #f7f9fc;
+        color: #526174;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.35px;
+        padding: 15px 12px;
+        white-space: nowrap;
+        border-bottom: 1px solid #e9edf3;
+    }
+
+    .inventory-table tbody td {
+        padding: 15px 12px;
+        border-color: #f0f2f5;
+        vertical-align: middle;
+    }
+
+    .inventory-table tbody tr {
+        transition: background 0.15s ease;
+    }
+
+    .inventory-table tbody tr:hover {
+        background: #f8fbff;
+    }
+
+    .seller-info {
+        padding-bottom: 5px;
+    }
+
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .status-indicator > span {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .active-status {
+        color: #198754;
+    }
+
+    .active-status > span {
+        background: #198754;
+    }
+
+    .inactive-status {
+        color: #6c757d;
+    }
+
+    .inactive-status > span {
+        background: #adb5bd;
+    }
+
+    .product-actions {
+        min-width: 170px;
+    }
+
+    .product-actions .btn {
+        white-space: nowrap;
+        border-radius: 7px;
+    }
+
+    .view-btn {
+        font-weight: 600;
+    }
+
+    .add-stock-btn {
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(5px);
+        transition: all 0.2s ease;
+        pointer-events: none;
+    }
+
+    .inventory-table tbody tr:hover .add-stock-btn {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(0);
+        pointer-events: auto;
+    }
+
+    .empty-state-icon {
+        width: 65px;
+        height: 65px;
+        margin: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 18px;
+        background: #f0f4f9;
+        color: #8291a5;
+        font-size: 30px;
+    }
+
+    @media (hover: none) {
+        .add-stock-btn {
+            opacity: 1;
+            visibility: visible;
+            transform: none;
+            pointer-events: auto;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .inventory-page {
+            padding-top: 18px !important;
+        }
+
+        .inventory-table tbody td {
+            padding: 12px 10px;
+        }
+
+        .product-actions {
+            min-width: 155px;
+        }
+    }
+
+</style>
+
+{% endblock %}

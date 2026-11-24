@@ -1,0 +1,561 @@
+
+{% extends "base.html" %}
+
+{% block title %}Database Management | MobileStore ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .db-page {
+        color: #252a3d;
+    }
+
+    .db-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 28px;
+    }
+
+    .db-header h3 {
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .db-header p {
+        color: #858ba0;
+        margin: 0;
+    }
+
+    .db-card {
+        background: #fff;
+        border: 1px solid #e9ebf3;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(30, 40, 80, 0.04);
+        height: 100%;
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .db-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(30, 40, 80, 0.08);
+    }
+
+    .db-card-body {
+        padding: 25px;
+    }
+
+    .db-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        font-size: 22px;
+        margin-bottom: 18px;
+    }
+
+    .db-icon.blue {
+        background: #eeeeff;
+        color: #5656df;
+    }
+
+    .db-icon.red {
+        background: #fff0f0;
+        color: #dc3545;
+    }
+
+    .db-card h5 {
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .db-card p {
+        color: #858ba0;
+        font-size: 14px;
+        line-height: 1.7;
+    }
+
+    .db-btn {
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-weight: 600;
+    }
+
+    .db-history-card {
+        background: #fff;
+        border: 1px solid #e9ebf3;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(30, 40, 80, 0.04);
+        overflow: hidden;
+    }
+
+    .db-history-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #e9ebf3;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .db-history-header h5 {
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .db-table {
+        margin-bottom: 0;
+    }
+
+    .db-table thead th {
+        background: #f8f9fc;
+        color: #777f95;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: 15px 20px;
+        border-bottom: 1px solid #e9ebf3;
+        white-space: nowrap;
+    }
+
+    .db-table tbody td {
+        padding: 16px 20px;
+        vertical-align: middle;
+        font-size: 13px;
+        border-color: #f0f1f6;
+    }
+
+    .db-file-name {
+        font-weight: 600;
+        color: #343a50;
+        word-break: break-word;
+    }
+
+    .db-badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 20px;
+        background: #eeeeff;
+        color: #5656df;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .db-empty {
+        text-align: center;
+        padding: 45px 15px;
+        color: #858ba0;
+    }
+
+    .db-empty i {
+        font-size: 36px;
+        color: #c5c9d7;
+    }
+
+    .db-warning {
+        background: #fff8e8;
+        border: 1px solid #ffe5a8;
+        border-radius: 9px;
+        padding: 12px;
+        color: #856404;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .db-danger-note {
+        font-size: 12px;
+        color: #dc3545;
+        margin-top: 12px;
+    }
+
+    @media (max-width: 576px) {
+        .db-card-body {
+            padding: 20px;
+        }
+
+        .db-history-header {
+            padding: 18px;
+        }
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid py-4 db-page">
+
+    <!-- Page Header -->
+    <div class="db-header">
+        <div>
+            <h3>Database Management</h3>
+            <p>Manage backups, recovery and database maintenance.</p>
+        </div>
+
+        <div class="text-muted small">
+            <i class="bi bi-shield-lock me-1"></i>
+            Administrator Access
+        </div>
+
+        <a href="{{ url_for('dashboard_page') }}"
+       class="btn btn-outline-secondary db-btn">
+        <i class="bi bi-arrow-left me-1"></i>
+        Back to Dashboard
+        </a>
+        
+    </div>
+
+
+    <!-- Management Cards -->
+    <div class="row g-4 mb-4">
+
+        <!-- Create Backup -->
+        <div class="col-md-6 col-xl-4">
+            <div class="db-card">
+                <div class="db-card-body">
+
+                    <div class="db-icon blue">
+                        <i class="bi bi-database-add"></i>
+                    </div>
+
+                    <h5>Create Database Backup</h5>
+
+                    <p>
+                        Create a secure copy of your current database.
+                        Keep your business information protected before
+                        making important changes.
+                    </p>
+
+                    <form method="POST"
+                          action="{{ url_for('database_create_backup') }}">
+
+                        <input type="hidden"
+                               name="csrf_token"
+                               value="{{ csrf_token() }}">
+
+                        <button type="submit"
+                                class="btn btn-primary db-btn">
+                            <i class="bi bi-cloud-arrow-down me-1"></i>
+                            Create Backup
+                        </button>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Truncate Database -->
+        <div class="col-md-6 col-xl-4">
+            <div class="db-card">
+                <div class="db-card-body">
+
+                    <div class="db-icon red">
+                        <i class="bi bi-trash3"></i>
+                    </div>
+
+                    <h5>Truncate All Records</h5>
+
+                    <p>
+                        Clear business records while retaining user
+                        accounts, store settings and uploaded files.
+                    </p>
+
+                    <div class="db-warning mb-3">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        An automatic database backup will be created
+                        before deletion.
+                    </div>
+
+                    <form method="POST"
+                          action="{{ url_for('database_truncate') }}"
+                          onsubmit="return confirm('Are you absolutely sure? All business records will be deleted.');">
+
+                        <input type="hidden"
+                               name="csrf_token"
+                               value="{{ csrf_token() }}">
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">
+                                Type TRUNCATE to confirm
+                            </label>
+
+                            <input type="text"
+                                   name="confirmation"
+                                   class="form-control"
+                                   placeholder="Type TRUNCATE"
+                                   required
+                                   autocomplete="off">
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-danger db-btn">
+                            <i class="bi bi-trash3 me-1"></i>
+                            Truncate Records
+                        </button>
+
+                    </form>
+
+                    <div class="db-danger-note">
+                        <i class="bi bi-shield-exclamation me-1"></i>
+                        This operation requires administrator confirmation.
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Restore Database -->
+        <div class="col-md-6 col-xl-4">
+            <div class="db-card">
+                <div class="db-card-body">
+
+                    <div class="db-icon blue">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </div>
+
+                    <h5>Restore Database</h5>
+
+                    <p>
+                        Recover your previous business records using a saved
+                        database backup or an external backup file.
+                    </p>
+
+                    <div class="db-warning mb-3">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        Restoring replaces the current database. A backup
+                        of the current database will be created first.
+                    </div>
+
+                    <form method="POST"
+                          action="{{ url_for('database_restore') }}"
+                          enctype="multipart/form-data"
+                          onsubmit="return confirm('Are you sure you want to restore this database? Current data will be replaced.');">
+
+                        <input type="hidden"
+                               name="csrf_token"
+                               value="{{ csrf_token() }}">
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">
+                                Select Existing Backup
+                            </label>
+
+                            <select name="backup_category"
+                                    class="form-select mb-2"
+                                    id="restore_backup_category">
+
+                                <option value="">
+                                    Choose a saved backup
+                                </option>
+
+                                {% for backup in backup_history %}
+                                    <option value="{{ backup.category }}"
+                                            data-backup-name="{{ backup.name }}">
+                                        {{ backup.name }}
+                                    </option>
+                                {% endfor %}
+
+                            </select>
+
+                            <input type="hidden"
+                                   name="backup_name"
+                                   id="restore_backup_name">
+
+                            <small class="text-muted">
+                                Select a backup from your Backup History.
+                            </small>
+                        </div>
+
+                        <div class="text-center text-muted small mb-3">
+                            — OR UPLOAD A BACKUP FILE —
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">
+                                Upload Database Backup
+                            </label>
+
+                            <input type="file"
+                                   name="backup_file"
+                                   class="form-control"
+                                   accept=".db">
+
+                            <small class="text-muted">
+                                Select an external SQLite .db backup file.
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">
+                                Type RESTORE to confirm
+                            </label>
+
+                            <input type="text"
+                                   name="confirmation"
+                                   class="form-control"
+                                   placeholder="Type RESTORE"
+                                   autocomplete="off"
+                                   required>
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-primary db-btn">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>
+                            Restore Database
+                        </button>
+
+                    </form>
+
+                    <div class="db-danger-note">
+                        <i class="bi bi-shield-exclamation me-1"></i>
+                        Administrator confirmation is required.
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- Backup History -->
+    <div class="db-history-card">
+
+        <div class="db-history-header">
+            <div>
+                <h5>
+                    <i class="bi bi-clock-history me-2 text-primary"></i>
+                    Backup History
+                </h5>
+
+                <small class="text-muted">
+                    Previously created database backups
+                </small>
+            </div>
+
+            <span class="db-badge">
+                {{ backup_history|length }} Backups
+            </span>
+        </div>
+
+
+        {% if backup_history %}
+
+        <div class="table-responsive">
+            <table class="table table-hover db-table">
+
+                <thead>
+                    <tr>
+                        <th>Backup File</th>
+                        <th>Category</th>
+                        <th>Date & Time</th>
+                        <th>File Size</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for backup in backup_history %}
+                    <tr>
+
+                        <td>
+                            <div class="db-file-name">
+                                <i class="bi bi-file-earmark-zip me-2 text-primary"></i>
+                                {{ backup.name }}
+                            </div>
+                        </td>
+
+                        <td>
+                            <span class="db-badge">
+                                {{ backup.category|replace('_', ' ')|title }}
+                            </span>
+                        </td>
+
+                        <td>
+                            {{ backup.date.strftime('%d-%m-%Y %I:%M %p') }}
+                        </td>
+
+                        <td class="fw-semibold">
+                            {{ backup.size }} MB
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+
+        {% else %}
+
+        <div class="db-empty">
+            <i class="bi bi-database d-block mb-3"></i>
+
+            <h6 class="fw-semibold">No Backups Found</h6>
+
+            <p class="small mb-0">
+                Create your first database backup to see it listed here.
+            </p>
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const backupCategory = document.getElementById(
+        "restore_backup_category"
+    );
+
+    const backupName = document.getElementById(
+        "restore_backup_name"
+    );
+
+    const backupFile = document.querySelector(
+        'input[name="backup_file"]'
+    );
+
+    if (backupCategory && backupName) {
+
+        backupCategory.addEventListener("change", function () {
+
+            const selectedOption =
+                backupCategory.options[backupCategory.selectedIndex];
+
+            backupName.value =
+                selectedOption.dataset.backupName || "";
+
+            if (backupFile && backupName.value) {
+                backupFile.value = "";
+            }
+
+        });
+    }
+
+    if (backupFile && backupCategory) {
+
+        backupFile.addEventListener("change", function () {
+
+            if (backupFile.files.length > 0) {
+                backupCategory.value = "";
+                backupName.value = "";
+            }
+
+        });
+    }
+
+});
+</script>
+
+{% endblock %}

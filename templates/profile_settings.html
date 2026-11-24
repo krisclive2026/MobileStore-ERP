@@ -1,0 +1,81 @@
+
+{% extends "base.html" %}
+
+{% block title %}Profile Settings | MobileStore ERP{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 650px;">
+
+    <div class="mb-4">
+        <h2 class="fw-bold">Profile Settings</h2>
+        <p class="text-secondary">
+            Update your own account information.
+        </p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form method="POST" action="{{ url_for('profile_settings') }}">
+                <input type="hidden" name="csrf_token"
+                       value="{{ csrf_token() }}">
+
+                <div class="mb-3">
+                    <label for="full_name" class="form-label">Full Name</label>
+                    <input id="full_name" name="full_name"
+                           class="form-control" maxlength="150"
+                           value="{{ user.full_name or '' }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input id="username" name="username"
+                           class="form-control" maxlength="80"
+                           value="{{ user.username }}" required>
+                </div>
+
+                <hr class="my-4">
+                <h5>Change Password</h5>
+                <p class="text-secondary small">
+                    Leave both password fields empty to keep your current password.
+                </p>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label">New Password</label>
+                    <input id="password" name="password" type="password"
+                           class="form-control" minlength="12"
+                           autocomplete="new-password">
+                </div>
+
+                <div class="mb-4">
+                    <label for="confirm_password" class="form-label">
+                        Confirm New Password
+                    </label>
+                    <input id="confirm_password" name="confirm_password"
+                           type="password" class="form-control"
+                           autocomplete="new-password">
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check2-circle me-1"></i>
+                    Save Changes
+                </button>
+
+                <a href="{{ url_for('dashboard_page') }}"
+                   class="btn btn-outline-secondary ms-2">
+                    Cancel
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
